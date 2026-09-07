@@ -1,0 +1,10 @@
+# Node / Dependencies if any
+node_modules/
+dist/
+build/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
