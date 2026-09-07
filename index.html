@@ -3,444 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OmniMeta • Plataforma Omnicanal Enterprise para Meta</title>
-  <meta name="description" content="Centraliza WhatsApp Cloud API, Facebook Messenger e Instagram Direct en una interfaz de alto rendimiento estilo WhatsApp Web con chatbot de bienvenida y traspaso humano." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230866ff'><path d='M12 2C6.48 2 2 6.48 2 12c0 1.84.5 3.56 1.36 5.05L2 22l5.12-1.34C8.54 21.5 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z'/></svg>" />
+  <title>Lecturas de Tarot Online • Consultas Personalizadas e Inmediatas</title>
+  <meta name="description" content="Consultas espirituales y tiradas de Tarot del amor, trabajo y destino. Atención personalizada e inmediata por WhatsApp, Facebook Messenger e Instagram." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'><path d='M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z'/></svg>" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
 
-  <!-- Barra de Navegación Superior -->
-  <header class="navbar">
-    <div class="container navbar-inner">
-      <a href="#/" class="brand-logo" id="nav-brand-logo">
-        <div class="brand-icon">💬</div>
-        <div class="brand-text">Omni<span>Meta</span></div>
+  <!-- Cabecera y Navegación Principal -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🔮</div>
+        <div class="logo-text">
+          <span class="logo-title">Lecturas de Tarot</span>
+          <span class="logo-sub">lecturasdetarte.online</span>
+        </div>
       </a>
 
       <nav>
-        <ul class="nav-links">
-          <li><a href="#/" class="nav-link active" id="nav-link-home">Inicio</a></li>
-          <li><a href="#features" class="nav-link" id="nav-link-features">Características</a></li>
-          <li><a href="#/privacidad" class="nav-link" id="nav-link-privacy">Privacidad</a></li>
-          <li><a href="#/terminos" class="nav-link" id="nav-link-terms">Términos</a></li>
-          <li><a href="#/eliminacion-de-datos" class="nav-link" id="nav-link-deletion">Eliminación de Datos</a></li>
+        <ul class="site-nav">
+          <li class="nav-item"><a href="/">Inicio</a></li>
+          <li class="nav-item"><a href="#servicios">Tiradas & Consultas</a></li>
+          <li class="nav-item"><a href="#canales">Canales de Atención</a></li>
+          <li class="nav-item"><a href="/politica-de-privacidad.html">Privacidad</a></li>
+          <li class="nav-item"><a href="/terminos-de-servicio.html">Términos</a></li>
         </ul>
       </nav>
 
-      <div class="nav-actions">
-        <a href="#/login" class="btn btn-primary" id="btn-login-nav">
-          <span>Acceso Operadores</span>
-          <span>→</span>
+      <div class="header-actions">
+        <a href="/login.html" class="btn btn-outline-gold" id="btn-login-header">
+          <span>Portal Tarotistas</span>
+          <span>🗝️</span>
         </a>
       </div>
     </div>
   </header>
 
-  <!-- ========================================== -->
-  <!-- VISTA 1: LANDING PAGE PRINCIPAL            -->
-  <!-- ========================================== -->
-  <main id="view-home">
-    <section class="hero">
+  <!-- Hero Principal -->
+  <main>
+    <section class="hero-tarot">
       <div class="container">
-        <div class="badge-tag">
-          <span class="pulse-dot"></span>
-          <span>Meta Graph API v21.0 Certified • Cifrado AES-256-GCM</span>
+        <div class="hero-tag">
+          <span>✨ Consultas Espirituales en Tiempo Real</span>
         </div>
 
-        <h1 class="hero-title">
-          <span class="gradient-text">La Plataforma Omnicanal Definitiva para</span><br />
-          <span class="gradient-accent">WhatsApp, Messenger e Instagram</span>
+        <h1 class="hero-heading">
+          Descubre lo que los Arcanos Revelan Sobre tu <span>Amor, Destino y Prosperidad</span>
         </h1>
 
-        <p class="hero-desc">
-          Centraliza más de 10 páginas de Facebook, múltiples líneas de WhatsApp Business y perfiles de Instagram en una sola bandeja de entrada de alta velocidad estilo WhatsApp Web, con bots de bienvenida inteligentes y protocolo de pase a humano instantáneo.
+        <p class="hero-subheading">
+          Respuestas claras, certeras y confidenciales. Conéctate al instante con nuestras tarotistas profesionales a través de tu canal favorito: WhatsApp, Messenger o Instagram.
         </p>
 
-        <div class="hero-cta-group">
-          <a href="#/login" class="btn btn-wa" id="hero-btn-inbox">
-            <span>Abrir Bandeja de Entrada</span>
-            <span>⚡</span>
+        <div class="hero-ctas">
+          <a href="#canales" class="btn btn-gold">
+            <span>Iniciar Consulta Ahora</span>
+            <span>➤</span>
           </a>
-          <a href="#features" class="btn btn-secondary" id="hero-btn-explore">
-            <span>Conocer Arquitectura</span>
-            <span>↓</span>
+          <a href="#servicios" class="btn btn-outline-gold">
+            <span>Ver Tipos de Lecturas</span>
           </a>
         </div>
 
-        <div class="channels-pills">
-          <div class="channel-pill pill-wa">
-            <span>🟢</span> WhatsApp Cloud API
-          </div>
-          <div class="channel-pill pill-fb">
-            <span>🔵</span> Facebook Pages (10+ cuentas)
-          </div>
-          <div class="channel-pill pill-ig">
-            <span>🟣</span> Instagram Direct Messaging
-          </div>
+        <!-- Canales de Atención Directa -->
+        <div class="contact-channels-bar" id="canales">
+          <a href="#canales" class="channel-card-link" style="border-color: rgba(37, 211, 102, 0.4);">
+            <span style="font-size: 20px;">💬</span>
+            <div style="text-align: left;">
+              <div style="font-size: 11px; color: var(--wa-green); font-weight: 700;">WHATSAPP DIRECTO</div>
+              <div style="font-size: 13.5px;">Atención Inmediata 24/7</div>
+            </div>
+          </a>
+
+          <a href="#canales" class="channel-card-link" style="border-color: rgba(24, 119, 242, 0.4);">
+            <span style="font-size: 20px;">🌐</span>
+            <div style="text-align: left;">
+              <div style="font-size: 11px; color: #60a5fa; font-weight: 700;">FACEBOOK MESSENGER</div>
+              <div style="font-size: 13.5px;">Fan Pages Oficiales</div>
+            </div>
+          </a>
+
+          <a href="#canales" class="channel-card-link" style="border-color: rgba(220, 39, 67, 0.4);">
+            <span style="font-size: 20px;">📸</span>
+            <div style="text-align: left;">
+              <div style="font-size: 11px; color: #f472b6; font-weight: 700;">INSTAGRAM DIRECT</div>
+              <div style="font-size: 13.5px;">Mensajes & Tiradas Rápidas</div>
+            </div>
+          </a>
         </div>
       </div>
     </section>
 
-    <!-- Previsualización Interactiva de WhatsApp Web -->
-    <section class="container preview-section" id="preview-mockup">
-      <div class="mockup-window">
-        <!-- Columna Izquierda: Lista de Chats -->
-        <aside class="mockup-sidebar">
-          <div class="mockup-sidebar-header">
-            <div class="mockup-user-avatar">OM</div>
-            <div style="font-size: 13px; color: #8696a0;">Operador Activo: Admin</div>
-          </div>
-          <div class="mockup-search-box">
-            <input type="text" class="mockup-search-input" placeholder="🔍 Buscar conversación o canal..." />
-          </div>
-          <div class="mockup-chat-list">
-            <!-- Chat 1 (WhatsApp) -->
-            <div class="mockup-chat-item active" data-channel="whatsapp">
-              <div class="mockup-contact-avatar">
-                CR
-                <div class="channel-badge-indicator badge-wa">W</div>
-              </div>
-              <div class="mockup-chat-info">
-                <div class="mockup-chat-top">
-                  <div class="mockup-chat-name">Carlos Rodríguez</div>
-                  <div class="mockup-chat-time">10:42</div>
-                </div>
-                <div class="mockup-chat-bottom">
-                  <div class="mockup-chat-msg">¿Tienen stock disponible del producto?</div>
-                  <div class="mockup-unread-badge">2</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Chat 2 (Facebook Messenger) -->
-            <div class="mockup-chat-item" data-channel="messenger">
-              <div class="mockup-contact-avatar">
-                MS
-                <div class="channel-badge-indicator badge-fb">F</div>
-              </div>
-              <div class="mockup-chat-info">
-                <div class="mockup-chat-top">
-                  <div class="mockup-chat-name">María Silva (Sucursal Centro)</div>
-                  <div class="mockup-chat-time">09:15</div>
-                </div>
-                <div class="mockup-chat-bottom">
-                  <div class="mockup-chat-msg">¡Hola! ¿A qué hora abren hoy?</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Chat 3 (Instagram) -->
-            <div class="mockup-chat-item" data-channel="instagram">
-              <div class="mockup-contact-avatar">
-                JL
-                <div class="channel-badge-indicator badge-ig">I</div>
-              </div>
-              <div class="mockup-chat-info">
-                <div class="mockup-chat-top">
-                  <div class="mockup-chat-name">@juan_lopez_design</div>
-                  <div class="mockup-chat-time">Ayer</div>
-                </div>
-                <div class="mockup-chat-bottom">
-                  <div class="mockup-chat-msg">Te envié una consulta por DM</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- Columna Derecha: Vista del Chat Activo -->
-        <section class="mockup-chatview">
-          <header class="mockup-chat-header">
-            <div class="mockup-chat-header-info">
-              <div class="mockup-contact-avatar" style="width: 36px; height: 36px;">CR</div>
-              <div>
-                <div class="mockup-header-title">Carlos Rodríguez • WhatsApp Ventas</div>
-                <div class="mockup-header-sub">Ventana de 24h activa (expira en 22h)</div>
-              </div>
-            </div>
-            <div>
-              <span class="handover-pill" id="mockup-handover-status">
-                <span>👤</span> Atendido por Humano
-              </span>
-            </div>
-          </header>
-
-          <div class="mockup-messages">
-            <!-- Mensaje de Cliente -->
-            <div class="bubble bubble-inbound">
-              Hola, buenas tardes. Quería consultar si tienen disponibilidad de entrega inmediata.
-              <div class="bubble-meta">10:40</div>
-            </div>
-
-            <!-- Respuesta del Chatbot Automático -->
-            <div class="bubble bubble-outbound" style="background: #1f2c34; border: 1px solid rgba(139, 92, 246, 0.3);">
-              <div style="font-size: 11px; color: #c084fc; font-weight: 600; margin-bottom: 2px;">🤖 Chatbot OmniMeta</div>
-              ¡Hola Carlos! Bienvenido a WhatsApp Ventas. Hemos recibido tu consulta y enseguida un asesor continuará la conversación.
-              <div class="bubble-meta">10:40 <span class="check-double">✓✓</span></div>
-            </div>
-
-            <!-- Mensaje Humano del Operador -->
-            <div class="bubble bubble-outbound">
-              ¡Hola Carlos! Sí, disponemos de stock para entrega el día de hoy. ¿Para qué localidad sería el envío?
-              <div class="bubble-meta">10:42 <span class="check-double">✓✓</span></div>
-            </div>
-
-            <!-- Respuesta del Cliente -->
-            <div class="bubble bubble-inbound">
-              Genial, sería para Capital. ¿Me compartes el enlace de pago?
-              <div class="bubble-meta">10:43</div>
-            </div>
-          </div>
-
-          <div class="mockup-input-bar">
-            <input type="text" class="mockup-input-field" placeholder="Escribe un mensaje para Carlos..." value="¡Por supuesto! Aquí tienes el link seguro:" />
-            <button class="btn btn-primary" style="padding: 9px 16px;">Enviar ➤</button>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <!-- Sección de Funcionalidades Técnicas -->
-    <section class="features-section" id="features">
+    <!-- Sección de Servicios de Consulta -->
+    <section class="section-services" id="servicios">
       <div class="container">
-        <h2 class="section-title">Infraestructura Blindada y Escalable</h2>
-        <p class="section-sub">Diseñado bajo estándares rigurosos de ingeniería de software (SDD) y lineamientos oficiales de Meta Platform.</p>
+        <div class="section-header">
+          <h2 class="section-title">Consultas y Lecturas Especializadas</h2>
+          <p class="section-description">Cada tirada es personalizada, analizando tus energías actuales con respeto y honestidad.</p>
+        </div>
 
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon-wrapper icon-wa">🟢</div>
-            <h3 class="feature-title">WhatsApp Cloud API Oficial</h3>
-            <p class="feature-text">Integración directa con los servidores de Meta. Soporte para múltiples números corporativos, envío con plantillas HSM y descarga segura de audios y archivos con URLs efímeras de 5 minutos.</p>
+        <div class="services-grid">
+          <article class="tarot-card">
+            <div class="card-icon">❤️</div>
+            <h3 class="card-title">Tarot del Amor y Pareja</h3>
+            <p class="card-text">Claridad sobre sentimientos, intenciones reales, reconciliaciones y el rumbo de tu vínculo afectivo.</p>
+            <a href="#canales" class="card-action">Consultar por WhatsApp →</a>
+          </article>
+
+          <article class="tarot-card">
+            <div class="card-icon">🪙</div>
+            <h3 class="card-title">Trabajo, Finanzas y Negocios</h3>
+            <p class="card-text">Orientación sobre proyectos laborales, toma de decisiones económicas y desbloqueo de caminos profesionales.</p>
+            <a href="#canales" class="card-action">Consultar por Messenger →</a>
+          </article>
+
+          <article class="tarot-card">
+            <div class="card-icon">🌟</div>
+            <h3 class="card-title">Tirada General y Destino</h3>
+            <p class="card-text">Una visión integral de los próximos meses en salud, espiritualidad y los ciclos que estás por comenzar.</p>
+            <a href="#canales" class="card-action">Consultar por Instagram →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Confianza, Ética y Privacidad -->
+    <section class="section-trust">
+      <div class="container">
+        <div class="trust-grid">
+          <div class="trust-item">
+            <h4>🔒 100% Confidencial</h4>
+            <p>Tus consultas, nombres y situaciones son tratadas con absoluta reserva profesional.</p>
           </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper icon-fb">🔵</div>
-            <h3 class="feature-title">Multi-Página Facebook Messenger</h3>
-            <p class="feature-text">Conecta 10 o más Fan Pages simultáneamente. Detección automática de respuestas de operadores externos (`is_echo`) y ventana ampliada de 7 días con etiqueta oficial `HUMAN_AGENT`.</p>
+          <div class="trust-item">
+            <h4>⚡ Respuesta sin Esperas</h4>
+            <p>Un bot de bienvenida toma tu solicitud y te asigna al instante con una tarotista activa.</p>
           </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper icon-bot">🤖</div>
-            <h3 class="feature-title">Protocolo Handover Automatizado</h3>
-            <p class="feature-text">El chatbot da la bienvenida personalizada al cliente y se silencia de inmediato cuando un operador humano toma el control desde la web o la app móvil de Meta.</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper icon-sec">🛡️</div>
-            <h3 class="feature-title">Criptografía AES-256-GCM</h3>
-            <p class="feature-text">Todos los tokens de acceso y secretos de las aplicaciones se almacenan cifrados en reposo en PostgreSQL 16 con vectores de inicialización (IV) y etiquetas de autenticación (AuthTag).</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">⚡</div>
-            <h3 class="feature-title">Ingesta en Cola Asíncrona (&lt; 50ms)</h3>
-            <p class="feature-text">El webhook responde inmediatamente a Meta para evitar penalizaciones y procesa las conversaciones en segundo plano con colas en memoria y persistencia transaccional.</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">📜</div>
-            <h3 class="feature-title">Compliance Total con Meta App Review</h3>
-            <p class="feature-text">Incluye endpoints de eliminación de datos de usuario con decodificación criptográfica de `signed_request`, términos de uso y políticas de privacidad auditadas.</p>
+          <div class="trust-item">
+            <h4>🤝 Trato Humano y Cálido</h4>
+            <p>Orientación sincera y empática, sin juzgar tus dudas ni tus circunstancias.</p>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- ========================================== -->
-  <!-- VISTA 2: POLÍTICA DE PRIVACIDAD            -->
-  <!-- ========================================== -->
-  <section class="container legal-view-container" id="view-privacy">
-    <div class="legal-card">
-      <h1>Política de Privacidad</h1>
-      <div class="legal-meta">Última actualización: 7 de Septiembre de 2026 • Conforme a Meta Platform Terms & GDPR</div>
-
-      <p>En <strong>OmniMeta</strong> (en adelante, "la Plataforma"), nos comprometemos a proteger la privacidad y seguridad de los datos personales de nuestros usuarios, operadores y de los clientes que interactúan a través de los canales conectados de WhatsApp Cloud API, Facebook Messenger e Instagram Direct Messaging.</p>
-
-      <h2>1. Datos que Recopilamos</h2>
-      <p>Nuestra plataforma procesa únicamente los datos necesarios para brindar servicios de atención al cliente y mensajería omnicanal:</p>
-      <ul>
-        <li><strong>Identificadores de Plataforma:</strong> Identificadores de usuario de Meta (PSID en Messenger, IGSID en Instagram, números de teléfono en WhatsApp Cloud API).</li>
-        <li><strong>Contenido de Mensajes:</strong> Texto, archivos multimedia (imágenes, audios y documentos) enviados durante las conversaciones para su lectura por operadores autorizados.</li>
-        <li><strong>Metadatos Técnicos:</strong> Marcas de tiempo, confirmaciones de entrega y lectura, e identificadores de canales asignados.</li>
-      </ul>
-
-      <h2>2. Finalidad del Tratamiento de Datos</h2>
-      <p>Los datos recopilados se utilizan exclusivamente para:</p>
-      <ul>
-        <li>Permitir a los operadores de la empresa responder consultas y gestionar la atención al cliente en tiempo real.</li>
-        <li>Despachar respuestas automáticas de bienvenida mediante el chatbot configurado por la empresa.</li>
-        <li>Mantener la sincronización y el registro del historial de conversaciones durante la relación comercial.</li>
-      </ul>
-
-      <h2>3. Seguridad y Cifrado de la Información</h2>
-      <p>Implementamos medidas de seguridad de grado industrial para salvaguardar la información:</p>
-      <ul>
-        <li><strong>Cifrado en Reposo:</strong> Todos los tokens de acceso de Meta y credenciales de API se almacenan cifrados mediante el algoritmo criptográfico simétrico <code>AES-256-GCM</code> con vectores de autenticación únicos.</li>
-        <li><strong>Cifrado en Tránsito:</strong> Todas las comunicaciones entre Meta, nuestros servidores y el panel de operadores se ejecutan exclusivamente a través de canales seguros <code>HTTPS / TLS 1.3</code> y WebSockets autenticados.</li>
-        <li><strong>Verificación Criptográfica:</strong> Cada evento entrante de Meta es validado contra ataques de falsificación mediante firmas <code>HMAC-SHA256</code> en tiempo constante (<code>crypto.timingSafeEqual</code>).</li>
-      </ul>
-
-      <h2>4. No Comercialización de Datos</h2>
-      <p>OmniMeta no vende, alquila, transfiere ni comercializa datos personales de usuarios o clientes con terceros con fines publicitarios ni de prospección comercial.</p>
-
-      <h2>5. Derechos del Usuario y Eliminación de Datos</h2>
-      <p>Cualquier usuario cuyos datos hayan sido procesados puede solicitar su disasociación o eliminación definitiva en cualquier momento mediante nuestra sección de <a href="#/eliminacion-de-datos" style="color: #60a5fa;">Eliminación de Datos</a> o a través de la configuración de aplicaciones de su cuenta de Facebook/Meta.</p>
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- VISTA 3: TÉRMINOS DE SERVICIO              -->
-  <!-- ========================================== -->
-  <section class="container legal-view-container" id="view-terms">
-    <div class="legal-card">
-      <h1>Términos de Servicio</h1>
-      <div class="legal-meta">Última actualización: 7 de Septiembre de 2026 • Versión 3.0</div>
-
-      <p>Al acceder y utilizar la plataforma <strong>OmniMeta</strong>, la empresa y sus operadores autorizados aceptan cumplir íntegramente los presentes Términos de Servicio, así como las Condiciones para Desarrolladores y Políticas de la Plataforma Meta.</p>
-
-      <h2>1. Uso Autorizado</h2>
-      <p>La plataforma está destinada exclusivamente a la gestión de atención al cliente y soporte comercial legítimo a través de las APIs oficiales de Meta (WhatsApp Business Cloud API, Facebook Graph API e Instagram Graph API).</p>
-
-      <h2>2. Cumplimiento de las Ventanas de Mensajería de Meta</h2>
-      <p>Los operadores se comprometen a respetar los lineamientos de contacto de Meta:</p>
-      <ul>
-        <li><strong>Ventana Estándar de 24 Horas:</strong> Se permite el envío de mensajes de texto libre dentro de las 24 horas posteriores al último mensaje enviado por el cliente.</li>
-        <li><strong>Etiqueta de Agente Humano (HUMAN_AGENT):</strong> En Facebook Messenger e Instagram Direct, la plataforma permite extender la respuesta hasta 7 días exclusivamente para la atención de consultas iniciadas por el cliente gestionadas por operadores humanos.</li>
-        <li><strong>Prohibición de Spam:</strong> Queda estrictamente prohibido el envío de mensajes masivos no solicitados o contenido publicitario no autorizado fuera de las plantillas aprobadas (HSM) de WhatsApp.</li>
-      </ul>
-
-      <h2>3. Responsabilidad de Credenciales</h2>
-      <p>Los administradores son responsables de la custodia de sus credenciales de acceso y de revocar oportunamente los tokens de operadores desvinculados.</p>
-
-      <h2>4. Disponibilidad del Servicio</h2>
-      <p>Hacemos nuestros mejores esfuerzos técnicos para garantizar una disponibilidad del 99.9%. No seremos responsables por interrupciones atribuibles a caídas en la infraestructura externa de Meta Platform o fallas en los proveedores de telecomunicaciones.</p>
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- VISTA 4: ELIMINACIÓN DE DATOS (META REQ)   -->
-  <!-- ========================================== -->
-  <section class="container legal-view-container" id="view-deletion">
-    <div class="legal-card">
-      <h1>Instrucciones y Solicitud de Eliminación de Datos de Usuario</h1>
-      <div class="legal-meta">Cumplimiento con las Directrices Oficiales de Meta Platform para Eliminación de Datos</div>
-
-      <p>Conforme a las Políticas de la Plataforma Meta y las leyes internacionales de protección de datos (GDPR / LGPD), OmniMeta ofrece mecanismos automatizados y directos para que los usuarios puedan solicitar la eliminación y anonimización de cualquier información asociada a sus perfiles de WhatsApp, Facebook o Instagram.</p>
-
-      <h2>Mecanismo 1: Eliminación Automática desde Meta</h2>
-      <p>Cuando desvinculas o eliminas nuestra aplicación desde la sección <em>Configuración y Privacidad &gt; Apps y sitios web</em> de tu cuenta de Facebook, Meta envía una llamada cifrada y firmada (<code>signed_request</code>) a nuestro endpoint oficial:</p>
-      <div style="background: #0b0f19; padding: 12px 18px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; color: #38bdf8; margin: 12px 0;">
-        POST https://tu-dominio.com/api/compliance/data-deletion
-      </div>
-      <p>Nuestros servidores procesan automáticamente la solicitud, disasocian los identificadores y generan un <strong>Código de Confirmación</strong> único junto a un enlace de seguimiento de estado.</p>
-
-      <h2>Mecanismo 2: Consulta y Comprobación de Solicitud</h2>
-      <p>Si ya cuentas con un código de confirmación o deseas verificar el estado de tu solicitud de eliminación, introduce tu código a continuación:</p>
-
-      <div class="deletion-form-box">
-        <form id="form-check-deletion">
-          <div class="form-group">
-            <label class="form-label" for="input-del-code">Código de Confirmación de Eliminación:</label>
-            <input type="text" id="input-del-code" class="form-input" placeholder="Ej: del_1725700000_a1b2c3d4" required />
-          </div>
-          <button type="submit" class="btn btn-primary" id="btn-submit-deletion">Consultar Estado de Eliminación</button>
-        </form>
-
-        <div id="deletion-status-result" class="status-result-box">
-          <!-- Resultado dinámico inyectado por JS -->
-        </div>
-      </div>
-
-      <h2>Mecanismo 3: Solicitud Manual por Correo Electrónico</h2>
-      <p>También puedes enviar un correo electrónico a nuestro Delegado de Protección de Datos en <strong style="color: #93c5fd;">privacidad@tu-empresa.com</strong> indicando tu número de teléfono o ID de usuario de Meta. Tu solicitud será atendida en un plazo máximo de 48 horas hábiles.</p>
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- VISTA 5: PANTALLA DE LOGIN (MODAL / VIEW)  -->
-  <!-- ========================================== -->
-  <section class="container legal-view-container" id="view-login">
-    <div style="max-width: 440px; margin: 40px auto;">
-      <div class="legal-card" style="padding: 36px; text-align: center;">
-        <div class="brand-icon" style="margin: 0 auto 16px; width: 48px; height: 48px; font-size: 24px;">💬</div>
-        <h2 style="font-size: 24px; margin-bottom: 8px; color: var(--text-primary);">Iniciar Sesión</h2>
-        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px;">Acceso a la bandeja unificada de atención al cliente</p>
-
-        <form id="form-login-view" style="text-align: left;">
-          <div class="form-group">
-            <label class="form-label" for="login-email">Correo Electrónico:</label>
-            <input type="email" id="login-email" class="form-input" placeholder="admin@empresa.com" required value="admin@empresa.com" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="login-password">Contraseña:</label>
-            <div style="position: relative;">
-              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required value="admin123" />
-              <button type="button" id="btn-toggle-password" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px;">👁️</button>
-            </div>
-          </div>
-
-          <div id="login-error-msg" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;">
-            <!-- Error dinámico -->
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="btn-submit-login" style="width: 100%; padding: 12px;">
-            Ingresar al Panel de Control
-          </button>
-        </form>
-
-        <div style="margin-top: 20px; font-size: 12.5px; color: var(--text-muted);">
-          Credenciales por defecto: <code>admin@empresa.com</code> / <code>admin123</code>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer General -->
-  <footer class="footer">
+  <!-- Footer Profesional -->
+  <footer class="site-footer">
     <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <div class="brand-logo">
-            <div class="brand-icon" style="width: 32px; height: 32px; font-size: 16px;">💬</div>
-            <div class="brand-text" style="font-size: 18px;">Omni<span>Meta</span></div>
+      <div class="footer-top">
+        <div class="footer-brand-info">
+          <div class="logo-brand">
+            <div class="logo-icon" style="width: 32px; height: 32px; font-size: 16px;">🔮</div>
+            <div class="logo-title" style="font-size: 17px;">Lecturas de Tarot Online</div>
           </div>
-          <p>Plataforma Enterprise de Mensajería Unificada y Automatización con IA para WhatsApp Cloud API, Facebook Messenger e Instagram Direct.</p>
+          <p>Servicio profesional de orientación espiritual y lecturas de cartas del tarot a través de plataformas oficiales de mensajería.</p>
         </div>
 
-        <div class="footer-links">
+        <div class="footer-links-group">
           <div class="footer-col">
-            <h4>Plataforma</h4>
+            <h5>Navegación</h5>
             <ul>
-              <li><a href="#/">Inicio</a></li>
-              <li><a href="#features">Características</a></li>
-              <li><a href="#/login">Acceso Operadores</a></li>
+              <li><a href="/">Inicio</a></li>
+              <li><a href="#servicios">Tiradas Disponibles</a></li>
+              <li><a href="#canales">Canales de Contacto</a></li>
+              <li><a href="/login.html">Acceso para Tarotistas</a></li>
             </ul>
           </div>
 
           <div class="footer-col">
-            <h4>Compliance Meta</h4>
+            <h5>Políticas & Cumplimiento</h5>
             <ul>
-              <li><a href="#/privacidad">Política de Privacidad</a></li>
-              <li><a href="#/terminos">Términos de Servicio</a></li>
-              <li><a href="#/eliminacion-de-datos">Eliminación de Datos</a></li>
+              <li><a href="/politica-de-privacidad.html">Política de Privacidad</a></li>
+              <li><a href="/terminos-de-servicio.html">Términos de Servicio</a></li>
+              <li><a href="/eliminacion-de-datos.html">Eliminación de Datos</a></li>
             </ul>
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <div>© 2026 OmniMeta Platform. Todos los derechos reservados. Compatible con Meta Graph API v21.0.</div>
-        <div class="system-status-indicator" id="system-status-badge">
-          <span class="pulse-dot"></span>
-          <span id="system-status-text">Conectando con Backend...</span>
+        <div>© 2026 lecturasdetarte.online. Todos los derechos reservados.</div>
+        <div class="backend-indicator" id="footer-status-indicator">
+          <span class="pulse"></span>
+          <span id="footer-status-label">Servicio en línea</span>
         </div>
       </div>
     </div>
   </footer>
 
-  <script type="module" src="/src/main.js"></script>
+  <script type="module">
+    // Comprobar estado de conexión con el backend en puerto 3000
+    async function checkHealth() {
+      const label = document.getElementById('footer-status-label');
+      try {
+        const res = await fetch('http://localhost:3000/health');
+        if (res.ok) {
+          label.textContent = 'Servidores en línea • Atención activa';
+        }
+      } catch {
+        label.textContent = 'Atención por canales directos';
+      }
+    }
+    checkHealth();
+  </script>
 </body>
 </html>
