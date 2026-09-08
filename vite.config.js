@@ -1,19 +1,27 @@
-import { resolve } from 'path';
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  plugins: [react()],
   server: {
     port: 5173,
-    host: '127.0.0.1'
-  },
-  build: {
-    rollupOptions: {
-      input: {
-        main: resolve(import.meta.dirname, 'index.html'),
-        privacidad: resolve(import.meta.dirname, 'politica-de-privacidad.html'),
-        terminos: resolve(import.meta.dirname, 'terminos-de-servicio.html'),
-        eliminacion: resolve(import.meta.dirname, 'eliminacion-de-datos.html'),
-        login: resolve(import.meta.dirname, 'login.html')
+    host: '127.0.0.1',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/health': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        ws: true
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
       }
     }
   }
