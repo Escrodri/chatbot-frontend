@@ -1238,10 +1238,6 @@
   color: var(--danger);
 }
 
-.msg-bubble.failed {
-  border: 1px solid rgba(239, 68, 68, 0.35) !important;
-}
-
 .btn-retry-send {
   margin-left: 6px;
   background: none;

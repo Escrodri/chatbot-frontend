@@ -1,13 +1,6 @@
 import React, { useMemo } from 'react';
 import { IconoDeCanal } from '../Icons';
 
-const PLATFORM_COLORS = {
-  whatsapp: '#25d366',
-  instagram: '#e1306c',
-  facebook: '#1877f2',
-  messenger: '#1877f2'
-};
-
 // El logo del canal, en su versión oficial. Antes eran dibujos aproximados y
 // se notaba: el de Messenger sobre todo.
 const PlatformGlyph = ({ platform }) => (
