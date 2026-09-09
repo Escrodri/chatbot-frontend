@@ -25,7 +25,8 @@ export function SettingsPage() {
   // Estados de Escáner de Facebook / Messenger
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [scanToken, setScanToken] = useState('');
-  const [metaAppId, setMetaAppId] = useState('2381150255623992');
+  const [metaAppId, setMetaAppId] = useState('');
+  const [metaConfigId, setMetaConfigId] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scannedPages, setScannedPages] = useState([]);
   const [selectedPagesToConnect, setSelectedPagesToConnect] = useState([]);
@@ -135,6 +136,7 @@ export function SettingsPage() {
     loadBotSettings();
     loadUsers();
     loadLogs();
+    loadMetaAppInfo();
   }, []);
 
   // Handler: Crear Canal
@@ -274,6 +276,20 @@ export function SettingsPage() {
     }
   };
 
+  // Traer del servidor el App ID y el ID de configuración del login de Meta.
+  // Antes estaban escritos a mano en el código; ahora salen del .env del backend.
+  const loadMetaAppInfo = async () => {
+    try {
+      const res = await apiFetch('/api/settings/channels/meta-app-info');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.appId) setMetaAppId(data.appId);
+      if (data.loginConfigId) setMetaConfigId(data.loginConfigId);
+    } catch (err) {
+      console.warn('No se pudo obtener la configuración de Meta:', err.message);
+    }
+  };
+
   // Handler: abrir el editor de canales de un operador
   const openChannelsModal = (u) => {
     setChannelsModalUser(u);
@@ -371,27 +387,94 @@ export function SettingsPage() {
     }
   };
 
-  // Conectar con Facebook vía OAuth Popup / SDK
+  // Escanear a partir del código que devuelve el Login for Business.
+  // El canje por token lo hace el backend, porque necesita el App Secret.
+  const handleScanConCodigo = async (code) => {
+    try {
+      const res = await apiFetch('/api/settings/channels/facebook-exchange-code', {
+        method: 'POST',
+        body: JSON.stringify({ code })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setScanError(data.error || 'Meta rechazó la autorización.');
+        setScannedPages([]);
+        return;
+      }
+
+      setScannedPages(data.pages || []);
+      setMissingPerms(data.missingRecommended || []);
+      setScanError('');
+
+      if ((data.pages || []).length === 0) {
+        setScanError('Meta autorizó, pero no devolvió ninguna página. Revisá que hayas marcado tus páginas al conceder permisos.');
+      }
+    } catch (err) {
+      setScanError('Error de red al canjear la autorización: ' + err.message);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // Conectar con Facebook.
+  //
+  // Requiere que en la app de Meta esté habilitado el inicio de sesión con el
+  // SDK de JavaScript y que el dominio figure entre los permitidos.
+  // Si Meta llegara a devolver un 'code' en vez de un token, también se soporta:
+  // el backend lo canjea en /channels/facebook-exchange-code.
   const handleFacebookConnect = () => {
     setScanError('');
+    setScannedPages([]);
+
     setScanning(true);
+
+    // Si el usuario cierra la ventana de Meta o el diálogo no responde, la
+    // interfaz no puede quedar girando para siempre.
+    let resuelto = false;
+    const tiempoLimite = setTimeout(() => {
+      if (!resuelto) {
+        setScanning(false);
+        setScanError('Meta no respondió. Puede que hayas cerrado la ventana, o que la configuración del inicio de sesión no esté completa.');
+      }
+    }, 90000);
+
+    const finalizar = () => { resuelto = true; clearTimeout(tiempoLimite); };
 
     const triggerLogin = () => {
       try {
         window.FB.login((response) => {
-          if (response.authResponse && response.authResponse.accessToken) {
-            const userToken = response.authResponse.accessToken;
-            setScanToken(userToken);
-            handleScanFacebook(userToken);
-          } else {
+          const auth = response?.authResponse;
+
+          if (!auth) {
+            finalizar();
             setScanning(false);
             setScanError('Inicio de sesión con Facebook cancelado o no autorizado.');
+            return;
+          }
+
+          finalizar();
+
+          // El Login for Business devuelve normalmente un 'code' de un solo uso.
+          // Algunas configuraciones devuelven el token directo: soportamos ambos.
+          if (auth.code) {
+            handleScanConCodigo(auth.code);
+          } else if (auth.accessToken) {
+            setScanToken(auth.accessToken);
+            handleScanFacebook(auth.accessToken);
+          } else {
+            setScanning(false);
+            setScanError('Meta autorizó pero no devolvió ni código ni token.');
           }
         }, {
-          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,instagram_manage_messages',
+          // Flujo clásico por permisos: es el que funciona con esta app una vez
+          // habilitado el inicio de sesión con el SDK de JavaScript en Meta.
+          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,instagram_basic,instagram_manage_messages',
           return_scopes: true
         });
       } catch (err) {
+        finalizar();
         setScanning(false);
         setScanError('No se pudo abrir el diálogo de Facebook: ' + err.message);
       }
@@ -414,6 +497,11 @@ export function SettingsPage() {
         const js = document.createElement('script');
         js.id = 'facebook-jssdk';
         js.src = 'https://connect.facebook.net/es_LA/sdk.js';
+        js.onerror = () => {
+          finalizar();
+          setScanning(false);
+          setScanError('No se pudo cargar el SDK de Facebook. Revisá tu conexión o si algún bloqueador lo está frenando.');
+        };
         document.head.appendChild(js);
       } else {
         setTimeout(triggerLogin, 600);
