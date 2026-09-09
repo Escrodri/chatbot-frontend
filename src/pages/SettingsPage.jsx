@@ -405,7 +405,7 @@ export function SettingsPage() {
           appId: metaAppId,
           cookie: true,
           xfbml: false,
-          version: 'v25.0'
+          version: 'v26.0'
         });
         triggerLogin();
       };
@@ -468,7 +468,7 @@ export function SettingsPage() {
       <div className="page-header">
         <h2>Panel de Control y Configuración</h2>
         <p>
-          Administración centralizada de cuentas de Meta v25.0, reglas del bot de bienvenida,
+          Administración centralizada de cuentas de Meta v26.0, reglas del bot de bienvenida,
           operadores de atención y auditoría de eventos en tiempo real.
         </p>
       </div>
@@ -1258,7 +1258,7 @@ export function SettingsPage() {
                   <strong>Meta App ID:</strong> <code>{metaAppId}</code> (Vinculada y Activa)
                 </div>
                 <span style={{ fontSize: '0.75rem', background: '#1877F2', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
-                  v25.0
+                  v26.0
                 </span>
               </div>
 
