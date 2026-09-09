@@ -36,9 +36,10 @@
   align-items: center;
   gap: 16px;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 18px;
+  /* Sin ancho máximo: la bandeja de abajo ocupa toda la pantalla, así que
+     centrar la barra dejaba el nombre despegado del borde izquierdo y los
+     botones despegados del derecho, como si sobrara margen a los costados. */
+  padding: 0 20px;
 }
 
 .brand-section {
@@ -1093,4 +1094,13 @@ input:checked + .slider:before { transform: translateX(22px); }
   .btn-nav-inbox span:last-child { display: none; }
   .panel-action-bar { flex-direction: column; align-items: flex-start; }
   .settings-main { padding: 20px 16px 44px; }
+}
+
+/* Los tres logos van pegados al nombre, alineados a la izquierda como él. */
+.brand-title-group .brand-channels {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  opacity: 0.9;
 }

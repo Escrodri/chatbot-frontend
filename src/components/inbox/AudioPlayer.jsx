@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IconoReproducir, IconoPausa, IconoMicrofono } from '../Icons';
+import { IconoReproducir, IconoPausa } from '../Icons';
 
 /**
  * Reproductor de notas de voz.
@@ -80,9 +80,13 @@ export function AudioPlayer({ src, propio = false }) {
   }
 
   const avance = duracion > 0 ? posicion : 0;
+  const porcentaje = duracion > 0 ? Math.min(100, (posicion / duracion) * 100) : 0;
 
   return (
-    <div className={`audio-player ${propio ? 'propio' : ''}`}>
+    <div
+      className={`audio-player ${propio ? 'propio' : ''}`}
+      style={{ '--avance': `${porcentaje}%` }}
+    >
       <audio ref={audioRef} src={src} preload="metadata" />
 
       <button
@@ -110,7 +114,6 @@ export function AudioPlayer({ src, propio = false }) {
         {formatearTiempo(reproduciendo || posicion > 0 ? posicion : duracion)}
       </span>
 
-      <IconoMicrofono size={13} className="audio-player-marca" />
     </div>
   );
 }

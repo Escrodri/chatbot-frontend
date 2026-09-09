@@ -823,11 +823,3 @@ a { color: var(--text-link); }
   .footer-top { flex-direction: column; }
   .logo-sub { display: none; }
 }
-
-/* Los tres logos bajo el nombre, en lugar de la línea en mayúsculas */
-.brand-channels {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  opacity: 0.85;
-}
