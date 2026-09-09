@@ -457,7 +457,7 @@ export function SettingsPage() {
 
       setScannedPages(data.pages || []);
       setMissingPerms(data.missingRecommended || []);
-      const unconn = (data.pages || []).filter(p => !p.alreadyConnected).map(p => p.id);
+      const unconn = [...new Set((data.pages || []).filter(p => !p.alreadyConnected).map(p => p.id))];
       setSelectedPagesToConnect(unconn);
 
       if ((data.pages || []).length === 0) {
@@ -596,8 +596,11 @@ export function SettingsPage() {
 
   // Conectar Fan Pages seleccionadas
   const handleConnectSelectedPages = async () => {
+    if (connectingPages) return;
+
+    const seenIds = new Set();
     const pagesToSubmit = scannedPages
-      .filter(p => selectedPagesToConnect.includes(p.id))
+      .filter(p => selectedPagesToConnect.includes(p.id) && !seenIds.has(p.id) && seenIds.add(p.id))
       .map(p => ({
         id: p.id,
         name: p.name,
