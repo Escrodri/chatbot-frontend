@@ -137,7 +137,17 @@ export function InboxPage() {
         return;
       }
 
-      setMessages(prev => [...prev, data.message]);
+      if (data.message) {
+        setMessages(prev => {
+          const index = prev.findIndex(m => m.id === data.message.id);
+          if (index !== -1) {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], ...data.message };
+            return updated;
+          }
+          return [...prev, data.message];
+        });
+      }
 
       // El backend avisa si Meta aceptó el mensaje o no (A-02).
       setSendBanner(data.delivered ? null : (data.error?.message || 'El mensaje no pudo entregarse.'));
