@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { apiUrl } from '../../lib/api';
+import { AudioPlayer } from './AudioPlayer';
+import {
+  IconoAlerta, IconoVenta, IconoDeCanal, IconoEnviar, IconoMicrofono,
+  IconoClip, IconoEliminar
+} from '../Icons';
 import { useAuth } from '../../context/AuthContext';
 
 /**
@@ -29,40 +34,12 @@ const PLATFORM_LABELS = {
   messenger: 'Messenger'
 };
 
-function SendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-      <path d="M2.4 21.2 22.6 12 2.4 2.8l.01 7.16L17 12 2.41 14.04z" />
-    </svg>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  );
-}
-
-function PaperclipIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-    </svg>
-  );
-}
+// Los íconos vienen del conjunto común: mismo trazo, mismo tamaño y mismo
+// comportamiento en tema claro y oscuro que el resto de la aplicación.
+const SendIcon = () => <IconoEnviar size={20} />;
+const MicIcon = () => <IconoMicrofono size={20} />;
+const TrashIcon = () => <IconoEliminar size={18} />;
+const PaperclipIcon = () => <IconoClip size={20} />;
 
 export function ChatArea({
   conversation,
@@ -433,6 +410,7 @@ export function ChatArea({
           <div className="chat-header-title">
             <h4>{conversation.contact_name || 'Contacto'}</h4>
             <span>
+              <IconoDeCanal platform={conversation.platform} size={13} />
               {conversation.channel_name || platformLabel}
               {(conversation.contact_phone || conversation.channel_identifier)
                 ? ` · ${conversation.contact_phone || conversation.channel_identifier}`
@@ -443,8 +421,9 @@ export function ChatArea({
 
         <div className="chat-header-actions">
           {/* Indicador de ventana de mensajería */}
+          {/* Dato de estado, no una acción: por eso no tiene forma de botón. */}
           <div className={`window-indicator ${windowStatus.canSendFreeText ? 'active' : 'warning'}`}>
-            <span>{windowStatus.canSendFreeText ? 'Ventana 24 h activa' : 'Human Agent (7 días)'}</span>
+            <span>{windowStatus.canSendFreeText ? 'Podés escribir libremente' : 'Fuera de las 24 h'}</span>
           </div>
 
           {/* Switch de handover */}
@@ -465,6 +444,7 @@ export function ChatArea({
               onClick={() => setShowSaleForm(v => !v)}
               title="Registrar una venta hecha en esta conversación"
             >
+              <IconoVenta size={15} />
               <span>Marcar venta</span>
             </button>
           )}
@@ -579,11 +559,11 @@ export function ChatArea({
                 className={`msg-bubble-wrapper ${isInbound ? 'inbound' : 'outbound'}`}
               >
                 <div className={`msg-bubble ${bubbleClass}`}>
-                  {/* Etiqueta de remitente si es saliente */}
-                  {!isInbound && (
-                    <span className={`msg-sender-tag ${isBot ? 'bot' : 'agent'}`}>
-                      {isBot ? 'Bot de bienvenida' : (msg.sender_user_name || 'Operador')}
-                    </span>
+                  {/* Solo se aclara quién habló cuando no es obvio: los mensajes
+                      del bot. Poner el nombre del operador arriba de cada burbuja
+                      propia es ruido, ningún chat lo hace. */}
+                  {!isInbound && isBot && (
+                    <span className="msg-sender-tag bot">Bot de bienvenida</span>
                   )}
 
                   {/* Renderizado multimedia dinámico */}
@@ -638,7 +618,7 @@ export function ChatArea({
                   {msg.content_type === 'audio' && (
                     <div className="msg-audio-container">
                       {msg.media_url ? (
-                        <audio src={mediaSrc(msg, token)} controls className="msg-audio-player" preload="metadata" />
+                        <AudioPlayer src={mediaSrc(msg, token)} propio={!isInbound} />
                       ) : (
                         <span className="msg-fallback-tag">[Nota de voz]</span>
                       )}
@@ -684,10 +664,7 @@ export function ChatArea({
                   {/* Un mensaje que no salió se dice claramente, no con una tilde (A-02) */}
                   {isFailed && (
                     <div className="msg-failed-note">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7.5v5.5M12 16.4h.01" />
-                      </svg>
+                      <IconoAlerta size={14} />
                       <div>
                         <strong>No se envió.</strong>{' '}
                         {msg.error_details?.message || 'Meta rechazó el mensaje.'}
@@ -757,9 +734,9 @@ export function ChatArea({
             {filePreview ? (
               <img src={filePreview} alt="Preview" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
             ) : audioPreviewUrl ? (
-              <audio src={audioPreviewUrl} controls style={{ height: '32px', maxWidth: '240px' }} />
+              <AudioPlayer src={audioPreviewUrl} />
             ) : (
-              <span style={{ fontSize: '1.2rem' }}>📎</span>
+              <IconoClip size={20} />
             )}
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(0)} KB)

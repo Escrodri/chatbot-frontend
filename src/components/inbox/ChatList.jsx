@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { IconoDeCanal } from '../Icons';
 
 const PLATFORM_COLORS = {
   whatsapp: '#25d366',
@@ -7,28 +8,11 @@ const PLATFORM_COLORS = {
   messenger: '#1877f2'
 };
 
-function PlatformGlyph({ platform }) {
-  if (platform === 'whatsapp') {
-    return (
-      <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true">
-        <path d="M12 2a9.9 9.9 0 0 0-8.6 14.9L2 22l5.3-1.4A9.9 9.9 0 1 0 12 2zm5.5 12.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.7.2l-.9 1.1c-.2.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2.1c-.2-.3 0-.4.1-.6l.5-.6.3-.5v-.5l-1-2.3c-.2-.6-.5-.5-.7-.5H8c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.2 3.4 5.3 4.7 2.6 1 3.1.8 3.7.8.6-.1 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.3-.6-.4z" />
-      </svg>
-    );
-  }
-  if (platform === 'instagram') {
-    return (
-      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="5.2" />
-        <circle cx="12" cy="12" r="4" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true">
-      <path d="M12 2C6.3 2 2 6.2 2 11.8c0 3 1.3 5.6 3.5 7.4v3.3l3.2-1.8c.9.2 1.8.4 2.8.4 5.7 0 10-4.2 10-9.8S17.7 2 12 2zm1 12.8-2.6-2.7-4.9 2.7 5.4-5.7 2.6 2.7 4.8-2.7-5.3 5.7z" />
-    </svg>
-  );
-}
+// El logo del canal, en su versión oficial. Antes eran dibujos aproximados y
+// se notaba: el de Messenger sobre todo.
+const PlatformGlyph = ({ platform }) => (
+  <IconoDeCanal platform={platform} size={10} color={false} />
+);
 
 export function ChatList({
   conversations,
@@ -179,9 +163,9 @@ export function ChatList({
                     </span>
 
                     <div className="chat-badges-row">
-                      <span className={`bot-chip ${isBotActive ? 'bot' : 'human'}`}>
-                        {isBotActive ? 'Bot' : 'Humano'}
-                      </span>
+                      {isBotActive && (
+                        <span className="bot-chip bot">Bot</span>
+                      )}
                       {hasUnread && (
                         <span className="unread-badge">{chat.unread_count}</span>
                       )}

@@ -1131,3 +1131,133 @@
 }
 
 .sale-form-hint-neutral { color: var(--text-soft); }
+
+/* =============================================================================
+   REPRODUCTOR DE NOTAS DE VOZ
+   Reemplaza al del navegador, que ocupa demasiado y cambia de aspecto según
+   dónde se abra la bandeja.
+============================================================================= */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+  max-width: 280px;
+  padding: 4px 2px;
+}
+
+.audio-player-boton {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wa-teal);
+  color: #fff;
+  transition: var(--t-fast);
+  padding-left: 2px; /* el triángulo de reproducir se ve centrado así */
+}
+
+.audio-player-boton:hover { background: var(--wa-teal-dark); }
+.audio-player.propio .audio-player-boton { background: var(--wa-teal-deep); }
+
+.audio-player-barra {
+  flex: 1;
+  height: 3px;
+  min-width: 0;
+  cursor: pointer;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+
+.audio-player-barra::-webkit-slider-thumb {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--wa-teal);
+  cursor: pointer;
+}
+
+.audio-player-barra::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: none;
+  border-radius: 50%;
+  background: var(--wa-teal);
+  cursor: pointer;
+}
+
+.audio-player-barra:disabled { cursor: default; opacity: 0.6; }
+
+.audio-player-tiempo {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  min-width: 32px;
+  text-align: right;
+}
+
+.audio-player-marca { flex-shrink: 0; color: var(--text-soft); opacity: 0.7; }
+
+.audio-player-error { font-size: 12.5px; color: var(--danger); }
+
+/* =============================================================================
+   AJUSTES DE JERARQUÍA
+============================================================================= */
+/* El estado de la ventana es información, no una acción: sin borde ni fondo
+   de botón, para que no compita con los dos que sí se pueden apretar. */
+.window-indicator {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 4px !important;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.window-indicator.warning { color: var(--warn); }
+
+/* Un mensaje que no salió: aviso discreto dentro de la burbuja, no un cartel
+   rojo del tamaño del mensaje. */
+.msg-failed-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(239, 68, 68, 0.25);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--danger);
+}
+
+.msg-bubble.failed {
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+.btn-retry-send {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--danger);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* El canal, junto al nombre del contacto, con su logo */
+.chat-header-title span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

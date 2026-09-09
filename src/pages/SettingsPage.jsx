@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import {
+  IconoCanales, IconoRobot, IconoEquipo, IconoRegistro, IconoBuscarPaginas,
+  IconoAgregar, IconoProbar, IconoEditar, IconoPausar, IconoEliminar,
+  IconoDeCanal, IconoAlerta, IconoBuscar, IconoVisto
+} from '../components/Icons';
 import { useAuth } from '../context/AuthContext';
 
 export function SettingsPage() {
@@ -172,7 +177,7 @@ export function SettingsPage() {
         return;
       }
 
-      addToast('Canal conectado con éxito y credenciales cifradas con AES-256-GCM', 'success');
+      addToast('Canal conectado. Sus credenciales quedaron guardadas de forma cifrada.', 'success');
       setShowChannelModal(false);
       setChannelForm({
         platform: 'whatsapp',
@@ -242,7 +247,7 @@ export function SettingsPage() {
         return;
       }
 
-      addToast('Canal actualizado con éxito y credenciales re-cifradas', 'success');
+      addToast('Canal actualizado.', 'success');
       setEditingChannel(null);
       loadChannels();
     } catch (err) {
@@ -261,10 +266,10 @@ export function SettingsPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        addToast(`✅ Conexión con Meta validada: ${data.message || 'Canal activo'}`, 'success');
+        addToast(`Conexión validada: ${data.message || 'el canal está activo'}`, 'success');
         loadChannels();
       } else {
-        addToast(`❌ Validación fallida: ${data.error || 'Token inválido en Meta'}`, 'error');
+        addToast(`No se pudo validar: ${data.error || 'el token no es válido'}`, 'error');
         loadChannels();
       }
     } catch (err) {
@@ -657,7 +662,7 @@ export function SettingsPage() {
       <div className="page-header">
         <h2>Panel de Control y Configuración</h2>
         <p>
-          Administración centralizada de cuentas de Meta v26.0, reglas del bot de bienvenida,
+          Tus cuentas de WhatsApp, Messenger e Instagram, el bot de bienvenida,
           operadores de atención y auditoría de eventos en tiempo real.
         </p>
       </div>
@@ -668,7 +673,7 @@ export function SettingsPage() {
           className={`tab-btn ${activeTab === 'channels' ? 'active' : ''}`}
           onClick={() => setActiveTab('channels')}
         >
-          <span>📱 Canales Conectados</span>
+          <span><IconoCanales size={15} /> Canales</span>
           <span className="tab-counter">{channels.length}</span>
         </button>
 
@@ -676,14 +681,14 @@ export function SettingsPage() {
           className={`tab-btn ${activeTab === 'bot' ? 'active' : ''}`}
           onClick={() => setActiveTab('bot')}
         >
-          <span>🤖 Chatbot Automático</span>
+          <span><IconoRobot size={15} /> Bot de bienvenida</span>
         </button>
 
         <button
           className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          <span>👥 Operadores y Equipo</span>
+          <span><IconoEquipo size={15} /> Equipo</span>
           <span className="tab-counter">{users.length}</span>
         </button>
 
@@ -691,7 +696,7 @@ export function SettingsPage() {
           className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
         >
-          <span>📜 Auditoría de Webhooks</span>
+          <span><IconoRegistro size={15} /> Registro</span>
         </button>
       </nav>
 
@@ -701,7 +706,7 @@ export function SettingsPage() {
           <div className="panel-action-bar">
             <div className="panel-title">
               <h3>Cuentas de Mensajería Conectadas</h3>
-              <p>Credenciales cifradas con AES-256-GCM para WhatsApp Cloud API, Instagram y Facebook.</p>
+              <p>Los números y páginas desde donde recibís y respondés mensajes.</p>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button
@@ -713,7 +718,7 @@ export function SettingsPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 title="Escanear y vincular automáticamente todas las Fan Pages de Facebook de tu perfil"
               >
-                <span>⚡</span>
+                <IconoBuscarPaginas size={15} />
                 <span>Escanear Páginas de Facebook</span>
               </button>
               <button
@@ -728,9 +733,9 @@ export function SettingsPage() {
 
           {channels.length === 0 ? (
             <div className="empty-state-box">
-              <div className="empty-state-icon">🔮</div>
+              <div className="empty-state-icon"><IconoCanales size={28} /></div>
               <h4>No hay canales conectados</h4>
-              <p>Conecta tu primer número de WhatsApp Cloud API o Fan Page para comenzar a recibir consultas.</p>
+              <p>Conectá tu primer número de WhatsApp o tu página de Facebook para empezar a recibir mensajes.</p>
               <button
                 className="btn-primary-gold"
                 onClick={() => setShowChannelModal(true)}
@@ -741,7 +746,7 @@ export function SettingsPage() {
           ) : (
             <div className="channels-grid">
               {channels.map(ch => {
-                const platformIcon = ch.platform === 'whatsapp' ? '📱' : ch.platform === 'instagram' ? '📷' : '💬';
+                const platformIcon = <IconoDeCanal platform={ch.platform} size={14} />;
                 const statusLabel = ch.status === 'active' ? 'Activo' : ch.status === 'paused' ? 'Pausado' : 'Error';
 
                 return (
@@ -758,7 +763,7 @@ export function SettingsPage() {
                       <span className="channel-id-code">ID: {ch.channel_identifier}</span>
                       {ch.error_message && (
                         <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '6px' }}>
-                          ⚠️ {ch.error_message}
+                          <IconoAlerta size={13} /> {ch.error_message}
                         </p>
                       )}
                     </div>
@@ -776,14 +781,14 @@ export function SettingsPage() {
                           title="Probar token y conectividad con Meta Graph API"
                           style={{ color: 'var(--gold-light)' }}
                         >
-                          {testingChannelId === ch.id ? 'Probando...' : '⚡ Probar'}
+                          {testingChannelId === ch.id ? 'Probando…' : <><IconoProbar size={14} /> Probar</>}
                         </button>
                         <button
                           className="btn-card-action"
                           onClick={() => handleOpenEditChannel(ch)}
                           title="Editar nombre, identificador o renovar token de acceso"
                         >
-                          ✏️ Editar
+                          <IconoEditar size={14} /> Editar
                         </button>
                         <button
                           className="btn-card-action"
@@ -812,7 +817,7 @@ export function SettingsPage() {
         <section className="tab-panel active">
           <div className="panel-action-bar">
             <div className="panel-title">
-              <h3>Chatbot de Bienvenida y Handover</h3>
+              <h3>Bot de bienvenida</h3>
               <p>Configura la respuesta automática inmediata que reciben los clientes al enviar su primer mensaje.</p>
             </div>
           </div>
@@ -884,7 +889,7 @@ export function SettingsPage() {
                 <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
                   <div style={{ background: '#18223c', borderLeft: '3px solid var(--gold-primary)', borderRadius: '8px', padding: '12px 16px', maxWidth: '450px' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                      🤖 BOT DE LECTURAS DE TARDE
+                      Bot de bienvenida
                     </span>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-pure)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
                       {formatBotPreview(botSettings.welcome_message)}
@@ -995,7 +1000,7 @@ export function SettingsPage() {
           <div className="panel-action-bar">
             <div className="panel-title">
               <h3>Monitor de Webhooks y Auditoría Meta</h3>
-              <p>Historial de peticiones crudas recibidas desde Meta Graph API con firmas HMAC-SHA256 validadas.</p>
+              <p>Todo lo que Meta le avisó al sistema, por si algo no llegó y hay que revisar.</p>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <select
@@ -1016,7 +1021,7 @@ export function SettingsPage() {
                 className="btn-secondary"
                 onClick={() => loadLogs(logsLimit)}
               >
-                🔄 Refrescar
+                Actualizar
               </button>
             </div>
           </div>
@@ -1093,16 +1098,16 @@ export function SettingsPage() {
                   value={channelForm.platform}
                   onChange={(e) => setChannelForm(prev => ({ ...prev, platform: e.target.value }))}
                 >
-                  <option value="whatsapp">📱 WhatsApp Cloud API</option>
-                  <option value="facebook">💬 Facebook Messenger (Fan Page)</option>
-                  <option value="instagram">📷 Instagram Direct (Cuenta Profesional)</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="facebook">Messenger (página de Facebook)</option>
+                  <option value="instagram">Instagram (cuenta profesional)</option>
                 </select>
               </div>
 
               {/* Banner de recomendación para Facebook e Instagram */}
               {channelForm.platform !== 'whatsapp' && (
                 <div style={{ background: 'rgba(24, 119, 242, 0.1)', border: '1px solid rgba(24, 119, 242, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: '#93c5fd', lineHeight: '1.4' }}>
-                  💡 <strong>¿No quieres buscar IDs numéricos?</strong> Puedes cerrar este formulario y usar el botón <strong>⚡ Escanear Páginas de Facebook</strong> en el panel principal para detectar y conectar tus páginas automáticamente en 1 clic.
+                  <strong>¿No quieres buscar IDs numéricos?</strong> Puedes cerrar este formulario y usar el botón <strong>Escanear páginas de Facebook</strong> en el panel principal para detectar y conectar tus páginas automáticamente en 1 clic.
                 </div>
               )}
 
@@ -1165,7 +1170,7 @@ export function SettingsPage() {
                   onChange={(e) => setChannelForm(prev => ({ ...prev, accessToken: e.target.value }))}
                 />
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                  Se cifrará inmediatamente en PostgreSQL con AES-256-GCM.
+                  Se guarda cifrado; nadie puede leerlo desde la base.
                 </span>
               </div>
 
@@ -1193,7 +1198,7 @@ export function SettingsPage() {
               </div>
 
               <div className="form-group-custom">
-                <label>App Secret (Opcional para HMAC):</label>
+                <label>Clave secreta de la app (opcional):</label>
                 <input
                   type="password"
                   className="input-custom"
@@ -1280,7 +1285,7 @@ export function SettingsPage() {
                   onChange={(e) => setEditChannelForm(prev => ({ ...prev, accessToken: e.target.value }))}
                 />
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                  Si el token venció o cambió en Meta Developers, pégalo aquí para re-cifrarlo con AES-256-GCM.
+                  Si el token venció o lo cambiaste en Meta, pegá el nuevo acá.
                 </span>
               </div>
 
@@ -1584,7 +1589,7 @@ export function SettingsPage() {
           <div className="modal-dialog" style={{ maxWidth: '720px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                <IconoBuscarPaginas size={20} />
                 <div>
                   <h3>Escanear y Conectar Fan Pages de Facebook</h3>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -1652,7 +1657,7 @@ export function SettingsPage() {
               {/* Instrucción de permisos */}
               <div style={{ background: 'rgba(0, 168, 132, 0.08)', border: '1px solid var(--border-gold)', borderRadius: '8px', padding: '12px 16px' }}>
                 <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--gold-light)', marginBottom: '4px' }}>
-                  🔑 Permisos necesarios en Meta para escanear páginas:
+                  Permisos que hacen falta en Meta para ver tus páginas:
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
                   El token debe contener los permisos: <code style={{ color: '#93c5fd' }}>pages_show_list</code>, <code style={{ color: '#93c5fd' }}>pages_messaging</code> y <code style={{ color: '#93c5fd' }}>pages_manage_metadata</code>.
@@ -1678,7 +1683,7 @@ export function SettingsPage() {
                     disabled={scanning || !scanToken.trim()}
                     style={{ whiteSpace: 'nowrap' }}
                   >
-                    {scanning ? 'Escaneando...' : '🔍 Escanear'}
+                    {scanning ? 'Escaneando…' : <><IconoBuscar size={14} /> Escanear</>}
                   </button>
                 </div>
               </div>
@@ -1686,14 +1691,14 @@ export function SettingsPage() {
               {/* Error si ocurre */}
               {scanError && (
                 <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', padding: '10px 14px', color: '#fca5a5', fontSize: '0.82rem' }}>
-                  ⚠️ {scanError}
+                  <IconoAlerta size={14} /> {scanError}
                 </div>
               )}
 
               {/* Alerta de permisos faltantes */}
               {missingPerms.length > 0 && (
                 <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '8px', padding: '10px 14px', color: '#fcd34d', fontSize: '0.8rem' }}>
-                  ⚠️ Al token actual le faltan los siguientes permisos recomendados para mensajería: {missingPerms.join(', ')}
+                  <IconoAlerta size={14} /> Al token le faltan estos permisos: {missingPerms.join(', ')}
                 </div>
               )}
 
@@ -1743,7 +1748,7 @@ export function SettingsPage() {
                             />
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '1.1rem' }}>📘</span>
+                                <IconoDeCanal platform="facebook" size={16} />
                                 <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-pure)' }}>
                                   {page.name}
                                 </span>
@@ -1756,7 +1761,7 @@ export function SettingsPage() {
                               </div>
                               {page.instagram && (
                                 <div style={{ fontSize: '0.74rem', color: '#f472b6', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>📷</span>
+                                  <IconoDeCanal platform="instagram" size={16} />
                                   <span>Cuenta de Instagram vinculada: <strong>@{page.instagram.username}</strong></span>
                                   {page.instagram.alreadyConnected && (
                                     <span style={{ color: 'var(--wa-green)', fontWeight: 600 }}>(Ya vinculada)</span>
@@ -1815,7 +1820,7 @@ export function SettingsPage() {
       <div className="toast-container">
         {toasts.map(t => (
           <div key={t.id} className={`toast-msg ${t.type}`}>
-            <span>{t.type === 'success' ? '✓' : '⚠️'}</span>
+            <span>{t.type === 'success' ? <IconoVisto size={15} /> : <IconoAlerta size={15} />}</span>
             <span>{t.message}</span>
           </div>
         ))}
