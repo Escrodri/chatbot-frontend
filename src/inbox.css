@@ -800,6 +800,125 @@
   cursor: not-allowed;
 }
 
+.btn-mic {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--wa-teal);
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--t-fast);
+  flex-shrink: 0;
+}
+
+.btn-mic:hover:not(:disabled) {
+  background: var(--wa-teal-deep);
+  transform: scale(1.05);
+}
+
+.btn-mic:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Grabadora de nota de voz en el composer */
+.composer-recording-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 8px;
+  background: var(--bg-input);
+  border-radius: 24px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  animation: fadeInRecord 0.2s ease-out;
+}
+
+@keyframes fadeInRecord {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-strong);
+  font-size: 14px;
+  flex: 1;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+  animation: pulseRecording 1s infinite alternate ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes pulseRecording {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+.recording-timer {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.5px;
+}
+
+.recording-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+}
+
+.recording-wave span {
+  display: inline-block;
+  width: 3px;
+  background: var(--wa-teal);
+  border-radius: 2px;
+  animation: waveBar 1.2s infinite ease-in-out;
+}
+
+.recording-wave span:nth-child(2) { animation-delay: 0.2s; }
+.recording-wave span:nth-child(3) { animation-delay: 0.4s; }
+.recording-wave span:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes waveBar {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+.btn-recording-cancel {
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--t-fast);
+}
+
+.btn-recording-cancel:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
 /* Botón flotante "nuevos mensajes" */
 .btn-scroll-bottom {
   position: absolute;

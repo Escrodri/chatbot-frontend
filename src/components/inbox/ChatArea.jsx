@@ -37,6 +37,25 @@ function SendIcon() {
   );
 }
 
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
 function PaperclipIcon() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -61,9 +80,17 @@ export function ChatArea({
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
   // Rastrear el id de la conversación activa para reiniciar los flags inmediatamente
   const convId = conversation?.id;
@@ -79,6 +106,22 @@ export function ChatArea({
     prevLastMsgIdRef.current = null;
   }
 
+  // Limpieza al desmontar o cambiar de chat si se estaba grabando
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
+
+  const formatDuration = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -88,20 +131,141 @@ export function ChatArea({
       return;
     }
 
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+      setAudioPreviewUrl(null);
+    }
+
     setSelectedFile(file);
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => setFilePreview(ev.target.result);
       reader.readAsDataURL(file);
+    } else if (
+      file.type.startsWith('audio/') ||
+      ['.mp3', '.ogg', '.wav', '.m4a', '.aac', '.opus'].some(ext => file.name.toLowerCase().endsWith(ext))
+    ) {
+      setFilePreview(null);
+      setAudioPreviewUrl(URL.createObjectURL(file));
     } else {
       setFilePreview(null);
+      setAudioPreviewUrl(null);
     }
   };
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
+    if (audioPreviewUrl) {
+      URL.revokeObjectURL(audioPreviewUrl);
+      setAudioPreviewUrl(null);
+    }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Iniciar grabación de nota de voz con el micrófono
+  const startRecording = async () => {
+    if (sending || isRecording) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert('Tu navegador no tiene soporte para grabación de micrófono o requiere conexión segura (HTTPS/localhost).');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      let mime = 'audio/webm;codecs=opus';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+          mime = 'audio/ogg;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mime = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mime = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mime = 'audio/webm';
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start(100);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Error al acceder al micrófono:', err);
+      alert('No se pudo acceder al micrófono. Por favor permite el acceso al micrófono en los permisos de tu navegador.');
+    }
+  };
+
+  // Cancelar y descartar grabación
+  const cancelRecording = () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingDuration(0);
+  };
+
+  // Detener y enviar nota de voz
+  const sendRecording = () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    mediaRecorderRef.current.onstop = () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+
+      const recordedMime = mediaRecorderRef.current?.mimeType || 'audio/webm';
+      const audioBlob = new Blob(audioChunksRef.current, { type: recordedMime });
+      audioChunksRef.current = [];
+      setIsRecording(false);
+      setRecordingDuration(0);
+
+      if (audioBlob.size === 0) return;
+
+      let ext = '.webm';
+      if (recordedMime.includes('ogg')) ext = '.ogg';
+      else if (recordedMime.includes('mp4') || recordedMime.includes('m4a')) ext = '.m4a';
+      else if (recordedMime.includes('wav')) ext = '.wav';
+
+      const fileName = `nota_de_voz_${Date.now()}${ext}`;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onSendMessage({
+          text: '🎵 [Nota de voz]',
+          fileBase64: reader.result,
+          fileName,
+          mimeType: recordedMime
+        });
+        setTimeout(() => scrollToBottom('smooth'), 80);
+      };
+      reader.readAsDataURL(audioBlob);
+    };
+
+    mediaRecorderRef.current.stop();
   };
 
   // Monitorear posición manual del scroll
@@ -360,7 +524,7 @@ export function ChatArea({
                       ) : (
                         <span className="msg-fallback-tag">[Nota de voz]</span>
                       )}
-                      {msg.text && msg.text !== '🎵 [Nota de voz / Audio]' && (
+                      {msg.text && !['🎵 [Nota de voz]', '🎵 [Nota de voz / Audio]'].includes(msg.text) && (
                         <p className="msg-media-caption">{msg.text}</p>
                       )}
                     </div>
@@ -474,6 +638,8 @@ export function ChatArea({
           }}>
             {filePreview ? (
               <img src={filePreview} alt="Preview" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
+            ) : audioPreviewUrl ? (
+              <audio src={audioPreviewUrl} controls style={{ height: '32px', maxWidth: '240px' }} />
             ) : (
               <span style={{ fontSize: '1.2rem' }}>📎</span>
             )}
@@ -491,42 +657,89 @@ export function ChatArea({
           </div>
         )}
 
-        <form onSubmit={handleSend} className="composer-form">
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          <button
-            type="button"
-            className="btn-card-action"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending}
-            title="Adjuntar archivo, imagen o documento"
-            style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
-          >
-            <PaperclipIcon />
-          </button>
+        {isRecording ? (
+          <div className="composer-recording-bar">
+            <button
+              type="button"
+              className="btn-recording-cancel"
+              onClick={cancelRecording}
+              title="Cancelar y descartar grabación"
+            >
+              <TrashIcon />
+            </button>
 
-          <input
-            type="text"
-            className="composer-input"
-            placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje..."}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            disabled={sending}
-          />
+            <div className="recording-indicator">
+              <span className="recording-dot"></span>
+              <span className="recording-timer">{formatDuration(recordingDuration)}</span>
+              <div className="recording-wave">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-soft)', marginLeft: '4px' }}>
+                Grabando nota de voz...
+              </span>
+            </div>
 
-          <button
-            type="submit"
-            className="btn-send-message"
-            disabled={(!inputText.trim() && !selectedFile) || sending}
-            title="Enviar mensaje (Enter)"
-          >
-            {sending ? '…' : <SendIcon />}
-          </button>
-        </form>
+            <button
+              type="button"
+              className="btn-send-message"
+              onClick={sendRecording}
+              title="Enviar nota de voz"
+              style={{ background: '#25D366' }}
+            >
+              <SendIcon />
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="composer-form">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.ogg,.mp3,.wav,.m4a"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              className="btn-card-action"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending}
+              title="Adjuntar archivo, imagen, audio o documento"
+              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+            >
+              <PaperclipIcon />
+            </button>
+
+            <input
+              type="text"
+              className="composer-input"
+              placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje..."}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              disabled={sending}
+            />
+
+            {inputText.trim() || selectedFile ? (
+              <button
+                type="submit"
+                className="btn-send-message"
+                disabled={sending}
+                title="Enviar mensaje (Enter)"
+              >
+                {sending ? '…' : <SendIcon />}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-mic"
+                onClick={startRecording}
+                disabled={sending}
+                title="Grabar nota de voz"
+              >
+                <MicIcon />
+              </button>
+            )}
+          </form>
+        )}
       </footer>
     </section>
   );
