@@ -56,6 +56,7 @@ export function SettingsPage() {
     status: 'active'
   });
   const [editChannelSubmitting, setEditChannelSubmitting] = useState(false);
+  const [testingChannelId, setTestingChannelId] = useState(null);
 
 
   // Formulario nuevo usuario
@@ -235,6 +236,28 @@ export function SettingsPage() {
       addToast('Error al actualizar canal: ' + err.message, 'error');
     } finally {
       setEditChannelSubmitting(false);
+    }
+  };
+
+  // Handler: Probar y Verificar Canal en vivo con Meta
+  const handleTestChannel = async (id) => {
+    setTestingChannelId(id);
+    try {
+      const res = await apiFetch(`/api/settings/channels/${id}/test`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        addToast(`✅ Conexión con Meta validada: ${data.message || 'Canal activo'}`, 'success');
+        loadChannels();
+      } else {
+        addToast(`❌ Validación fallida: ${data.error || 'Token inválido en Meta'}`, 'error');
+        loadChannels();
+      }
+    } catch (err) {
+      addToast('Error al probar canal: ' + err.message, 'error');
+    } finally {
+      setTestingChannelId(null);
     }
   };
 
@@ -730,6 +753,15 @@ export function SettingsPage() {
                         <span>Etiqueta</span>
                       </div>
                       <div className="channel-card-actions">
+                        <button
+                          className="btn-card-action"
+                          onClick={() => handleTestChannel(ch.id)}
+                          disabled={testingChannelId === ch.id}
+                          title="Probar token y conectividad con Meta Graph API"
+                          style={{ color: 'var(--gold-light)' }}
+                        >
+                          {testingChannelId === ch.id ? 'Probando...' : '⚡ Probar'}
+                        </button>
                         <button
                           className="btn-card-action"
                           onClick={() => handleOpenEditChannel(ch)}
