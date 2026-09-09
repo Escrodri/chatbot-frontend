@@ -46,6 +46,18 @@ export function SettingsPage() {
   });
   const [channelSubmitting, setChannelSubmitting] = useState(false);
 
+  // Formulario editar canal
+  const [editingChannel, setEditingChannel] = useState(null);
+  const [editChannelForm, setEditChannelForm] = useState({
+    name: '',
+    channelIdentifier: '',
+    accessToken: '',
+    colorTag: '#00a884',
+    status: 'active'
+  });
+  const [editChannelSubmitting, setEditChannelSubmitting] = useState(false);
+
+
   // Formulario nuevo usuario
   const [userForm, setUserForm] = useState({
     name: '',
@@ -173,6 +185,56 @@ export function SettingsPage() {
       addToast('Error al conectar canal: ' + err.message, 'error');
     } finally {
       setChannelSubmitting(false);
+    }
+  };
+
+  // Handler: Abrir Modal Editar Canal
+  const handleOpenEditChannel = (channel) => {
+    setEditingChannel(channel);
+    setEditChannelForm({
+      name: channel.name || '',
+      channelIdentifier: channel.channel_identifier || '',
+      accessToken: '',
+      colorTag: channel.color_tag || '#00a884',
+      status: channel.status || 'active'
+    });
+  };
+
+  // Handler: Actualizar Canal
+  const handleUpdateChannel = async (e) => {
+    e.preventDefault();
+    if (!editingChannel) return;
+    setEditChannelSubmitting(true);
+
+    try {
+      const payload = {
+        name: editChannelForm.name.trim(),
+        channelIdentifier: editChannelForm.channelIdentifier.trim(),
+        colorTag: editChannelForm.colorTag,
+        status: editChannelForm.status
+      };
+      if (editChannelForm.accessToken && editChannelForm.accessToken.trim()) {
+        payload.accessToken = editChannelForm.accessToken.trim();
+      }
+
+      const res = await apiFetch(`/api/settings/channels/${editingChannel.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        addToast(data.error || 'Error al actualizar el canal', 'error');
+        return;
+      }
+
+      addToast('Canal actualizado con éxito y credenciales re-cifradas', 'success');
+      setEditingChannel(null);
+      loadChannels();
+    } catch (err) {
+      addToast('Error al actualizar canal: ' + err.message, 'error');
+    } finally {
+      setEditChannelSubmitting(false);
     }
   };
 
@@ -670,6 +732,13 @@ export function SettingsPage() {
                       <div className="channel-card-actions">
                         <button
                           className="btn-card-action"
+                          onClick={() => handleOpenEditChannel(ch)}
+                          title="Editar nombre, identificador o renovar token de acceso"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          className="btn-card-action"
                           onClick={() => handleToggleChannelStatus(ch.id, ch.status)}
                         >
                           {ch.status === 'active' ? 'Pausar' : 'Activar'}
@@ -1101,6 +1170,110 @@ export function SettingsPage() {
                   disabled={channelSubmitting}
                 >
                   {channelSubmitting ? 'Guardando y cifrando...' : 'Guardar y Conectar Canal'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR CANAL */}
+      {editingChannel && (
+        <div className="modal-overlay active" onClick={() => setEditingChannel(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Editar Canal: {editingChannel.name}</h3>
+              <button className="btn-close-modal" onClick={() => setEditingChannel(null)}>&times;</button>
+            </div>
+            <form onSubmit={handleUpdateChannel}>
+              <div className="form-group-custom">
+                <label>Plataforma:</label>
+                <input
+                  type="text"
+                  className="input-custom"
+                  value={editingChannel.platform ? editingChannel.platform.toUpperCase() : ''}
+                  disabled
+                  style={{ opacity: 0.7, cursor: 'not-allowed' }}
+                />
+              </div>
+
+              <div className="form-group-custom">
+                <label>Nombre descriptivo / Alias:</label>
+                <input
+                  type="text"
+                  className="input-custom"
+                  required
+                  value={editChannelForm.name}
+                  onChange={(e) => setEditChannelForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group-custom">
+                <label>
+                  {editingChannel.platform === 'whatsapp' ? 'Identificador del Número de Teléfono (Phone Number ID):' : 'Identificador de la Fan Page (Page ID):'}
+                </label>
+                <input
+                  type="text"
+                  className="input-custom"
+                  required
+                  value={editChannelForm.channelIdentifier}
+                  onChange={(e) => setEditChannelForm(prev => ({ ...prev, channelIdentifier: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group-custom">
+                <label>Nuevo Access Token de Meta (Opcional):</label>
+                <input
+                  type="password"
+                  className="input-custom"
+                  placeholder="Dejar en blanco para conservar el token actual, o pegar nuevo EAA..."
+                  autoComplete="off"
+                  value={editChannelForm.accessToken}
+                  onChange={(e) => setEditChannelForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                  Si el token venció o cambió en Meta Developers, pégalo aquí para re-cifrarlo con AES-256-GCM.
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group-custom">
+                  <label>Estado:</label>
+                  <select
+                    className="input-custom"
+                    value={editChannelForm.status}
+                    onChange={(e) => setEditChannelForm(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="active">Activo</option>
+                    <option value="paused">Pausado</option>
+                  </select>
+                </div>
+                <div className="form-group-custom">
+                  <label>Color de Etiqueta:</label>
+                  <input
+                    type="color"
+                    className="input-custom"
+                    value={editChannelForm.colorTag}
+                    onChange={(e) => setEditChannelForm(prev => ({ ...prev, colorTag: e.target.value }))}
+                    style={{ height: '44px', padding: '4px', cursor: 'pointer' }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setEditingChannel(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-gold"
+                  disabled={editChannelSubmitting}
+                >
+                  {editChannelSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>
