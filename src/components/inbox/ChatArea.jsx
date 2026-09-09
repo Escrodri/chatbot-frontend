@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { apiUrl } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -63,7 +63,7 @@ export function ChatArea({
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
-  const prevConvIdRef = useRef(null);
+  const initialScrollDoneRef = useRef(false);
   const prevMessagesCountRef = useRef(0);
   const prevLastMsgIdRef = useRef(null);
 
@@ -107,31 +107,49 @@ export function ChatArea({
   // Scroll al final del chat
   const scrollToBottom = (behavior = 'smooth') => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        behavior
-      });
+      if (behavior === 'auto') {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      } else {
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
     }
     isNearBottomRef.current = true;
     setShowScrollBottomBtn(false);
   };
 
-  // Efecto inteligente de scroll: No mueve la vista si el usuario está leyendo arriba
-  useEffect(() => {
+  // Posicionamiento de scroll:
+  // useLayoutEffect se ejecuta de forma síncrona ANTES de que el navegador dibuje en pantalla.
+  // Así el chat aparece directamente abajo sin ningún parpadeo ni animación de bajada.
+  useLayoutEffect(() => {
     if (!conversation) return;
 
-    // 1. Si cambió de chat, posicionar al final inmediatamente
-    if (conversation.id !== prevConvIdRef.current) {
-      prevConvIdRef.current = conversation.id;
-      prevMessagesCountRef.current = messages.length;
-      prevLastMsgIdRef.current = messages[messages.length - 1]?.id || null;
-      isNearBottomRef.current = true;
-      setShowScrollBottomBtn(false);
-      setTimeout(() => scrollToBottom('auto'), 40);
+    // 1. Carga inicial del chat:
+    // Si aún no se hizo el scroll inicial de este chat y ya tenemos mensajes:
+    if (!initialScrollDoneRef.current) {
+      if (messages.length > 0) {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+        initialScrollDoneRef.current = true;
+        prevMessagesCountRef.current = messages.length;
+        prevLastMsgIdRef.current = messages[messages.length - 1]?.id || null;
+        isNearBottomRef.current = true;
+        setShowScrollBottomBtn(false);
+
+        // Doble fijación en el siguiente frame por si imágenes o fuentes se dibujan con delay
+        requestAnimationFrame(() => {
+          if (chatContainerRef.current && isNearBottomRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          }
+        });
+      }
       return;
     }
 
-    // 2. Si es el mismo chat, detectar si realmente entraron mensajes nuevos
+    // 2. Si ya cargó inicialmente, detectar si realmente entraron mensajes nuevos
     const currentLastMsgId = messages[messages.length - 1]?.id || null;
     const hasNewMessage = currentLastMsgId && currentLastMsgId !== prevLastMsgIdRef.current;
     const countIncreased = messages.length > prevMessagesCountRef.current;
@@ -147,7 +165,6 @@ export function ChatArea({
         setShowScrollBottomBtn(true);
       }
     }
-    // Si fue un simple refresco de polling sin mensajes nuevos, no tocar el scroll
   }, [messages, conversation]);
 
   const handleSend = (e) => {

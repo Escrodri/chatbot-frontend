@@ -71,9 +71,12 @@ export function InboxPage() {
   useEffect(() => {
     setSendBanner(null);
     if (selectedId) {
+      setMessages([]); // Limpiar mensajes del chat previo para evitar parpadeos
       loadMessages(selectedId);
       const msgInterval = setInterval(() => loadMessages(selectedId), 3000);
       return () => clearInterval(msgInterval);
+    } else {
+      setMessages([]);
     }
   }, [selectedId, loadMessages]);
 
@@ -210,6 +213,7 @@ export function InboxPage() {
       {/* Columna Derecha: Conversación Activa o Estado Vacío */}
       {selectedConversation ? (
         <ChatArea
+          key={selectedConversation.id}
           conversation={selectedConversation}
           messages={messages}
           onSendMessage={handleSendMessage}
