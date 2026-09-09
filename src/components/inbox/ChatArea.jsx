@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Dirección del archivo multimedia de un mensaje.
@@ -8,14 +9,17 @@ import { apiUrl } from '../../lib/api';
  * servidor puede volver a bajarlo de Meta si su copia local se perdió (el disco
  * del hosting se borra en cada despliegue), y de paso los archivos dejan de
  * estar accesibles sin sesión.
+ * Pasa el token en la query (?token=...) para que etiquetas <img>, <audio> y <video>
+ * puedan autenticar sin depender de cookies cross-site de terceros.
  */
-function mediaSrc(msg) {
+function mediaSrc(msg, token) {
   if (!msg) return null;
-  // Si alguna vez llega una URL absoluta (por ejemplo directa de Meta), se respeta.
+  // Si alguna vez llega una URL absoluta (por ejemplo Cloudinary o directa de Meta), se respeta.
   const u = msg.media_url || '';
   if (u.startsWith('http://') || u.startsWith('https://')) return u;
   if (!msg.media_url && !msg.meta_media_id) return null;
-  return apiUrl(`/api/media/${msg.id}`);
+  const base = apiUrl(`/api/media/${msg.id}`);
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
 const PLATFORM_LABELS = {
@@ -51,6 +55,7 @@ export function ChatArea({
   onDismissBanner = () => {},
   onRetryMessage = null
 }) {
+  const { token } = useAuth();
   const [inputText, setInputText] = useState('');
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -253,7 +258,18 @@ export function ChatArea({
                   {msg.content_type === 'sticker' && (
                     <div className="msg-sticker-container">
                       {msg.media_url ? (
-                        <img src={mediaSrc(msg)} alt="Sticker" className="msg-sticker-img" loading="lazy" />
+                        <img
+                          src={mediaSrc(msg, token)}
+                          alt="Sticker"
+                          className="msg-sticker-img"
+                          loading="lazy"
+                          onError={(e) => {
+                            if (msg.media_url && !e.currentTarget.dataset.fallbackTried) {
+                              e.currentTarget.dataset.fallbackTried = 'true';
+                              e.currentTarget.src = apiUrl(msg.media_url);
+                            }
+                          }}
+                        />
                       ) : (
                         <span className="msg-fallback-tag">[Sticker]</span>
                       )}
@@ -264,11 +280,17 @@ export function ChatArea({
                     <div className="msg-media-container">
                       {msg.media_url ? (
                         <img
-                          src={mediaSrc(msg)}
+                          src={mediaSrc(msg, token)}
                           alt="Imagen enviada"
                           className="msg-media-img"
                           loading="lazy"
-                          onClick={() => window.open(mediaSrc(msg), '_blank')}
+                          onError={(e) => {
+                            if (msg.media_url && !e.currentTarget.dataset.fallbackTried) {
+                              e.currentTarget.dataset.fallbackTried = 'true';
+                              e.currentTarget.src = apiUrl(msg.media_url);
+                            }
+                          }}
+                          onClick={() => window.open(mediaSrc(msg, token) || apiUrl(msg.media_url), '_blank')}
                         />
                       ) : (
                         <span className="msg-fallback-tag">[Imagen]</span>
@@ -282,7 +304,7 @@ export function ChatArea({
                   {msg.content_type === 'audio' && (
                     <div className="msg-audio-container">
                       {msg.media_url ? (
-                        <audio src={mediaSrc(msg)} controls className="msg-audio-player" preload="metadata" />
+                        <audio src={mediaSrc(msg, token)} controls className="msg-audio-player" preload="metadata" />
                       ) : (
                         <span className="msg-fallback-tag">[Nota de voz]</span>
                       )}
@@ -295,7 +317,7 @@ export function ChatArea({
                   {msg.content_type === 'video' && (
                     <div className="msg-media-container">
                       {msg.media_url ? (
-                        <video src={mediaSrc(msg)} controls className="msg-media-video" preload="metadata" />
+                        <video src={mediaSrc(msg, token)} controls className="msg-media-video" preload="metadata" />
                       ) : (
                         <span className="msg-fallback-tag">[Video]</span>
                       )}
@@ -308,7 +330,7 @@ export function ChatArea({
                   {msg.content_type === 'document' && (
                     <div className="msg-doc-container">
                       {msg.media_url ? (
-                        <a href={mediaSrc(msg)} target="_blank" rel="noopener noreferrer" className="msg-doc-link">
+                        <a href={mediaSrc(msg, token) || apiUrl(msg.media_url)} target="_blank" rel="noopener noreferrer" className="msg-doc-link">
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5z" />
                             <path d="M14 2.5v5h5" />
