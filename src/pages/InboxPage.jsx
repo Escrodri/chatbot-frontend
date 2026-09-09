@@ -80,14 +80,19 @@ export function InboxPage() {
   const selectedConversation = conversations.find(c => c.id === selectedId) || null;
 
   // Enviar mensaje como operador
-  const handleSendMessage = async (text) => {
+  const handleSendMessage = async (payload) => {
     if (!selectedId || sending) return;
+    const bodyObj = typeof payload === 'string' ? { text: payload } : payload;
+    const { text, fileBase64, fileName } = bodyObj;
+    if ((!text || !text.trim()) && !fileBase64) return;
+
     setSending(true);
+    setSendBanner(null);
 
     try {
       const res = await apiFetch(`/api/conversations/${selectedId}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ text })
+        body: JSON.stringify(bodyObj)
       });
 
       const data = await res.json().catch(() => ({}));
@@ -104,11 +109,12 @@ export function InboxPage() {
       setSendBanner(data.delivered ? null : (data.error?.message || 'El mensaje no pudo entregarse.'));
 
       // Actualizar último mensaje y pasar a Handover en la lista lateral
+      const displayPreview = text || (fileName ? `[Archivo: ${fileName}]` : 'Archivo adjunto');
       setConversations(prev => prev.map(c => {
         if (c.id === selectedId) {
           return {
             ...c,
-            last_message_text: text,
+            last_message_text: displayPreview,
             last_message_time: new Date().toISOString(),
             bot_status: 'handed_over'
           };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiUrl } from '../../lib/api';
 
 const PLATFORM_LABELS = {
   whatsapp: 'WhatsApp',
@@ -15,6 +16,14 @@ function SendIcon() {
   );
 }
 
+function PaperclipIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
 export function ChatArea({
   conversation,
   messages,
@@ -26,11 +35,39 @@ export function ChatArea({
 }) {
   const [inputText, setInputText] = useState('');
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const prevConvIdRef = useRef(null);
   const prevMessagesCountRef = useRef(0);
   const prevLastMsgIdRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert('El archivo supera el límite máximo permitido de 20MB.');
+      return;
+    }
+
+    setSelectedFile(file);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setFilePreview(ev.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Monitorear posición manual del scroll
   const handleScroll = () => {
@@ -92,10 +129,27 @@ export function ChatArea({
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!inputText.trim() || sending) return;
-    onSendMessage(inputText.trim());
-    setInputText('');
-    setTimeout(() => scrollToBottom('smooth'), 80);
+    if ((!inputText.trim() && !selectedFile) || sending) return;
+
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        onSendMessage({
+          text: inputText.trim(),
+          fileBase64: reader.result,
+          fileName: selectedFile.name,
+          mimeType: selectedFile.type
+        });
+        setInputText('');
+        handleRemoveFile();
+        setTimeout(() => scrollToBottom('smooth'), 80);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      onSendMessage(inputText.trim());
+      setInputText('');
+      setTimeout(() => scrollToBottom('smooth'), 80);
+    }
   };
 
   if (!conversation) return null;
@@ -181,7 +235,7 @@ export function ChatArea({
                   {msg.content_type === 'sticker' && (
                     <div className="msg-sticker-container">
                       {msg.media_url ? (
-                        <img src={msg.media_url} alt="Sticker" className="msg-sticker-img" loading="lazy" />
+                        <img src={apiUrl(msg.media_url)} alt="Sticker" className="msg-sticker-img" loading="lazy" />
                       ) : (
                         <span className="msg-fallback-tag">[Sticker]</span>
                       )}
@@ -192,11 +246,11 @@ export function ChatArea({
                     <div className="msg-media-container">
                       {msg.media_url ? (
                         <img
-                          src={msg.media_url}
+                          src={apiUrl(msg.media_url)}
                           alt="Imagen enviada"
                           className="msg-media-img"
                           loading="lazy"
-                          onClick={() => window.open(msg.media_url, '_blank')}
+                          onClick={() => window.open(apiUrl(msg.media_url), '_blank')}
                         />
                       ) : (
                         <span className="msg-fallback-tag">[Imagen]</span>
@@ -210,7 +264,7 @@ export function ChatArea({
                   {msg.content_type === 'audio' && (
                     <div className="msg-audio-container">
                       {msg.media_url ? (
-                        <audio src={msg.media_url} controls className="msg-audio-player" preload="metadata" />
+                        <audio src={apiUrl(msg.media_url)} controls className="msg-audio-player" preload="metadata" />
                       ) : (
                         <span className="msg-fallback-tag">[Nota de voz]</span>
                       )}
@@ -223,7 +277,7 @@ export function ChatArea({
                   {msg.content_type === 'video' && (
                     <div className="msg-media-container">
                       {msg.media_url ? (
-                        <video src={msg.media_url} controls className="msg-media-video" preload="metadata" />
+                        <video src={apiUrl(msg.media_url)} controls className="msg-media-video" preload="metadata" />
                       ) : (
                         <span className="msg-fallback-tag">[Video]</span>
                       )}
@@ -236,7 +290,7 @@ export function ChatArea({
                   {msg.content_type === 'document' && (
                     <div className="msg-doc-container">
                       {msg.media_url ? (
-                        <a href={msg.media_url} target="_blank" rel="noopener noreferrer" className="msg-doc-link">
+                        <a href={apiUrl(msg.media_url)} target="_blank" rel="noopener noreferrer" className="msg-doc-link">
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5z" />
                             <path d="M14 2.5v5h5" />
@@ -312,11 +366,59 @@ export function ChatArea({
 
       {/* Barra de entrada de mensajes */}
       <footer className="chat-composer">
+        {selectedFile && (
+          <div className="composer-file-preview" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '8px 14px',
+            marginBottom: '8px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-gold)',
+            borderRadius: '8px',
+            fontSize: '0.85rem'
+          }}>
+            {filePreview ? (
+              <img src={filePreview} alt="Preview" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }} />
+            ) : (
+              <span style={{ fontSize: '1.2rem' }}>📎</span>
+            )}
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(0)} KB)
+            </span>
+            <button
+              type="button"
+              onClick={handleRemoveFile}
+              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px' }}
+              title="Quitar archivo adjunto"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="composer-form">
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+          <button
+            type="button"
+            className="btn-card-action"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+            title="Adjuntar archivo, imagen o documento"
+            style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+          >
+            <PaperclipIcon />
+          </button>
+
           <input
             type="text"
             className="composer-input"
-            placeholder="Escribí un mensaje"
+            placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje..."}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             disabled={sending}
@@ -325,7 +427,7 @@ export function ChatArea({
           <button
             type="submit"
             className="btn-send-message"
-            disabled={!inputText.trim() || sending}
+            disabled={(!inputText.trim() && !selectedFile) || sending}
             title="Enviar mensaje (Enter)"
           >
             {sending ? '…' : <SendIcon />}
