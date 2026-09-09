@@ -148,7 +148,16 @@ export function ChatList({
                 onClick={() => onSelectChat(chat.id)}
               >
                 <div className="chat-avatar">
-                  <span>{(chat.contact_name || 'C').charAt(0).toUpperCase()}</span>
+                  {chat.contact_avatar ? (
+                    <img
+                      src={chat.contact_avatar}
+                      alt={chat.contact_name || 'Contacto'}
+                      className="chat-avatar-img"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span>{(chat.contact_name || 'C').charAt(0).toUpperCase()}</span>
+                  )}
                   <span
                     className="chat-platform-dot"
                     style={{ background: dotColor }}

@@ -187,7 +187,16 @@ export function ChatArea({
       <header className="chat-header">
         <div className="chat-header-user">
           <div className="chat-header-avatar">
-            {(conversation.contact_name || 'C').charAt(0).toUpperCase()}
+            {conversation.contact_avatar ? (
+              <img
+                src={conversation.contact_avatar}
+                alt={conversation.contact_name || 'Contacto'}
+                className="chat-avatar-img"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              (conversation.contact_name || 'C').charAt(0).toUpperCase()
+            )}
           </div>
           <div className="chat-header-title">
             <h4>{conversation.contact_name || 'Contacto'}</h4>
