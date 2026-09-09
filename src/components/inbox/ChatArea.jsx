@@ -64,6 +64,19 @@ function PaperclipIcon() {
   );
 }
 
+function getErrorMessage(errorDetails) {
+  if (!errorDetails) return 'Meta rechazó el mensaje.';
+  if (typeof errorDetails === 'string') {
+    try {
+      const parsed = JSON.parse(errorDetails);
+      return parsed.message || parsed.error || errorDetails;
+    } catch {
+      return errorDetails;
+    }
+  }
+  return errorDetails.message || errorDetails.error || 'Meta rechazó el mensaje.';
+}
+
 export function ChatArea({
   conversation,
   messages,
@@ -73,7 +86,8 @@ export function ChatArea({
   sending,
   sendBanner = null,
   onDismissBanner = () => {},
-  onRetryMessage = null
+  onRetryMessage = null,
+  onRegisterSale = null
 }) {
   const { token } = useAuth();
   const [inputText, setInputText] = useState('');
@@ -83,6 +97,11 @@ export function ChatArea({
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showSaleForm, setShowSaleForm] = useState(false);
+  const [saleAmount, setSaleAmount] = useState('');
+  const [saleCurrency, setSaleCurrency] = useState('PYG');
+  const [saleNote, setSaleNote] = useState('');
+  const [savingSale, setSavingSale] = useState(false);
 
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -350,6 +369,29 @@ export function ChatArea({
     }
   }, [messages, conversation]);
 
+  const cerrarFormularioVenta = () => {
+    setShowSaleForm(false);
+    setSaleAmount('');
+    setSaleNote('');
+  };
+
+  const handleSaleSubmit = async (e) => {
+    e.preventDefault();
+    if (savingSale || !onRegisterSale) return;
+
+    setSavingSale(true);
+    try {
+      const registrada = await onRegisterSale(conversation.id, {
+        value: saleAmount.trim() === '' ? null : saleAmount.trim(),
+        currency: saleCurrency,
+        note: saleNote.trim() || null
+      });
+      if (registrada) cerrarFormularioVenta();
+    } finally {
+      setSavingSale(false);
+    }
+  };
+
   const handleSend = (e) => {
     e.preventDefault();
     if ((!inputText.trim() && !selectedFile) || sending) return;
@@ -424,8 +466,78 @@ export function ChatArea({
           >
             <span>{isBotActive ? 'Bot activo' : 'Control humano'}</span>
           </button>
+
+          {/* Marcar la conversación como venta e informarla a Meta */}
+          {onRegisterSale && (
+            <button
+              type="button"
+              className="btn-sale"
+              onClick={() => setShowSaleForm(v => !v)}
+              title="Registrar una venta hecha en esta conversación"
+            >
+              <span>Marcar venta</span>
+            </button>
+          )}
         </div>
       </header>
+
+      {showSaleForm && onRegisterSale && (
+        <form className="sale-form" onSubmit={handleSaleSubmit}>
+          <div className="sale-form-fields">
+            <label>
+              <span>Monto</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                placeholder="0"
+                value={saleAmount}
+                onChange={(e) => setSaleAmount(e.target.value)}
+                autoFocus
+              />
+            </label>
+
+            <label>
+              <span>Moneda</span>
+              <select value={saleCurrency} onChange={(e) => setSaleCurrency(e.target.value)}>
+                <option value="PYG">Guaraníes (PYG)</option>
+                <option value="USD">Dólares (USD)</option>
+                <option value="ARS">Pesos argentinos (ARS)</option>
+                <option value="BRL">Reales (BRL)</option>
+                <option value="EUR">Euros (EUR)</option>
+              </select>
+            </label>
+
+            <label className="sale-form-note">
+              <span>Detalle (opcional)</span>
+              <input
+                type="text"
+                placeholder="Qué se vendió"
+                value={saleNote}
+                onChange={(e) => setSaleNote(e.target.value)}
+                maxLength={200}
+              />
+            </label>
+          </div>
+
+          <div className="sale-form-actions">
+            <button type="button" className="btn-sale-cancel" onClick={cerrarFormularioVenta} disabled={savingSale}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-sale-confirm" disabled={savingSale}>
+              {savingSale ? 'Registrando…' : 'Registrar venta'}
+            </button>
+          </div>
+
+          {conversation.platform === 'whatsapp' && !conversation.ctwa_clid && (
+            <p className="sale-form-hint">
+              Esta conversación no empezó desde un anuncio, así que la venta se guarda
+              pero Meta no la va a poder atribuir a ninguna campaña.
+            </p>
+          )}
+        </form>
+      )}
 
       {/* Hilo de mensajes */}
       <div className="chat-messages-thread" ref={chatContainerRef} onScroll={handleScroll}>
@@ -572,7 +684,7 @@ export function ChatArea({
                       </svg>
                       <div>
                         <strong>No se envió.</strong>{' '}
-                        {msg.error_details?.message || 'Meta rechazó el mensaje.'}
+                        {getErrorMessage(msg.error_details)}
                         <button
                           type="button"
                           className="btn-retry-send"

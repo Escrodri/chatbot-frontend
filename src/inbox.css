@@ -1019,3 +1019,113 @@
   }
   .inbox-chat-area { height: 58%; }
 }
+
+/* =============================================================================
+   MARCAR VENTA
+   Se avisa a Meta que la conversación terminó en una venta, para que los
+   anuncios se optimicen con resultados reales.
+============================================================================= */
+.btn-sale {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--t-fast);
+  white-space: nowrap;
+  background: rgba(37, 211, 102, 0.13);
+  color: var(--wa-teal-deep);
+  border: 1px solid rgba(37, 211, 102, 0.38);
+}
+
+.btn-sale:hover { background: rgba(37, 211, 102, 0.24); }
+
+.sale-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 6%;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.sale-form-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sale-form-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  min-width: 130px;
+}
+
+.sale-form-note { flex: 1; min-width: 200px; }
+
+.sale-form-fields input,
+.sale-form-fields select {
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 400;
+  font-family: var(--font-sans);
+}
+
+.sale-form-fields input:focus,
+.sale-form-fields select:focus {
+  outline: none;
+  border-color: var(--wa-teal);
+}
+
+.sale-form-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+}
+
+.sale-form-actions button {
+  padding: 8px 17px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--t-fast);
+  border: 1px solid transparent;
+}
+
+.btn-sale-cancel {
+  background: transparent;
+  color: var(--text-soft);
+  border-color: var(--border);
+}
+
+.btn-sale-cancel:hover { background: var(--bg-hover); }
+
+.btn-sale-confirm {
+  background: var(--wa-teal);
+  color: #fff;
+}
+
+.btn-sale-confirm:hover { background: var(--wa-teal-dark); }
+
+.sale-form-actions button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.sale-form-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--warn);
+}

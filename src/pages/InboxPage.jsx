@@ -129,6 +129,38 @@ export function InboxPage() {
     }
   };
 
+  // Registrar una venta hecha en la conversación e informársela a Meta.
+  // Devuelve true si quedó guardada, para que el formulario se cierre solo.
+  const handleRegisterSale = async (conversationId, { value, currency, note }) => {
+    if (!conversationId) return false;
+
+    setSendBanner(null);
+
+    try {
+      const res = await apiFetch(`/api/conversations/${conversationId}/sale`, {
+        method: 'POST',
+        body: JSON.stringify({ value, currency, note })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setSendBanner(data.error || 'No se pudo registrar la venta.');
+        return false;
+      }
+
+      // La venta siempre queda guardada; el aviso solo cuenta si Meta no la tomó.
+      setSendBanner(
+        data.reported
+          ? null
+          : (data.warning?.message || 'La venta quedó registrada, pero no se le pudo informar a Meta.')
+      );
+      return true;
+    } catch (err) {
+      setSendBanner('No se pudo registrar la venta. Revisá tu conexión.');
+      return false;
+    }
+  };
+
   // Enviar mensaje como operador
   const handleSendMessage = async (payload) => {
     if (!selectedId || sending) return;
@@ -236,6 +268,7 @@ export function InboxPage() {
           sendBanner={sendBanner}
           onDismissBanner={() => setSendBanner(null)}
           onRetryMessage={handleRetryMessage}
+          onRegisterSale={handleRegisterSale}
         />
       ) : (
         <EmptyState />
