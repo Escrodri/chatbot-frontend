@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandMark } from '../components/BrandMark';
 
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@empresa.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -30,18 +32,18 @@ export function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setMessage({ type: 'error', text: 'Por favor ingresa tu correo y contraseña.' });
+      setMessage({ type: 'error', text: 'Ingresá tu correo y contraseña.' });
       return;
     }
 
     setLoading(true);
-    setMessage({ type: 'info', text: 'Verificando credenciales con el servidor...' });
+    setMessage({ type: 'info', text: 'Verificando credenciales…' });
 
     try {
       const loggedUser = await login(email, password);
       setMessage({
         type: 'success',
-        text: `✨ ¡Bienvenida ${loggedUser.name}! Acceso autorizado.`
+        text: `¡Hola ${loggedUser.name}! Acceso autorizado.`
       });
       setTimeout(() => {
         navigate(loggedUser.role === 'admin' ? '/settings' : '/inbox', { replace: true });
@@ -49,7 +51,7 @@ export function LoginPage() {
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err.message || 'Error al iniciar sesión. Verifica correo o contraseña.'
+        text: err.message || 'No pudimos iniciar sesión. Revisá el correo o la contraseña.'
       });
       setLoading(false);
     }
@@ -58,31 +60,34 @@ export function LoginPage() {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        {/* Encabezado Místico */}
+        <div className="login-theme-row">
+          <ThemeToggle variant="outline" />
+        </div>
+
+        {/* Encabezado */}
         <div className="login-header">
           <div className="brand-badge-login">
-            <span className="brand-icon">🔮</span>
-            <span className="brand-name">Lecturas de Tarot</span>
+            <span className="brand-icon" style={{ color: 'var(--wa-teal-dark)' }}>
+              <BrandMark size={18} />
+            </span>
+            <span className="brand-name">Bandeja Unificada</span>
           </div>
-          <h2>Portal de Tarotistas</h2>
-          <p>Ingresa tus credenciales para acceder a la bandeja de mensajes omnicanal y atender a tus consultantes.</p>
+          <h2>Acceso del equipo</h2>
+          <p>Entrá con tu usuario para responder los mensajes de WhatsApp, Messenger e Instagram.</p>
 
-          <div style={{ marginTop: '10px', fontSize: '0.75rem' }}>
+          <div style={{ marginTop: '12px', fontSize: '12.5px', fontWeight: 600 }}>
             {serverHealth === 'healthy' && (
-              <span style={{ color: '#34d399', fontWeight: 600 }}>🟢 Conexión Segura con Servidor Central</span>
+              <span style={{ color: 'var(--ok)' }}>● Conectado con el servidor</span>
             )}
             {serverHealth === 'offline' && (
-              <span style={{ color: '#fbbf24', fontWeight: 600 }}>🟡 Servidor en espera de conexión</span>
+              <span style={{ color: 'var(--warn)' }}>● Servidor en espera de conexión</span>
             )}
           </div>
         </div>
 
         {/* Mensaje de feedback */}
         {message && (
-          <div
-            className={`login-msg ${message.type === 'error' ? 'msg-error' : 'msg-success'}`}
-            style={{ display: 'block', marginBottom: '16px' }}
-          >
+          <div className={`login-msg ${message.type === 'error' ? 'msg-error' : 'msg-success'}`}>
             {message.text}
           </div>
         )}
@@ -90,20 +95,20 @@ export function LoginPage() {
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <label htmlFor="email">Correo Electrónico:</label>
+            <label htmlFor="email">Correo electrónico</label>
             <input
               type="email"
               id="email"
               required
               autoComplete="email"
-              placeholder="tarotista@lecturasdetarte.online"
+              placeholder="operador@lecturasdetarde.online"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="input-group">
-            <label htmlFor="password">Contraseña:</label>
+            <label htmlFor="password">Contraseña</label>
             <div className="password-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -121,28 +126,35 @@ export function LoginPage() {
                 tabIndex="-1"
                 aria-label="Ver u ocultar contraseña"
               >
-                {showPassword ? '👁️' : '🙈'}
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M4 20L20 4" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn-login-submit"
-            disabled={loading}
-          >
-            {loading ? 'Validando acceso...' : 'Ingresar al Panel de Mensajes'}
+          <button type="submit" className="btn-login-submit" disabled={loading}>
+            {loading ? 'Validando acceso…' : 'Entrar'}
           </button>
         </form>
 
         <div className="login-footer">
           <p>
-            ¿Problemas para acceder? Contacta al administrador en{' '}
-            <a href="mailto:soporte@lecturasdetarte.online">soporte@lecturasdetarte.online</a>
+            ¿Problemas para entrar? Escribí a{' '}
+            <a href="mailto:soporte@lecturasdetarde.online">soporte@lecturasdetarde.online</a>
           </p>
-          <div style={{ marginTop: '12px' }}>
-            <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textDecoration: 'none' }}>
-              ← Volver al sitio principal
+          <div style={{ marginTop: '10px' }}>
+            <Link to="/" style={{ color: 'var(--text-soft)', fontSize: '13px', textDecoration: 'none' }}>
+              ← Volver al sitio
             </Link>
           </div>
         </div>

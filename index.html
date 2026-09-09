@@ -3,9 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lecturas de Tarot Online • Consultas Personalizadas e Inmediatas</title>
-  <meta name="description" content="Consultas espirituales y tiradas de Tarot del amor, trabajo y destino. Atención personalizada e inmediata por WhatsApp, Facebook Messenger e Instagram." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'><path d='M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z'/></svg>" />
+  <title>Bandeja Unificada • WhatsApp, Messenger e Instagram en un solo lugar</title>
+  <meta name="description" content="Bandeja compartida de atención al cliente: recibí y respondé los mensajes de WhatsApp, Facebook Messenger e Instagram Direct desde un mismo panel." />
+  <meta name="theme-color" content="#008069" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2300a884' d='M12 2.2c-5.4 0-9.8 3.9-9.8 8.7 0 2.6 1.3 5 3.4 6.6v3.4c0 .5.6.8 1 .5l3-2c.8.2 1.6.3 2.4.3 5.4 0 9.8-3.9 9.8-8.8S17.4 2.2 12 2.2z'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='7.9' cy='10.9' r='1.35'/%3E%3Ccircle cx='12' cy='10.9' r='1.35'/%3E%3Ccircle cx='16.1' cy='10.9' r='1.35'/%3E%3C/g%3E%3C/svg%3E" />
+  <script>
+    // Aplica el tema guardado antes de pintar, para evitar parpadeo.
+    (function () {
+      try {
+        var saved = localStorage.getItem('inbox_theme');
+        if (saved !== 'light' && saved !== 'dark') {
+          saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', saved);
+        document.documentElement.style.colorScheme = saved;
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

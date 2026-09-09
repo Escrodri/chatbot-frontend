@@ -9,43 +9,44 @@ export function TermsPage() {
 
       <main className="container page-legal">
         <h1>Términos de Servicio</h1>
-        <div className="date-meta">Última actualización: 7 de Septiembre de 2026 • Dominio: lecturasdetarte.online</div>
+        <div className="date-meta">Última actualización: 8 de Septiembre de 2026 • Dominio: lecturasdetarde.online</div>
 
         <p>
-          Bienvenido a <strong>Lecturas de Tarot Online</strong> (<code>lecturasdetarte.online</code>).
+          Bienvenido a <strong>Bandeja Unificada</strong> (<code>lecturasdetarde.online</code>).
           Al acceder a nuestro sitio web o iniciar una conversación a través de nuestros canales oficiales
           de WhatsApp, Facebook Messenger o Instagram Direct, usted acepta los presentes Términos de Servicio.
         </p>
 
         <h2>1. Naturaleza del Servicio</h2>
         <p>
-          Nuestros servicios consisten en lecturas espirituales, interpretación simbólica de los arcanos del tarot y
-          orientación personal. Las lecturas no constituyen asesoramiento médico, legal, financiero ni psicológico
-          profesional. El usuario es el único responsable de sus decisiones y actos.
+          Bandeja Unificada es un servicio de atención al cliente que centraliza las conversaciones recibidas
+          por WhatsApp, Facebook Messenger e Instagram Direct para responder consultas, brindar información
+          sobre productos y servicios, y dar seguimiento comercial.
         </p>
 
         <h2>2. Mayoría de Edad</h2>
         <p>
-          El servicio está destinado exclusivamente a personas mayores de 18 años (o la mayoría de edad legal en su
-          jurisdicción). Al contactarnos, usted declara bajo juramento cumplir con este requisito.
+          Para iniciar conversaciones, realizar consultas o efectuar compras se requiere contar con la edad legal
+          de consentimiento o la autorización correspondiente de un adulto responsable.
         </p>
 
         <h2>3. Uso Responsable y Canales Autorizados</h2>
         <p>
-          Las consultas se canalizan a través de las APIs oficiales de Meta Graph API v21.0. Queda estrictamente prohibido
-          el uso de lenguaje ofensivo, amenazas o intentos de vulnerar la seguridad de nuestros sistemas.
+          Las consultas se canalizan a través de las APIs oficiales de Meta Graph API. Queda estrictamente prohibido
+          el uso de lenguaje ofensivo, spam o intentos de vulnerar la seguridad de nuestros sistemas.
         </p>
 
-        <h2>4. Precios y Pagos</h2>
+        <h2>4. Contenidos y Servicios</h2>
         <p>
-          Cualquier tarifa aplicable a tiradas extendidas será informada con total transparencia por la tarotista antes de
-          iniciar la sesión. No existen cargos ocultos ni renovaciones automáticas no consentidas.
+          La información, presupuestos y respuestas brindadas por nuestros operadores son orientativas y buscan
+          acompañar su consulta con transparencia. Los precios y la disponibilidad pueden variar y se confirman
+          al momento de cerrar la operación.
         </p>
 
         <h2>5. Contacto Legal</h2>
         <p>
           Para cualquier consulta o aclaración respecto a estos términos, puede comunicarse a:{' '}
-          <strong style={{ color: 'var(--gold-light)' }}>contacto@lecturasdetarte.online</strong>.
+          <strong style={{ color: 'var(--gold-light)' }}>contacto@lecturasdetarde.online</strong>.
         </p>
       </main>
 

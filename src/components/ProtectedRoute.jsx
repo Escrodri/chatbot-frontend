@@ -10,19 +10,9 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--bg-cosmos)',
-          color: 'var(--gold-primary)'
-        }}
-      >
-        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔮</div>
-        <p style={{ fontFamily: 'var(--font-serif)', letterSpacing: '1px' }}>Iniciando sesión segura...</p>
+      <div className="app-loading">
+        <div className="spinner"></div>
+        <p>Iniciando sesión segura…</p>
       </div>
     );
   }

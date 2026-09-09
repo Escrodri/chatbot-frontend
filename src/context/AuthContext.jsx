@@ -5,18 +5,18 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('tarot_user');
+      const saved = localStorage.getItem('ldt_user') || localStorage.getItem('tarot_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('tarot_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('ldt_token') || localStorage.getItem('tarot_token'));
   const [loading, setLoading] = useState(true);
 
   // Helper de peticiones autenticadas hacia el proxy local de Vite (/api)
   const apiFetch = async (url, options = {}) => {
-    const currentToken = localStorage.getItem('tarot_token');
+    const currentToken = localStorage.getItem('ldt_token') || localStorage.getItem('tarot_token');
     const headers = {
       'Content-Type': 'application/json',
       ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}),
@@ -37,10 +37,12 @@ export function AuthProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
-        localStorage.setItem('tarot_user', JSON.stringify(data.user));
+        localStorage.setItem('ldt_user', JSON.stringify(data.user));
       } else {
         // Sesión inválida o expirada
         setUser(null);
+        localStorage.removeItem('ldt_user');
+        localStorage.removeItem('ldt_token');
         localStorage.removeItem('tarot_user');
         localStorage.removeItem('tarot_token');
       }

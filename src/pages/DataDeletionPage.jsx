@@ -34,7 +34,7 @@ export function DataDeletionPage() {
         <div className="date-meta">Conforme a las Políticas de Desarrolladores y Plataforma de Meta (Meta Graph API v21.0)</div>
 
         <p>
-          En <strong>Lecturas de Tarot Online</strong> (<code>lecturasdetarte.online</code>), respetamos plenamente su derecho
+          En <strong>Bandeja Unificada</strong> (<code>lecturasdetarde.online</code>), respetamos plenamente su derecho
           a la privacidad y al olvido de acuerdo con los estándares internacionales de protección de datos (RGPD, LGPD) y los
           términos de la plataforma de Meta.
         </p>
@@ -47,7 +47,7 @@ export function DataDeletionPage() {
         <ol style={{ paddingLeft: '24px', marginBottom: '20px', color: 'var(--text-main)' }}>
           <li style={{ marginBottom: '8px' }}>Ingrese a su cuenta de Facebook y vaya a <strong>Configuración y Privacidad → Configuración</strong>.</li>
           <li style={{ marginBottom: '8px' }}>En el menú lateral, seleccione <strong>Apps y sitios web</strong>.</li>
-          <li style={{ marginBottom: '8px' }}>Busque la aplicación vinculada a <strong>Lecturas de Tarot</strong> y haga clic en <strong>Eliminar</strong>.</li>
+          <li style={{ marginBottom: '8px' }}>Busque la aplicación vinculada a <strong>Bandeja Unificada</strong> y haga clic en <strong>Eliminar</strong>.</li>
           <li style={{ marginBottom: '8px' }}>
             Al confirmar la eliminación, los servidores de Meta enviarán una solicitud firmada criptográficamente (<code>signed_request</code>)
             a nuestro callback oficial en <code>POST /api/compliance/data-deletion</code>.
@@ -103,7 +103,7 @@ export function DataDeletionPage() {
         <h2>3. Solicitud Manual por Correo Electrónico</h2>
         <p>
           También puede solicitar la supresión de sus datos en cualquier momento enviando un correo a{' '}
-          <strong style={{ color: 'var(--gold-light)' }}>privacidad@lecturasdetarte.online</strong> indicando su número de WhatsApp
+          <strong style={{ color: 'var(--gold-light)' }}>privacidad@lecturasdetarde.online</strong> indicando su número de WhatsApp
           o usuario de Instagram. Su solicitud será procesada en menos de 24 horas laborables.
         </p>
       </main>

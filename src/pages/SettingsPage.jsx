@@ -41,7 +41,7 @@ export function SettingsPage() {
     accessToken: '',
     appId: '',
     appSecret: '',
-    colorTag: '#D4AF37'
+    colorTag: '#00a884'
   });
   const [channelSubmitting, setChannelSubmitting] = useState(false);
 
@@ -50,9 +50,15 @@ export function SettingsPage() {
     name: '',
     email: '',
     password: '',
-    role: 'agent'
+    role: 'agent',
+    channelIds: []
   });
   const [userSubmitting, setUserSubmitting] = useState(false);
+
+  // Asignación de canales a un operador ya existente (A-03)
+  const [channelsModalUser, setChannelsModalUser] = useState(null);
+  const [channelsDraft, setChannelsDraft] = useState([]);
+  const [channelsSaving, setChannelsSaving] = useState(false);
 
   // Bot guardado
   const [botSaving, setBotSaving] = useState(false);
@@ -158,7 +164,7 @@ export function SettingsPage() {
         accessToken: '',
         appId: '',
         appSecret: '',
-        colorTag: '#D4AF37'
+        colorTag: '#00a884'
       });
       loadChannels();
     } catch (err) {
@@ -259,7 +265,7 @@ export function SettingsPage() {
 
       addToast('Operador registrado con éxito en el sistema', 'success');
       setShowUserModal(false);
-      setUserForm({ name: '', email: '', password: '', role: 'agent' });
+      setUserForm({ name: '', email: '', password: '', role: 'agent', channelIds: [] });
       loadUsers();
     } catch (err) {
       addToast('Error de red al crear usuario: ' + err.message, 'error');
@@ -267,6 +273,45 @@ export function SettingsPage() {
       setUserSubmitting(false);
     }
   };
+
+  // Handler: abrir el editor de canales de un operador
+  const openChannelsModal = (u) => {
+    setChannelsModalUser(u);
+    setChannelsDraft(Array.isArray(u.channel_ids) ? u.channel_ids.map(Number) : []);
+  };
+
+  // Handler: guardar los canales asignados a un operador
+  const handleSaveUserChannels = async () => {
+    if (!channelsModalUser) return;
+    setChannelsSaving(true);
+
+    try {
+      const res = await apiFetch(`/api/settings/users/${channelsModalUser.id}/channels`, {
+        method: 'PUT',
+        body: JSON.stringify({ channelIds: channelsDraft })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.error || 'No se pudieron guardar los canales', 'error');
+        return;
+      }
+
+      addToast(data.message || 'Canales actualizados', 'success');
+      setChannelsModalUser(null);
+      loadUsers();
+    } catch (err) {
+      addToast('Error de red al guardar canales: ' + err.message, 'error');
+    } finally {
+      setChannelsSaving(false);
+    }
+  };
+
+  // Alterna un canal dentro de una lista de IDs
+  const toggleChannelId = (lista, channelId) => (
+    lista.includes(channelId) ? lista.filter(id => id !== channelId) : [...lista, channelId]
+  );
 
   // Variable Pill Click
   const insertVariable = (variable) => {
@@ -280,7 +325,7 @@ export function SettingsPage() {
   const formatBotPreview = (text) => {
     return (text || 'Escribe un mensaje...')
       .replace(/\{\{cliente\}\}/g, 'María')
-      .replace(/\{\{canal\}\}/g, 'WhatsApp Tarot');
+      .replace(/\{\{canal\}\}/g, 'WhatsApp Lecturas');
   };
 
   // Escanear Fan Pages de Facebook
@@ -424,7 +469,7 @@ export function SettingsPage() {
         <h2>Panel de Control y Configuración</h2>
         <p>
           Administración centralizada de cuentas de Meta v25.0, reglas del bot de bienvenida,
-          tarotistas operadores y auditoría de eventos en tiempo real.
+          operadores de atención y auditoría de eventos en tiempo real.
         </p>
       </div>
 
@@ -442,14 +487,14 @@ export function SettingsPage() {
           className={`tab-btn ${activeTab === 'bot' ? 'active' : ''}`}
           onClick={() => setActiveTab('bot')}
         >
-          <span>🤖 Chatbot Místico</span>
+          <span>🤖 Chatbot Automático</span>
         </button>
 
         <button
           className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          <span>👥 Tarotistas y Operadores</span>
+          <span>👥 Operadores y Equipo</span>
           <span className="tab-counter">{users.length}</span>
         </button>
 
@@ -531,7 +576,7 @@ export function SettingsPage() {
 
                     <div className="channel-footer">
                       <div className="channel-color-tag">
-                        <span className="color-dot" style={{ background: ch.color_tag || '#D4AF37' }}></span>
+                        <span className="color-dot" style={{ background: ch.color_tag || '#00a884' }}></span>
                         <span>Etiqueta</span>
                       </div>
                       <div className="channel-card-actions">
@@ -634,7 +679,7 @@ export function SettingsPage() {
                 <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
                   <div style={{ background: '#18223c', borderLeft: '3px solid var(--gold-primary)', borderRadius: '8px', padding: '12px 16px', maxWidth: '450px' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                      🤖 BOT DE LECTURAS DE TAROT
+                      🤖 BOT DE LECTURAS DE TARDE
                     </span>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-pure)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
                       {formatBotPreview(botSettings.welcome_message)}
@@ -662,7 +707,7 @@ export function SettingsPage() {
         <section className="tab-panel active">
           <div className="panel-action-bar">
             <div className="panel-title">
-              <h3>Tarotistas y Operadores del Sistema</h3>
+              <h3>Operadores y Equipo del Sistema</h3>
               <p>Gestión de cuentas con acceso a la bandeja de mensajes y control de roles RBAC.</p>
             </div>
             <button
@@ -670,7 +715,7 @@ export function SettingsPage() {
               onClick={() => setShowUserModal(true)}
             >
               <span>+</span>
-              <span>Dar de Alta Tarotista</span>
+              <span>Dar de Alta Operador</span>
             </button>
           </div>
 
@@ -682,6 +727,7 @@ export function SettingsPage() {
                   <th>Nombre</th>
                   <th>Correo Electrónico</th>
                   <th>Rol de Acceso</th>
+                  <th>Canales que ve</th>
                   <th>Estado</th>
                   <th>Fecha Registro</th>
                 </tr>
@@ -694,8 +740,37 @@ export function SettingsPage() {
                     <td>{u.email}</td>
                     <td>
                       <span className={`role-badge ${u.role}`}>
-                        {u.role === 'admin' ? 'Administrador' : 'Tarotista'}
+                        {u.role === 'admin' ? 'Administrador' : 'Operador'}
                       </span>
+                    </td>
+                    <td>
+                      {u.role === 'admin' ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Todos</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          {(u.channel_ids || []).length === 0 ? (
+                            <span
+                              style={{ color: 'var(--warn)', fontSize: '0.85rem', fontWeight: 600 }}
+                              title="Sin canales asignados este operador entra y no ve ninguna conversación"
+                            >
+                              Ninguno &mdash; bandeja vacía
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.85rem' }}>
+                              {(u.channel_ids || [])
+                                .map(id => channels.find(c => c.id === id)?.name || `#${id}`)
+                                .join(', ')}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="btn-card-action"
+                            onClick={() => openChannelsModal(u)}
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td><span className="status-dot active">Activo</span></td>
                     <td style={{ color: 'var(--text-muted)' }}>
@@ -833,10 +908,10 @@ export function SettingsPage() {
                   className="input-custom"
                   placeholder={
                     channelForm.platform === 'whatsapp'
-                      ? 'Ej: WhatsApp Tarot Consultas'
+                      ? 'Ej: WhatsApp Ventas'
                       : channelForm.platform === 'facebook'
-                      ? 'Ej: Fan Page Lecturas de Tarot'
-                      : 'Ej: Instagram @tarot_online'
+                      ? 'Ej: Fan Page del negocio'
+                      : 'Ej: Instagram @tucuenta'
                   }
                   required
                   value={channelForm.name}
@@ -950,16 +1025,16 @@ export function SettingsPage() {
         <div className="modal-overlay active" onClick={() => setShowUserModal(false)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Dar de Alta Tarotista / Operador</h3>
+              <h3>Dar de Alta Operador / Asesor</h3>
               <button className="btn-close-modal" onClick={() => setShowUserModal(false)}>&times;</button>
             </div>
             <form onSubmit={handleCreateUser}>
               <div className="form-group-custom">
-                <label>Nombre del Tarotista:</label>
+                <label>Nombre del Operador:</label>
                 <input
                   type="text"
                   className="input-custom"
-                  placeholder="Ej: Luna Tarotista"
+                  placeholder="Ej: Laura Gómez"
                   required
                   value={userForm.name}
                   onChange={(e) => setUserForm(prev => ({ ...prev, name: e.target.value }))}
@@ -971,7 +1046,7 @@ export function SettingsPage() {
                 <input
                   type="email"
                   className="input-custom"
-                  placeholder="tarotista@lecturasdetarte.online"
+                  placeholder="operador@lecturasdetarde.online"
                   required
                   value={userForm.email}
                   onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
@@ -983,9 +1058,9 @@ export function SettingsPage() {
                 <input
                   type="password"
                   className="input-custom"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 12 caracteres"
                   required
-                  minLength="6"
+                  minLength="12"
                   value={userForm.password}
                   onChange={(e) => setUserForm(prev => ({ ...prev, password: e.target.value }))}
                 />
@@ -998,10 +1073,50 @@ export function SettingsPage() {
                   value={userForm.role}
                   onChange={(e) => setUserForm(prev => ({ ...prev, role: e.target.value }))}
                 >
-                  <option value="agent">Tarotista / Operador (Solo Inbox)</option>
+                  <option value="agent">Operador / Asesor (Solo Inbox)</option>
                   <option value="admin">Administrador Total (Settings + Inbox)</option>
                 </select>
               </div>
+
+              {userForm.role === 'agent' && (
+                <div className="form-group-custom">
+                  <label>Canales que podrá ver:</label>
+                  {channels.length === 0 ? (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Todavía no hay canales conectados. Podés crear el operador ahora y asignarle
+                      canales más tarde desde la tabla.
+                    </p>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {channels.map(c => (
+                          <label
+                            key={c.id}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 400, cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={userForm.channelIds.includes(c.id)}
+                              onChange={() => setUserForm(prev => ({
+                                ...prev,
+                                channelIds: toggleChannelId(prev.channelIds, c.id)
+                              }))}
+                            />
+                            <span className="color-dot" style={{ background: c.color_tag || '#00a884' }}></span>
+                            <span>{c.name}</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({c.platform})</span>
+                          </label>
+                        ))}
+                      </div>
+                      {userForm.channelIds.length === 0 && (
+                        <p style={{ fontSize: '0.82rem', color: 'var(--warn)', margin: '10px 0 0' }}>
+                          Sin canales marcados, esta persona va a entrar y no va a ver ninguna conversación.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               <div className="modal-footer">
                 <button
@@ -1020,6 +1135,65 @@ export function SettingsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CANALES DE UN OPERADOR (A-03) */}
+      {channelsModalUser && (
+        <div className="modal-overlay active" onClick={() => setChannelsModalUser(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Canales de {channelsModalUser.name}</h3>
+              <button className="btn-close-modal" onClick={() => setChannelsModalUser(null)}>&times;</button>
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
+              Este operador solo verá las conversaciones de los canales que marques. Si no marcás
+              ninguno, entra a la bandeja y no ve nada.
+            </p>
+
+            {channels.length === 0 ? (
+              <p style={{ fontSize: '0.9rem', color: 'var(--warn)' }}>
+                No hay canales conectados todavía. Conectá uno en la pestaña de Canales.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {channels.map(c => (
+                  <label
+                    key={c.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={channelsDraft.includes(c.id)}
+                      onChange={() => setChannelsDraft(prev => toggleChannelId(prev, c.id))}
+                    />
+                    <span className="color-dot" style={{ background: c.color_tag || '#00a884' }}></span>
+                    <span style={{ fontWeight: 500 }}>{c.name}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({c.platform})</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setChannelsModalUser(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary-gold"
+                onClick={handleSaveUserChannels}
+                disabled={channelsSaving}
+              >
+                {channelsSaving ? 'Guardando...' : 'Guardar canales'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1132,7 +1306,7 @@ export function SettingsPage() {
               </div>
 
               {/* Instrucción de permisos */}
-              <div style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid var(--border-gold)', borderRadius: '8px', padding: '12px 16px' }}>
+              <div style={{ background: 'rgba(0, 168, 132, 0.08)', border: '1px solid var(--border-gold)', borderRadius: '8px', padding: '12px 16px' }}>
                 <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--gold-light)', marginBottom: '4px' }}>
                   🔑 Permisos necesarios en Meta para escanear páginas:
                 </div>

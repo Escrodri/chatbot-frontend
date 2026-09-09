@@ -14,6 +14,7 @@ export function InboxPage() {
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendBanner, setSendBanner] = useState(null);
 
   // Cargar lista de conversaciones
   const loadConversations = useCallback(async () => {
@@ -68,6 +69,7 @@ export function InboxPage() {
 
   // Al cambiar conversación seleccionada
   useEffect(() => {
+    setSendBanner(null);
     if (selectedId) {
       loadMessages(selectedId);
       const msgInterval = setInterval(() => loadMessages(selectedId), 3000);
@@ -88,25 +90,34 @@ export function InboxPage() {
         body: JSON.stringify({ text })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(prev => [...prev, data.message]);
+      const data = await res.json().catch(() => ({}));
 
-        // Actualizar último mensaje y pasar a Handover en la lista lateral
-        setConversations(prev => prev.map(c => {
-          if (c.id === selectedId) {
-            return {
-              ...c,
-              last_message_text: text,
-              last_message_time: new Date().toISOString(),
-              bot_status: 'handed_over'
-            };
-          }
-          return c;
-        }));
+      if (!res.ok) {
+        // El servidor rechazó la petición: la sesión venció, no hay permiso, etc.
+        setSendBanner(data.error || 'No se pudo enviar el mensaje. Revisá tu conexión.');
+        return;
       }
+
+      setMessages(prev => [...prev, data.message]);
+
+      // El backend avisa si Meta aceptó el mensaje o no (A-02).
+      setSendBanner(data.delivered ? null : (data.error?.message || 'El mensaje no pudo entregarse.'));
+
+      // Actualizar último mensaje y pasar a Handover en la lista lateral
+      setConversations(prev => prev.map(c => {
+        if (c.id === selectedId) {
+          return {
+            ...c,
+            last_message_text: text,
+            last_message_time: new Date().toISOString(),
+            bot_status: 'handed_over'
+          };
+        }
+        return c;
+      }));
     } catch (err) {
       console.error('Error al enviar mensaje:', err);
+      setSendBanner('No se pudo contactar al servidor. El mensaje no salió.');
     } finally {
       setSending(false);
     }
@@ -154,6 +165,8 @@ export function InboxPage() {
           onSendMessage={handleSendMessage}
           onToggleBot={handleToggleBot}
           sending={sending}
+          sendBanner={sendBanner}
+          onDismissBanner={() => setSendBanner(null)}
         />
       ) : (
         <EmptyState />

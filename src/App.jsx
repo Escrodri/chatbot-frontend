@@ -28,7 +28,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/login.html" element={<Navigate to="/login" replace />} />
 
-          {/* Rutas Privadas para Tarotistas y Operadores */}
+          {/* Rutas Privadas para Operadores y Equipo */}
           <Route
             path="/inbox"
             element={

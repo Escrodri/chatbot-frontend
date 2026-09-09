@@ -1,14 +1,14 @@
-# Omnichannel Tarot CRM - Frontend Web Application
+# Lecturas de Tarde - Frontend Web Application
 
-Aplicación web SPA (Single Page Application) desarrollada con **React** y **Vite**, diseñada con una estética mística y celestial de alta gama (*Dark Celestial Luxury*) para la gestión omnicanal de consultas de tarot a través de WhatsApp, Facebook Messenger e Instagram.
+Aplicación web SPA (Single Page Application) desarrollada con **React** y **Vite**, diseñada con estética editorial cálida (*Warm Editorial Dark*) para la gestión omnicanal de consultas y atención a lectores a través de WhatsApp, Facebook Messenger e Instagram.
 
 ---
 
-## 🔮 Características Principales
+## 📖 Características Principales
 
-* **Landing Page Mística (`/`):**
-  * Presentación premium de servicios de lectura de tarot y consultas personalizadas.
-  * Acceso directo al portal de operadores y tarotistas.
+* **Landing Page Editorial (`/`):**
+  * Presentación premium de contenidos, lecturas recomendadas y atención personalizada.
+  * Acceso directo al portal de operadores.
 * **Bandeja de Entrada Omnicanal (`/inbox`):**
   * Vista de chats en tiempo real con filtrado por canal (WhatsApp, Instagram, Facebook).
   * Renderizado multimedia enriquecido: stickers transparentes, galería de imágenes con ampliación, reproductor integrado para notas de voz y documentos.
@@ -66,4 +66,4 @@ Los archivos estáticos optimizados se generarán en la carpeta `dist/`.
 ---
 
 ## 🔒 Licencia y Autoría
-Desarrollado para el sistema omnicanal de Lecturas de Tarot. Todos los derechos reservados.
+Desarrollado para el sistema omnicanal de **Lecturas de Tarde** (lecturasdetarde.online). Todos los derechos reservados.

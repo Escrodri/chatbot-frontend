@@ -1,33 +1,38 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from './ThemeToggle';
+import { BrandMark } from './BrandMark';
+
+export const BRAND_NAME = 'Bandeja Unificada';
+export const BRAND_DOMAIN = 'lecturasdetarde.online';
 
 export function PublicHeader() {
   return (
     <header className="site-header">
       <div className="container header-inner">
-        <Link to="/" className="logo-brand" style={{ textDecoration: 'none' }}>
-          <div className="logo-icon">🔮</div>
+        <Link to="/" className="logo-brand">
+          <div className="logo-icon"><BrandMark size={21} /></div>
           <div className="logo-text">
-            <span className="logo-title">Lecturas de Tarot</span>
-            <span className="logo-sub">lecturasdetarte.online</span>
+            <span className="logo-title">{BRAND_NAME}</span>
+            <span className="logo-sub">{BRAND_DOMAIN}</span>
           </div>
         </Link>
 
         <nav>
           <ul className="site-nav">
             <li className="nav-item"><Link to="/">Inicio</Link></li>
-            <li className="nav-item"><a href="/#servicios">Tiradas & Consultas</a></li>
-            <li className="nav-item"><a href="/#canales">Canales de Atención</a></li>
+            <li className="nav-item"><a href="/#servicios">Cómo funciona</a></li>
+            <li className="nav-item"><a href="/#canales">Canales</a></li>
             <li className="nav-item"><Link to="/politica-de-privacidad">Privacidad</Link></li>
             <li className="nav-item"><Link to="/terminos-de-servicio">Términos</Link></li>
-            <li className="nav-item"><Link to="/eliminacion-de-datos">Eliminación de Datos</Link></li>
+            <li className="nav-item"><Link to="/eliminacion-de-datos">Eliminar datos</Link></li>
           </ul>
         </nav>
 
         <div className="header-actions">
-          <Link to="/login" className="btn btn-outline-gold" id="btn-login-header">
-            <span>Portal Tarotistas</span>
-            <span>🗝️</span>
+          <ThemeToggle />
+          <Link to="/login" className="btn btn-gold" id="btn-login-header">
+            <span>Entrar</span>
           </Link>
         </div>
       </div>
@@ -42,12 +47,15 @@ export function PublicFooter() {
         <div className="footer-top">
           <div className="footer-brand-info">
             <div className="logo-brand">
-              <div className="logo-icon" style={{ width: '32px', height: '32px', fontSize: '16px' }}>🔮</div>
-              <div className="logo-title" style={{ fontSize: '17px' }}>Lecturas de Tarot Online</div>
+              <div className="logo-icon" style={{ width: '32px', height: '32px' }}>
+                <BrandMark size={17} />
+              </div>
+              <div className="logo-title" style={{ fontSize: '16px' }}>{BRAND_NAME}</div>
             </div>
             <p>
-              Servicio profesional de orientación espiritual y lecturas de cartas del tarot
-              a través de plataformas oficiales de mensajería de Meta (WhatsApp, Messenger, Instagram).
+              Atención al cliente en un solo lugar. Recibimos y respondemos los mensajes de
+              WhatsApp, Facebook Messenger e Instagram Direct desde una bandeja compartida,
+              usando exclusivamente las APIs oficiales de Meta.
             </p>
           </div>
 
@@ -56,9 +64,9 @@ export function PublicFooter() {
               <h5>Navegación</h5>
               <ul>
                 <li><Link to="/">Inicio</Link></li>
-                <li><a href="/#servicios">Tiradas Disponibles</a></li>
-                <li><a href="/#canales">Canales de Contacto</a></li>
-                <li><Link to="/login">Acceso para Tarotistas</Link></li>
+                <li><a href="/#servicios">Cómo funciona</a></li>
+                <li><a href="/#canales">Canales de contacto</a></li>
+                <li><Link to="/login">Acceso del equipo</Link></li>
               </ul>
             </div>
 
@@ -74,10 +82,10 @@ export function PublicFooter() {
         </div>
 
         <div className="footer-bottom">
-          <div>© 2026 lecturasdetarte.online. Todos los derechos reservados.</div>
+          <div>© 2026 {BRAND_DOMAIN}. Todos los derechos reservados.</div>
           <div className="backend-indicator" id="footer-status-indicator">
             <span className="pulse"></span>
-            <span>Servidores en línea • Atención activa</span>
+            <span>Atención activa</span>
           </div>
         </div>
       </div>
