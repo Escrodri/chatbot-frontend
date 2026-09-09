@@ -48,7 +48,8 @@ export function ChatArea({
   onToggleBot,
   sending,
   sendBanner = null,
-  onDismissBanner = () => {}
+  onDismissBanner = () => {},
+  onRetryMessage = null
 }) {
   const [inputText, setInputText] = useState('');
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -337,7 +338,9 @@ export function ChatArea({
                         <button
                           type="button"
                           className="btn-retry-send"
-                          onClick={() => onSendMessage(msg.text)}
+                          onClick={() => (
+                            onRetryMessage ? onRetryMessage(msg.id) : onSendMessage(msg.text)
+                          )}
                           disabled={sending}
                         >
                           Reintentar

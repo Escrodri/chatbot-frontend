@@ -79,6 +79,40 @@ export function InboxPage() {
 
   const selectedConversation = conversations.find(c => c.id === selectedId) || null;
 
+  // Reintentar un mensaje que Meta rechazó.
+  // Se le pide al backend que vuelva a despachar el mensaje guardado, con su
+  // adjunto: mandar de nuevo solo el texto perdía el archivo.
+  const handleRetryMessage = async (messageId) => {
+    if (!selectedId || !messageId || sending) return;
+
+    setSending(true);
+    setSendBanner(null);
+
+    try {
+      const res = await apiFetch(`/api/conversations/${selectedId}/messages/${messageId}/retry`, {
+        method: 'POST'
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setSendBanner(data.error || 'No se pudo reintentar el envío.');
+        return;
+      }
+
+      if (data.delivered) {
+        setMessages(prev => prev.map(m => (
+          m.id === messageId ? { ...m, status: 'sent', error_details: null } : m
+        )));
+      } else {
+        setSendBanner(data.error?.message || 'Meta volvió a rechazar el mensaje.');
+      }
+    } catch (err) {
+      setSendBanner('No se pudo reintentar el envío. Revisá tu conexión.');
+    } finally {
+      setSending(false);
+    }
+  };
+
   // Enviar mensaje como operador
   const handleSendMessage = async (payload) => {
     if (!selectedId || sending) return;
@@ -173,6 +207,7 @@ export function InboxPage() {
           sending={sending}
           sendBanner={sendBanner}
           onDismissBanner={() => setSendBanner(null)}
+          onRetryMessage={handleRetryMessage}
         />
       ) : (
         <EmptyState />
