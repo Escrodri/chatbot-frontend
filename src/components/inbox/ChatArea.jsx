@@ -48,6 +48,7 @@ function PaperclipIcon() {
 export function ChatArea({
   conversation,
   messages,
+  loadingMessages = false,
   onSendMessage,
   onToggleBot,
   sending,
@@ -63,9 +64,20 @@ export function ChatArea({
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
+
+  // Rastrear el id de la conversación activa para reiniciar los flags inmediatamente
+  const convId = conversation?.id;
+  const activeConvIdRef = useRef(convId);
   const initialScrollDoneRef = useRef(false);
   const prevMessagesCountRef = useRef(0);
   const prevLastMsgIdRef = useRef(null);
+
+  if (activeConvIdRef.current !== convId) {
+    activeConvIdRef.current = convId;
+    initialScrollDoneRef.current = false;
+    prevMessagesCountRef.current = 0;
+    prevLastMsgIdRef.current = null;
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -120,17 +132,24 @@ export function ChatArea({
     setShowScrollBottomBtn(false);
   };
 
+  // Mantener el scroll anclado abajo cuando imágenes/multimedia terminan de renderizar
+  const handleMediaLoad = () => {
+    if (isNearBottomRef.current && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
   // Posicionamiento de scroll:
   // useLayoutEffect se ejecuta de forma síncrona ANTES de que el navegador dibuje en pantalla.
   // Así el chat aparece directamente abajo sin ningún parpadeo ni animación de bajada.
   useLayoutEffect(() => {
     if (!conversation) return;
 
-    // 1. Carga inicial del chat:
-    // Si aún no se hizo el scroll inicial de este chat y ya tenemos mensajes:
+    // 1. Carga inicial del chat o llegada por primera vez de mensajes:
     if (!initialScrollDoneRef.current) {
       if (messages.length > 0) {
         if (chatContainerRef.current) {
+          // Posicionamiento instantáneo al fondo sin animación
           chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
         initialScrollDoneRef.current = true;
@@ -139,7 +158,7 @@ export function ChatArea({
         isNearBottomRef.current = true;
         setShowScrollBottomBtn(false);
 
-        // Doble fijación en el siguiente frame por si imágenes o fuentes se dibujan con delay
+        // Doble fijación en el siguiente ciclo por si el DOM calculó fuentes/estilos
         requestAnimationFrame(() => {
           if (chatContainerRef.current && isNearBottomRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -149,7 +168,7 @@ export function ChatArea({
       return;
     }
 
-    // 2. Si ya cargó inicialmente, detectar si realmente entraron mensajes nuevos
+    // 2. Si ya cargó inicialmente este chat, detectar si realmente entraron mensajes nuevos
     const currentLastMsgId = messages[messages.length - 1]?.id || null;
     const hasNewMessage = currentLastMsgId && currentLastMsgId !== prevLastMsgIdRef.current;
     const countIncreased = messages.length > prevMessagesCountRef.current;
@@ -246,7 +265,12 @@ export function ChatArea({
 
       {/* Hilo de mensajes */}
       <div className="chat-messages-thread" ref={chatContainerRef} onScroll={handleScroll}>
-        {messages.length === 0 ? (
+        {loadingMessages ? (
+          <div className="thread-loading-state">
+            <div className="thread-spinner" />
+            <span>Cargando conversación...</span>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="thread-empty-note">
             No hay mensajes en esta conversación todavía.
           </div>
@@ -289,6 +313,7 @@ export function ChatArea({
                           alt="Sticker"
                           className="msg-sticker-img"
                           loading="lazy"
+                          onLoad={handleMediaLoad}
                           onError={(e) => {
                             if (msg.media_url && !e.currentTarget.dataset.fallbackTried) {
                               e.currentTarget.dataset.fallbackTried = 'true';
@@ -310,6 +335,7 @@ export function ChatArea({
                           alt="Imagen enviada"
                           className="msg-media-img"
                           loading="lazy"
+                          onLoad={handleMediaLoad}
                           onError={(e) => {
                             if (msg.media_url && !e.currentTarget.dataset.fallbackTried) {
                               e.currentTarget.dataset.fallbackTried = 'true';

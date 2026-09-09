@@ -426,6 +426,7 @@
 .chat-messages-thread {
   flex: 1;
   overflow-y: auto;
+  scroll-behavior: auto !important;
   padding: 20px 6% 24px;
   display: flex;
   flex-direction: column;
@@ -437,6 +438,33 @@
 
 [data-theme='dark'] .chat-messages-thread {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23e9edef' stroke-opacity='0.045' stroke-width='1.5' stroke-linejoin='round'%3E%3Ccircle cx='22' cy='24' r='8'/%3E%3Cpath d='M58 16h18v13h-9l-5 6v-6h-4z'/%3E%3Cpath d='M112 18l6 6-6 6-6-6z'/%3E%3Cpath d='M16 74h16v11h-7l-4 6v-6h-5z'/%3E%3Ccircle cx='72' cy='78' r='7'/%3E%3Cpath d='M110 68l7 12h-14z'/%3E%3Cpath d='M38 116l6 6-6 6-6-6z'/%3E%3Cpath d='M86 112h18v12h-10l-5 6v-6h-3z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.thread-loading-state {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-soft);
+  font-size: 13.5px;
+  background: var(--bg-panel);
+  padding: 14px 22px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-bubble);
+}
+
+.thread-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(0, 168, 132, 0.2);
+  border-top-color: var(--wa-teal-dark);
+  border-radius: 50%;
+  animation: thread-spin 0.8s linear infinite;
+}
+
+@keyframes thread-spin {
+  to { transform: rotate(360deg); }
 }
 
 .thread-empty-note {

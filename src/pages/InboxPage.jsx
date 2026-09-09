@@ -11,6 +11,7 @@ export function InboxPage() {
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sending, setSending] = useState(false);
@@ -30,8 +31,9 @@ export function InboxPage() {
   }, [apiFetch]);
 
   // Cargar mensajes de la conversación seleccionada
-  const loadMessages = useCallback(async (convId) => {
+  const loadMessages = useCallback(async (convId, isInitial = false) => {
     if (!convId) return;
+    if (isInitial) setLoadingMessages(true);
     try {
       const res = await apiFetch(`/api/conversations/${convId}/messages`);
       if (res.ok) {
@@ -57,8 +59,19 @@ export function InboxPage() {
       }
     } catch (err) {
       console.error('Error al cargar mensajes:', err);
+    } finally {
+      if (isInitial) setLoadingMessages(false);
     }
   }, [apiFetch]);
+
+  // Selección inmediata de chat: limpia el chat previo sincrónicamente en el mismo batch
+  const handleSelectChat = useCallback((id) => {
+    if (id === selectedId) return;
+    setSendBanner(null);
+    setMessages([]);
+    setLoadingMessages(true);
+    setSelectedId(id);
+  }, [selectedId]);
 
   // Polling suave para sincronización en tiempo real
   useEffect(() => {
@@ -71,12 +84,12 @@ export function InboxPage() {
   useEffect(() => {
     setSendBanner(null);
     if (selectedId) {
-      setMessages([]); // Limpiar mensajes del chat previo para evitar parpadeos
-      loadMessages(selectedId);
-      const msgInterval = setInterval(() => loadMessages(selectedId), 3000);
+      loadMessages(selectedId, true);
+      const msgInterval = setInterval(() => loadMessages(selectedId, false), 3000);
       return () => clearInterval(msgInterval);
     } else {
       setMessages([]);
+      setLoadingMessages(false);
     }
   }, [selectedId, loadMessages]);
 
@@ -203,7 +216,7 @@ export function InboxPage() {
       <ChatList
         conversations={conversations}
         selectedId={selectedId}
-        onSelectChat={setSelectedId}
+        onSelectChat={handleSelectChat}
         selectedPlatform={selectedPlatform}
         onSelectPlatform={setSelectedPlatform}
         searchQuery={searchQuery}
@@ -216,6 +229,7 @@ export function InboxPage() {
           key={selectedConversation.id}
           conversation={selectedConversation}
           messages={messages}
+          loadingMessages={loadingMessages}
           onSendMessage={handleSendMessage}
           onToggleBot={handleToggleBot}
           sending={sending}
