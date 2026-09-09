@@ -1129,3 +1129,5 @@
   line-height: 1.5;
   color: var(--warn);
 }
+
+.sale-form-hint-neutral { color: var(--text-soft); }

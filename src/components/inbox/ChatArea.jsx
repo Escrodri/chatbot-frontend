@@ -64,19 +64,6 @@ function PaperclipIcon() {
   );
 }
 
-function getErrorMessage(errorDetails) {
-  if (!errorDetails) return 'Meta rechazó el mensaje.';
-  if (typeof errorDetails === 'string') {
-    try {
-      const parsed = JSON.parse(errorDetails);
-      return parsed.message || parsed.error || errorDetails;
-    } catch {
-      return errorDetails;
-    }
-  }
-  return errorDetails.message || errorDetails.error || 'Meta rechazó el mensaje.';
-}
-
 export function ChatArea({
   conversation,
   messages,
@@ -101,6 +88,7 @@ export function ChatArea({
   const [saleAmount, setSaleAmount] = useState('');
   const [saleCurrency, setSaleCurrency] = useState('PYG');
   const [saleNote, setSaleNote] = useState('');
+  const [saleProduct, setSaleProduct] = useState('');
   const [savingSale, setSavingSale] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -373,6 +361,7 @@ export function ChatArea({
     setShowSaleForm(false);
     setSaleAmount('');
     setSaleNote('');
+    setSaleProduct('');
   };
 
   const handleSaleSubmit = async (e) => {
@@ -384,6 +373,7 @@ export function ChatArea({
       const registrada = await onRegisterSale(conversation.id, {
         value: saleAmount.trim() === '' ? null : saleAmount.trim(),
         currency: saleCurrency,
+        product: saleProduct.trim() || null,
         note: saleNote.trim() || null
       });
       if (registrada) cerrarFormularioVenta();
@@ -509,6 +499,17 @@ export function ChatArea({
               </select>
             </label>
 
+            <label>
+              <span>Producto</span>
+              <input
+                type="text"
+                placeholder="Ej: Cactus"
+                value={saleProduct}
+                onChange={(e) => setSaleProduct(e.target.value)}
+                maxLength={200}
+              />
+            </label>
+
             <label className="sale-form-note">
               <span>Detalle (opcional)</span>
               <input
@@ -529,6 +530,11 @@ export function ChatArea({
               {savingSale ? 'Registrando…' : 'Registrar venta'}
             </button>
           </div>
+
+          <p className="sale-form-hint sale-form-hint-neutral">
+            Escribí el producto siempre igual: con ese nombre se arman en Meta las
+            conversiones por producto, y si varía la escritura quedan separadas.
+          </p>
 
           {conversation.platform === 'whatsapp' && !conversation.ctwa_clid && (
             <p className="sale-form-hint">
@@ -684,7 +690,7 @@ export function ChatArea({
                       </svg>
                       <div>
                         <strong>No se envió.</strong>{' '}
-                        {getErrorMessage(msg.error_details)}
+                        {msg.error_details?.message || 'Meta rechazó el mensaje.'}
                         <button
                           type="button"
                           className="btn-retry-send"

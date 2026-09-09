@@ -53,7 +53,9 @@ export function SettingsPage() {
     channelIdentifier: '',
     accessToken: '',
     colorTag: '#00a884',
-    status: 'active'
+    status: 'active',
+    datasetId: '',
+    conversionsToken: ''
   });
   const [editChannelSubmitting, setEditChannelSubmitting] = useState(false);
   const [testingChannelId, setTestingChannelId] = useState(null);
@@ -197,7 +199,9 @@ export function SettingsPage() {
       channelIdentifier: channel.channel_identifier || '',
       accessToken: '',
       colorTag: channel.color_tag || '#00a884',
-      status: channel.status || 'active'
+      status: channel.status || 'active',
+      datasetId: channel.dataset_id || '',
+      conversionsToken: ''
     });
   };
 
@@ -216,6 +220,15 @@ export function SettingsPage() {
       };
       if (editChannelForm.accessToken && editChannelForm.accessToken.trim()) {
         payload.accessToken = editChannelForm.accessToken.trim();
+      }
+
+      // El conjunto de datos se manda siempre: vaciarlo es una forma legítima
+      // de dejar de informar ventas de este canal.
+      payload.datasetId = editChannelForm.datasetId.trim();
+
+      // El token solo si escribieron uno nuevo, para no borrar el guardado.
+      if (editChannelForm.conversionsToken && editChannelForm.conversionsToken.trim()) {
+        payload.conversionsToken = editChannelForm.conversionsToken.trim();
       }
 
       const res = await apiFetch(`/api/settings/channels/${editingChannel.id}`, {
@@ -1268,6 +1281,41 @@ export function SettingsPage() {
                 />
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
                   Si el token venció o cambió en Meta Developers, pégalo aquí para re-cifrarlo con AES-256-GCM.
+                </span>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Conjunto de datos para informar ventas (Opcional):</label>
+                <input
+                  type="text"
+                  className="input-custom"
+                  placeholder="Identificador del conjunto de datos del Administrador de eventos"
+                  autoComplete="off"
+                  value={editChannelForm.datasetId}
+                  onChange={(e) => setEditChannelForm(prev => ({ ...prev, datasetId: e.target.value }))}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                  Adonde se informan las ventas que marques en este canal. En WhatsApp es el conjunto
+                  de datos que Meta tiene atado a tu cuenta de WhatsApp Business, no un píxel cualquiera.
+                  Si lo dejás vacío, se usa la configuración general del servidor.
+                </span>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Token de la API de Conversiones (Opcional):</label>
+                <input
+                  type="password"
+                  className="input-custom"
+                  placeholder={editingChannel.tiene_token_conversiones
+                    ? 'Ya hay uno guardado. Escribí uno nuevo solo si querés reemplazarlo'
+                    : 'Token del usuario del sistema con permiso para registrar eventos'}
+                  autoComplete="off"
+                  value={editChannelForm.conversionsToken}
+                  onChange={(e) => setEditChannelForm(prev => ({ ...prev, conversionsToken: e.target.value }))}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                  Hace falta uno propio solo si este canal vive en un Business Manager distinto
+                  del resto. Se guarda cifrado, igual que el token de acceso.
                 </span>
               </div>
 

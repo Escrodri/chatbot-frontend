@@ -131,7 +131,7 @@ export function InboxPage() {
 
   // Registrar una venta hecha en la conversación e informársela a Meta.
   // Devuelve true si quedó guardada, para que el formulario se cierre solo.
-  const handleRegisterSale = async (conversationId, { value, currency, note }) => {
+  const handleRegisterSale = async (conversationId, { value, currency, note, product }) => {
     if (!conversationId) return false;
 
     setSendBanner(null);
@@ -139,7 +139,7 @@ export function InboxPage() {
     try {
       const res = await apiFetch(`/api/conversations/${conversationId}/sale`, {
         method: 'POST',
-        body: JSON.stringify({ value, currency, note })
+        body: JSON.stringify({ value, currency, note, product })
       });
       const data = await res.json().catch(() => ({}));
 
