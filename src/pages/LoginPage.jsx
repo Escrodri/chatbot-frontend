@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BrandMark } from '../components/BrandMark';
+import { apiUrl } from '../lib/api';
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -23,10 +24,30 @@ export function LoginPage() {
   }, [user, navigate]);
 
   useEffect(() => {
-    // Comprobar estado de conexión con backend vía proxy
-    fetch('/health')
-      .then(r => r.ok ? setServerHealth('healthy') : setServerHealth('offline'))
-      .catch(() => setServerHealth('offline'));
+    // Comprobar el estado real del backend.
+    //
+    // No alcanza con mirar res.ok: si el frontend está en un hosting estático
+    // que devuelve index.html para cualquier ruta desconocida, /health responde
+    // 200 con HTML y el indicador se pondría en verde sin que exista backend.
+    // Por eso exigimos JSON con status 'healthy'.
+    let cancelado = false;
+
+    fetch(apiUrl('/health'), { headers: { Accept: 'application/json' } })
+      .then(async (res) => {
+        if (!res.ok) return 'offline';
+
+        const tipo = res.headers.get('content-type') || '';
+        if (!tipo.includes('application/json')) return 'offline';
+
+        const datos = await res.json().catch(() => null);
+        return datos?.status === 'healthy' ? 'healthy' : 'offline';
+      })
+      .catch(() => 'offline')
+      .then((estado) => {
+        if (!cancelado) setServerHealth(estado);
+      });
+
+    return () => { cancelado = true; };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -80,7 +101,7 @@ export function LoginPage() {
               <span style={{ color: 'var(--ok)' }}>● Conectado con el servidor</span>
             )}
             {serverHealth === 'offline' && (
-              <span style={{ color: 'var(--warn)' }}>● Servidor en espera de conexión</span>
+              <span style={{ color: 'var(--warn)' }}>● Sin conexión con el servidor</span>
             )}
           </div>
         </div>

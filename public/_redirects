@@ -1,0 +1,7 @@
+# Enrutado del SPA: cualquier ruta que no sea un archivo real devuelve index.html,
+# para que /login, /inbox y las páginas legales funcionen al entrar directo o al
+# recargar. El 200 es una reescritura, no un redirect: la URL no cambia.
+#
+# Este mismo formato lo entienden Render Static Sites, Cloudflare Pages y Netlify,
+# así que sirve sin cambios en cualquiera de los tres.
+/*    /index.html   200
