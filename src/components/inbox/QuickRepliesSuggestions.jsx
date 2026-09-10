@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { quickRepliesService } from '../../services/quickReplies.service';
 
+/**
+ * QuickRepliesSuggestions Component
+ * Muestra sugerencias contextuales al escribir '/' o texto en el campo de mensajes.
+ * Permite buscar atajos por su nombre o por su contenido.
+ */
 export function QuickRepliesSuggestions({
   platform,
   inputValue,
@@ -10,24 +15,24 @@ export function QuickRepliesSuggestions({
 }) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  // Get quick replies and filter based on input
+  // Obtener y filtrar atajos según lo escrito en el input
   const suggestions = useMemo(() => {
     const allReplies = quickRepliesService.getByPlatform(platform);
     
     if (!inputValue || inputValue.trim().length === 0) {
-      return allReplies.slice(0, 5); // Show first 5 by default
+      return allReplies.slice(0, 6);
     }
 
     const query = inputValue.toLowerCase().replace(/^\//, '').trim();
     if (!query) {
-      return allReplies.slice(0, 5);
+      return allReplies.slice(0, 6);
     }
 
     return allReplies.filter(reply => {
       const text = (reply.text || reply.message || '').toLowerCase();
-      const label = (reply.label || '').toLowerCase();
-      return text.includes(query) || label.includes(query);
-    }).slice(0, 5);
+      const title = (reply.title || reply.label || reply.shortcut || '').toLowerCase();
+      return text.includes(query) || title.includes(query);
+    }).slice(0, 6);
   }, [platform, inputValue]);
 
   const handleSelectSuggestion = (reply) => {
@@ -78,7 +83,7 @@ export function QuickRepliesSuggestions({
     >
       <div className="suggestions-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="suggestions-label">⚡ Respuestas Rápidas</span>
+          <span className="suggestions-label">⚡ Atajos de CV</span>
           <span className="suggestions-count">{suggestions.length}</span>
         </div>
         {onClose && (
@@ -101,14 +106,16 @@ export function QuickRepliesSuggestions({
             onClick={() => handleSelectSuggestion(reply)}
             onMouseEnter={() => setSelectedIndex(index)}
           >
-            <span className="suggestion-icon">💬</span>
+            <span className="suggestion-icon">⚡</span>
             <div className="suggestion-content">
-              <div className="suggestion-text">{reply.text || reply.message}</div>
-              {reply.label && (
-                <div className="suggestion-label">{reply.label}</div>
-              )}
+              <div className="suggestion-text" style={{ fontWeight: 600 }}>
+                {reply.title || 'Atajo'}
+              </div>
+              <div className="suggestion-label">
+                {reply.text || reply.message}
+              </div>
             </div>
-            <span className="suggestion-shortcut">Click</span>
+            <span className="suggestion-shortcut">Enter</span>
           </div>
         ))}
       </div>

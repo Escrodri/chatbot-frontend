@@ -3,8 +3,9 @@ import { quickRepliesService } from '../../services/quickReplies.service';
 
 /**
  * QuickRepliesBar Component
- * Muestra respuestas rápidas directamente en un solo clic sobre el input del chat.
- * No requiere navegar por categorías.
+ * Muestra atajos de respuestas rápidas directamente en un solo clic sobre el input del chat.
+ * Cada botón muestra el nombre del atajo (ej. "Saludo inicial", "¿Tiene CV previo?")
+ * y al hacer clic inserta el mensaje completo en el campo de texto.
  */
 export function QuickRepliesBar({
   platform,
@@ -13,7 +14,6 @@ export function QuickRepliesBar({
   onOpenManager,
   visible = true
 }) {
-  // Obtener respuestas rápidas directas de la plataforma
   const replies = useMemo(() => {
     return quickRepliesService.getByPlatform(platform);
   }, [platform]);
@@ -25,14 +25,14 @@ export function QuickRepliesBar({
   return (
     <div className="quick-replies-bar">
       <div className="replies-header">
-        <span className="bar-label">⚡ Respuestas Rápidas</span>
+        <span className="bar-label">⚡ Atajos para CV</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {onOpenManager && (
             <button
               type="button"
               className="quick-bar-settings-btn"
               onClick={onOpenManager}
-              title="Administrar respuestas rápidas"
+              title="Configurar y crear atajos de CV"
             >
               ⚙
             </button>
@@ -42,7 +42,7 @@ export function QuickRepliesBar({
               type="button"
               className="quick-bar-close-btn"
               onClick={onClose}
-              title="Ocultar barra de respuestas rápidas"
+              title="Ocultar barra de atajos"
             >
               ×
             </button>
@@ -52,6 +52,7 @@ export function QuickRepliesBar({
 
       <div className="replies-container">
         {replies.map(reply => {
+          const shortcutTitle = reply.title || reply.shortcut || reply.label || (reply.text ? (reply.text.length > 20 ? reply.text.slice(0, 20) + '…' : reply.text) : 'Atajo');
           const replyText = reply.text || reply.message || '';
           return (
             <button
@@ -61,7 +62,7 @@ export function QuickRepliesBar({
               onClick={() => onSelectReply(replyText, reply)}
               title={replyText}
             >
-              <span className="reply-text">{replyText}</span>
+              <span className="reply-text">{shortcutTitle}</span>
             </button>
           );
         })}
