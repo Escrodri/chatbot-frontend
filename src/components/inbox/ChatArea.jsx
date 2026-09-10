@@ -144,8 +144,8 @@ export function ChatArea({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 20 * 1024 * 1024) {
-      alert('El archivo supera el límite máximo permitido de 20MB.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('El archivo supera el límite máximo permitido de 25MB. Por favor, selecciona un archivo más liviano o comprimido.');
       return;
     }
 
