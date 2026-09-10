@@ -7,7 +7,6 @@ import {
 } from '../Icons';
 import { useAuth } from '../../context/AuthContext';
 import { QuickRepliesManager } from '../QuickRepliesManager';
-import { TemplatesList } from '../TemplatesList';
 import { QuickRepliesSuggestions } from './QuickRepliesSuggestions';
 import { QuickRepliesBar } from './QuickRepliesBar';
 import { quickRepliesService } from '../../services/quickReplies.service';
@@ -96,8 +95,9 @@ export function ChatArea({
   }
 
   const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showQuickBar, setShowQuickBar] = useState(false);
+  const [showQuickBar, setShowQuickBar] = useState(() => {
+    return localStorage.getItem('inbox_show_quick_bar') !== 'false';
+  });
   const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
   const inputRef = useRef(null);
 
@@ -115,7 +115,6 @@ export function ChatArea({
         const reply = replies[num - 1];
         if (reply?.text) {
           setInputText(reply.text);
-          setShowQuickBar(false);
           setDismissedSuggestions(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }
@@ -793,11 +792,13 @@ export function ChatArea({
             platform={conversation.platform}
             onSelectReply={(text) => {
               setInputText(text);
-              setShowQuickBar(false);
               setDismissedSuggestions(true);
               setTimeout(() => inputRef.current?.focus(), 0);
             }}
-            onClose={() => setShowQuickBar(false)}
+            onClose={() => {
+              setShowQuickBar(false);
+              localStorage.setItem('inbox_show_quick_bar', 'false');
+            }}
             onOpenManager={() => setShowQuickReplies(true)}
             visible={showQuickBar}
           />
@@ -872,9 +873,15 @@ export function ChatArea({
             <button
               type="button"
               className="btn-card-action"
-              onClick={() => setShowQuickBar(prev => !prev)}
+              onClick={() => {
+                setShowQuickBar(prev => {
+                  const next = !prev;
+                  localStorage.setItem('inbox_show_quick_bar', String(next));
+                  return next;
+                });
+              }}
               disabled={sending}
-              title="Barra de respuestas rápidas instantáneas (⚡)"
+              title="Mostrar u ocultar atajos de CV (⚡)"
               style={{
                 padding: '8px 12px',
                 display: 'flex',
@@ -886,17 +893,6 @@ export function ChatArea({
               }}
             >
               ⚡
-            </button>
-
-            <button
-              type="button"
-              className="btn-card-action"
-              onClick={() => setShowTemplates(true)}
-              disabled={sending}
-              title="Plantillas oficiales de Meta"
-              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
-            >
-              📋
             </button>
 
             <input
@@ -948,19 +944,6 @@ export function ChatArea({
           isOpen={showQuickReplies}
           onClose={() => setShowQuickReplies(false)}
           onSelectReply={(text) => {
-            setInputText(text);
-            setShowQuickBar(false);
-            setDismissedSuggestions(true);
-            setTimeout(() => inputRef.current?.focus(), 0);
-          }}
-        />
-      )}
-
-      {showTemplates && (
-        <TemplatesList
-          isOpen={showTemplates}
-          onClose={() => setShowTemplates(false)}
-          onSelectTemplate={(text) => {
             setInputText(text);
             setShowQuickBar(false);
             setDismissedSuggestions(true);
