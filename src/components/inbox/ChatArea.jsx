@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { QuickRepliesManager } from '../QuickRepliesManager';
 import { TemplatesList } from '../TemplatesList';
 import { QuickRepliesSuggestions } from './QuickRepliesSuggestions';
+import { QuickRepliesBar } from './QuickRepliesBar';
 import { quickRepliesService } from '../../services/quickReplies.service';
 
 /**
@@ -96,6 +97,7 @@ export function ChatArea({
 
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showQuickBar, setShowQuickBar] = useState(false);
   const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
   const inputRef = useRef(null);
 
@@ -784,6 +786,19 @@ export function ChatArea({
           </div>
         )}
 
+        {showQuickBar && conversation?.platform && (
+          <QuickRepliesBar
+            platform={conversation.platform}
+            onSelectReply={(text) => {
+              setInputText(prev => prev ? prev + '\n' + text : text);
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+            onClose={() => setShowQuickBar(false)}
+            onOpenManager={() => setShowQuickReplies(true)}
+            visible={showQuickBar}
+          />
+        )}
+
         {showAutoSuggestions && (
           <QuickRepliesSuggestions
             platform={conversation?.platform || 'whatsapp'}
@@ -853,10 +868,18 @@ export function ChatArea({
             <button
               type="button"
               className="btn-card-action"
-              onClick={() => setShowQuickReplies(true)}
+              onClick={() => setShowQuickBar(prev => !prev)}
               disabled={sending}
-              title="Respuestas rápidas (Ctrl+1-9)"
-              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+              title="Barra de respuestas rápidas instantáneas (⚡)"
+              style={{
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: showQuickBar ? 'rgba(0, 168, 132, 0.18)' : 'var(--bg-card)',
+                borderColor: showQuickBar ? 'var(--wa-teal)' : 'var(--border-gold)',
+                color: showQuickBar ? 'var(--wa-teal-dark)' : 'inherit'
+              }}
             >
               ⚡
             </button>

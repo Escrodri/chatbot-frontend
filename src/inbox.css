@@ -1630,3 +1630,233 @@
   gap: 6px;
 }
 
+/* Quick Replies Bar - Fast Selection Without Modals */
+.quick-replies-bar {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-top: 2px solid var(--wa-teal);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  animation: suggestionsSlideUp 0.18s ease-out;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 15;
+}
+
+.replies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 12px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.bar-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--wa-teal-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme='dark'] .bar-label {
+  color: var(--wa-teal);
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background var(--t-fast);
+}
+
+.back-btn:hover {
+  background: var(--bg-active);
+}
+
+.quick-bar-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: var(--t-fast);
+}
+
+.quick-bar-close-btn:hover {
+  color: var(--text-strong);
+  background: var(--bg-active);
+}
+
+.quick-bar-settings-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: var(--t-fast);
+}
+
+.quick-bar-settings-btn:hover {
+  color: var(--wa-teal);
+  background: var(--bg-active);
+}
+
+.replies-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  align-content: flex-start;
+}
+
+/* Category Buttons */
+.category-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-btn:hover {
+  background: var(--wa-teal);
+  color: #fff;
+  border-color: var(--wa-teal);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+.category-btn:active {
+  transform: translateY(0);
+}
+
+.category-icon {
+  font-size: 13px;
+}
+
+.category-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.category-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.category-btn:hover .category-count {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Reply Item Buttons */
+.reply-item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 7px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--text-strong);
+  transition: all 0.15s ease;
+  word-break: break-word;
+  flex: 1;
+  min-width: 120px;
+}
+
+.reply-item:hover {
+  background: var(--wa-teal);
+  color: #fff;
+  border-color: var(--wa-teal);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+.reply-item:active {
+  transform: translateY(0);
+}
+
+.reply-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Expanded State */
+.quick-replies-bar.expanded {
+  max-height: 250px;
+}
+
+.quick-replies-bar.expanded .replies-container {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quick-replies-bar.expanded .reply-item {
+  width: 100%;
+  flex: none;
+}
+
+@media (max-width: 768px) {
+  .quick-replies-bar {
+    max-height: 160px;
+  }
+  .replies-container {
+    gap: 4px;
+    padding: 6px 10px;
+  }
+  .category-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .reply-item {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+
