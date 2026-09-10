@@ -114,7 +114,7 @@ export function ChatArea({
         const replies = quickRepliesService.getByPlatform(platform);
         const reply = replies[num - 1];
         if (reply?.text) {
-          setInputText(prev => prev ? prev + '\n' + reply.text : reply.text);
+          setInputText(reply.text);
           setShowQuickBar(false);
           setDismissedSuggestions(true);
           setTimeout(() => inputRef.current?.focus(), 0);
@@ -792,7 +792,7 @@ export function ChatArea({
           <QuickRepliesBar
             platform={conversation.platform}
             onSelectReply={(text) => {
-              setInputText(prev => prev ? prev + '\n' + text : text);
+              setInputText(text);
               setShowQuickBar(false);
               setDismissedSuggestions(true);
               setTimeout(() => inputRef.current?.focus(), 0);
@@ -948,7 +948,9 @@ export function ChatArea({
           isOpen={showQuickReplies}
           onClose={() => setShowQuickReplies(false)}
           onSelectReply={(text) => {
-            setInputText(prev => prev ? prev + '\n' + text : text);
+            setInputText(text);
+            setShowQuickBar(false);
+            setDismissedSuggestions(true);
             setTimeout(() => inputRef.current?.focus(), 0);
           }}
         />
@@ -959,7 +961,9 @@ export function ChatArea({
           isOpen={showTemplates}
           onClose={() => setShowTemplates(false)}
           onSelectTemplate={(text) => {
-            setInputText(prev => prev ? prev + '\n' + text : text);
+            setInputText(text);
+            setShowQuickBar(false);
+            setDismissedSuggestions(true);
             setTimeout(() => inputRef.current?.focus(), 0);
           }}
         />
