@@ -101,7 +101,7 @@ export function ChatArea({
   const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
   const inputRef = useRef(null);
 
-  const showAutoSuggestions = !dismissedSuggestions && (inputText.startsWith('/') || (inputText.trim().length >= 2 && !selectedFile));
+  const showAutoSuggestions = !dismissedSuggestions && inputText.startsWith('/') && !selectedFile;
 
   // Atajos de teclado para respuestas rápidas (Ctrl+1 a 9)
   useEffect(() => {
@@ -115,6 +115,8 @@ export function ChatArea({
         const reply = replies[num - 1];
         if (reply?.text) {
           setInputText(prev => prev ? prev + '\n' + reply.text : reply.text);
+          setShowQuickBar(false);
+          setDismissedSuggestions(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }
       }
@@ -791,6 +793,8 @@ export function ChatArea({
             platform={conversation.platform}
             onSelectReply={(text) => {
               setInputText(prev => prev ? prev + '\n' + text : text);
+              setShowQuickBar(false);
+              setDismissedSuggestions(true);
               setTimeout(() => inputRef.current?.focus(), 0);
             }}
             onClose={() => setShowQuickBar(false)}

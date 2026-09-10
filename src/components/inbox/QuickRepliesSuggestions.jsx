@@ -111,9 +111,6 @@ export function QuickRepliesSuggestions({
               <div className="suggestion-text" style={{ fontWeight: 600 }}>
                 {reply.title || 'Atajo'}
               </div>
-              <div className="suggestion-label">
-                {reply.text || reply.message}
-              </div>
             </div>
             <span className="suggestion-shortcut">Enter</span>
           </div>

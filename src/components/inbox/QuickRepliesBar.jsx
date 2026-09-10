@@ -3,9 +3,8 @@ import { quickRepliesService } from '../../services/quickReplies.service';
 
 /**
  * QuickRepliesBar Component
- * Muestra atajos de respuestas rápidas directamente en un solo clic sobre el input del chat.
- * Cada botón muestra el nombre del atajo (ej. "Saludo inicial", "¿Tiene CV previo?")
- * y al hacer clic inserta el mensaje completo en el campo de texto.
+ * Muestra únicamente los nombres de los atajos. Al hacer clic en un atajo,
+ * inserta el mensaje correspondiente en el input y se cierra la barra.
  */
 export function QuickRepliesBar({
   platform,
@@ -32,7 +31,7 @@ export function QuickRepliesBar({
               type="button"
               className="quick-bar-settings-btn"
               onClick={onOpenManager}
-              title="Configurar y crear atajos de CV"
+              title="Configurar atajos"
             >
               ⚙
             </button>
@@ -42,7 +41,7 @@ export function QuickRepliesBar({
               type="button"
               className="quick-bar-close-btn"
               onClick={onClose}
-              title="Ocultar barra de atajos"
+              title="Ocultar atajos"
             >
               ×
             </button>
@@ -52,7 +51,7 @@ export function QuickRepliesBar({
 
       <div className="replies-container">
         {replies.map(reply => {
-          const shortcutTitle = reply.title || reply.shortcut || reply.label || (reply.text ? (reply.text.length > 20 ? reply.text.slice(0, 20) + '…' : reply.text) : 'Atajo');
+          const shortcutTitle = reply.title || reply.shortcut || reply.label || 'Atajo';
           const replyText = reply.text || reply.message || '';
           return (
             <button
@@ -60,7 +59,6 @@ export function QuickRepliesBar({
               type="button"
               className="quick-reply-btn reply-item"
               onClick={() => onSelectReply(replyText, reply)}
-              title={replyText}
             >
               <span className="reply-text">{shortcutTitle}</span>
             </button>
