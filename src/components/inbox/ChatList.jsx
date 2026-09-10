@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { IconoDeCanal } from '../Icons';
+import { conversationNotesService } from '../../services/conversationNotes.service';
+import { ConversationTags } from '../ConversationTags';
 const PLATFORM_COLORS = {
   whatsapp: '#25d366',
   instagram: '#e1306c',
@@ -124,6 +126,9 @@ export function ChatList({
             const hasUnread = chat.unread_count > 0;
             const dotColor = PLATFORM_COLORS[chat.platform] || chat.channel_color || '#00a884';
 
+            const note = conversationNotesService.getNote(chat.id);
+            const displayName = note?.customName || chat.contact_name || 'Contacto';
+
             return (
               <div
                 key={chat.id}
@@ -134,12 +139,12 @@ export function ChatList({
                   {chat.contact_avatar ? (
                     <img
                       src={chat.contact_avatar}
-                      alt={chat.contact_name || 'Contacto'}
+                      alt={displayName}
                       className="chat-avatar-img"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
-                    <span>{(chat.contact_name || 'C').charAt(0).toUpperCase()}</span>
+                    <span>{displayName.charAt(0).toUpperCase()}</span>
                   )}
                   <span
                     className="chat-platform-dot"
@@ -152,9 +157,13 @@ export function ChatList({
 
                 <div className="chat-info">
                   <div className="chat-info-top">
-                    <span className="chat-contact-name">{chat.contact_name || 'Contacto'}</span>
+                    <span className="chat-contact-name">{displayName}</span>
                     <span className="chat-time">{formatChatTime(chat.last_message_time)}</span>
                   </div>
+
+                  {note?.tags && note.tags.length > 0 && (
+                    <ConversationTags tags={note.tags} />
+                  )}
 
                   <div className="chat-info-bottom">
                     <span className="chat-snippet">

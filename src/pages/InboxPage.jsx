@@ -3,6 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { ChatList } from '../components/inbox/ChatList';
 import { ChatArea } from '../components/inbox/ChatArea';
 import { EmptyState } from '../components/inbox/EmptyState';
+import { NotesPanel } from '../components/NotesPanel';
+import { SalesDashboard } from '../components/SalesDashboard';
+import { AutomationRulesManager } from '../components/AutomationRulesManager';
+import { IntegrationsManager } from '../components/IntegrationsManager';
+import { ReportBuilder } from '../components/ReportBuilder';
+import { ContactsManager } from '../components/ContactsManager';
+import { SearchResults } from '../components/SearchResults';
+import { messageSearchService } from '../services/messageSearch.service';
 import '../inbox.css';
 
 export function InboxPage() {
@@ -16,6 +24,38 @@ export function InboxPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sending, setSending] = useState(false);
   const [sendBanner, setSendBanner] = useState(null);
+
+  // Estados de modales y herramientas
+  const [showSalesDashboard, setShowSalesDashboard] = useState(false);
+  const [showAutomation, setShowAutomation] = useState(false);
+  const [showIntegrations, setShowIntegrations] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Indexar conversaciones para búsqueda avanzada de mensajes
+  useEffect(() => {
+    if (conversations.length > 0) {
+      messageSearchService.indexMessages(conversations);
+    }
+  }, [conversations]);
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    if (query.trim().length >= 2) {
+      const results = messageSearchService.search(query, 50);
+      if (results && results.length > 0) {
+        setSearchResults(results);
+        setShowSearchResults(true);
+      } else {
+        setShowSearchResults(false);
+      }
+    } else {
+      setShowSearchResults(false);
+    }
+  };
 
   // Cargar lista de conversaciones
   const loadConversations = useCallback(async () => {
@@ -252,7 +292,7 @@ export function InboxPage() {
         selectedPlatform={selectedPlatform}
         onSelectPlatform={setSelectedPlatform}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
       />
 
       {/* Columna Derecha: Conversación Activa o Estado Vacío */}
@@ -272,6 +312,114 @@ export function InboxPage() {
         />
       ) : (
         <EmptyState />
+      )}
+
+      {/* Panel lateral de notas del contacto */}
+      {showNotesPanel && selectedConversation && (
+        <NotesPanel
+          conversationId={selectedConversation.id}
+          contactName={selectedConversation.contact_name}
+          onClose={() => setShowNotesPanel(false)}
+        />
+      )}
+
+      {/* Barra de herramientas para modales y paneles */}
+      <div className="inbox-toolbar">
+        <button
+          type="button"
+          className="toolbar-btn"
+          onClick={() => setShowSalesDashboard(true)}
+          title="Panel de Ventas y Métricas"
+        >
+          📊
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn"
+          onClick={() => setShowContacts(true)}
+          title="Directorio de Contactos"
+        >
+          👥
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn"
+          onClick={() => setShowReports(true)}
+          title="Generador de Reportes"
+        >
+          📋
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn"
+          onClick={() => setShowAutomation(true)}
+          title="Reglas de Automatización"
+        >
+          ⚙️
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn"
+          onClick={() => setShowIntegrations(true)}
+          title="Integraciones y Webhooks"
+        >
+          🔌
+        </button>
+        {selectedConversation && (
+          <button
+            type="button"
+            className={`toolbar-btn ${showNotesPanel ? 'active' : ''}`}
+            onClick={() => setShowNotesPanel(v => !v)}
+            title="Notas del contacto y etiquetas"
+          >
+            📝
+          </button>
+        )}
+      </div>
+
+      {/* Modales de características avanzadas */}
+      {showSalesDashboard && (
+        <SalesDashboard
+          isOpen={showSalesDashboard}
+          onClose={() => setShowSalesDashboard(false)}
+        />
+      )}
+
+      {showContacts && (
+        <ContactsManager
+          onClose={() => setShowContacts(false)}
+        />
+      )}
+
+      {showReports && (
+        <ReportBuilder
+          onClose={() => setShowReports(false)}
+        />
+      )}
+
+      {showAutomation && (
+        <AutomationRulesManager
+          isOpen={showAutomation}
+          onClose={() => setShowAutomation(false)}
+        />
+      )}
+
+      {showIntegrations && (
+        <IntegrationsManager
+          isOpen={showIntegrations}
+          onClose={() => setShowIntegrations(false)}
+        />
+      )}
+
+      {showSearchResults && (
+        <SearchResults
+          results={searchResults}
+          onSelectResult={(conversationId) => {
+            setSelectedId(conversationId);
+            setShowSearchResults(false);
+          }}
+          onClose={() => setShowSearchResults(false)}
+        />
       )}
     </div>
   );

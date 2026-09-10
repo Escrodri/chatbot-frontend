@@ -6,6 +6,9 @@ import {
   IconoClip, IconoEliminar
 } from '../Icons';
 import { useAuth } from '../../context/AuthContext';
+import { QuickRepliesManager } from '../QuickRepliesManager';
+import { TemplatesList } from '../TemplatesList';
+import { quickRepliesService } from '../../services/quickReplies.service';
 
 /**
  * Dirección del archivo multimedia de un mensaje.
@@ -89,6 +92,30 @@ export function ChatArea({
     prevMessagesCountRef.current = 0;
     prevLastMsgIdRef.current = null;
   }
+
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const inputRef = useRef(null);
+
+  // Atajos de teclado para respuestas rápidas (Ctrl+1 a 9)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const num = parseInt(e.key, 10);
+      if (isCtrl && num >= 1 && num <= 9 && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const platform = conversation?.platform || 'whatsapp';
+        const replies = quickRepliesService.getByPlatform(platform);
+        const reply = replies[num - 1];
+        if (reply?.text) {
+          setInputText(prev => prev ? prev + '\n' + reply.text : reply.text);
+          setTimeout(() => inputRef.current?.focus(), 0);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [conversation?.platform]);
 
   // Limpieza al desmontar o cambiar de chat si se estaba grabando
   useEffect(() => {
@@ -804,7 +831,30 @@ export function ChatArea({
               <PaperclipIcon />
             </button>
 
+            <button
+              type="button"
+              className="btn-card-action"
+              onClick={() => setShowQuickReplies(true)}
+              disabled={sending}
+              title="Respuestas rápidas (Ctrl+1-9)"
+              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+            >
+              ⚡
+            </button>
+
+            <button
+              type="button"
+              className="btn-card-action"
+              onClick={() => setShowTemplates(true)}
+              disabled={sending}
+              title="Plantillas oficiales de Meta"
+              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+            >
+              📋
+            </button>
+
             <input
+              ref={inputRef}
               type="text"
               className="composer-input"
               placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje..."}
@@ -836,6 +886,29 @@ export function ChatArea({
           </form>
         )}
       </footer>
+
+      {showQuickReplies && (
+        <QuickRepliesManager
+          platform={conversation?.platform || 'whatsapp'}
+          isOpen={showQuickReplies}
+          onClose={() => setShowQuickReplies(false)}
+          onSelectReply={(text) => {
+            setInputText(prev => prev ? prev + '\n' + text : text);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+        />
+      )}
+
+      {showTemplates && (
+        <TemplatesList
+          isOpen={showTemplates}
+          onClose={() => setShowTemplates(false)}
+          onSelectTemplate={(text) => {
+            setInputText(prev => prev ? prev + '\n' + text : text);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+        />
+      )}
     </section>
   );
 }
