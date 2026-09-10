@@ -632,6 +632,45 @@ input:checked + .slider:before { transform: translateX(22px); }
   margin-bottom: 7px;
 }
 
+/* Vista previa de burbuja del bot adaptable a tema claro y oscuro */
+.bot-preview-container {
+  background: var(--bg-chat);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%230b141a' stroke-opacity='0.04' stroke-width='1.5' stroke-linejoin='round'%3E%3Ccircle cx='22' cy='24' r='8'/%3E%3Cpath d='M58 16h18v13h-9l-5 6v-6h-4z'/%3E%3Cpath d='M112 18l6 6-6 6-6-6z'/%3E%3Cpath d='M16 74h16v11h-7l-4 6v-6h-5z'/%3E%3Ccircle cx='72' cy='78' r='7'/%3E%3Cpath d='M110 68l7 12h-14z'/%3E%3Cpath d='M38 116l6 6-6 6-6-6z'/%3E%3Cpath d='M86 112h18v12h-10l-5 6v-6h-3z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+[data-theme='dark'] .bot-preview-container {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23e9edef' stroke-opacity='0.04' stroke-width='1.5' stroke-linejoin='round'%3E%3Ccircle cx='22' cy='24' r='8'/%3E%3Cpath d='M58 16h18v13h-9l-5 6v-6h-4z'/%3E%3Cpath d='M112 18l6 6-6 6-6-6z'/%3E%3Cpath d='M16 74h16v11h-7l-4 6v-6h-5z'/%3E%3Ccircle cx='72' cy='78' r='7'/%3E%3Cpath d='M110 68l7 12h-14z'/%3E%3Cpath d='M38 116l6 6-6 6-6-6z'/%3E%3Cpath d='M86 112h18v12h-10l-5 6v-6h-3z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.bot-preview-bubble {
+  background: var(--bubble-bot);
+  border-left: 3px solid var(--bot-accent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  max-width: 450px;
+  box-shadow: var(--shadow-bubble);
+}
+
+.bot-preview-tag {
+  font-size: 0.75rem;
+  color: var(--bot-accent);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.bot-preview-text {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  white-space: pre-wrap;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .variable-pills {
   display: flex;
   gap: 8px;

@@ -886,12 +886,12 @@ export function SettingsPage() {
               {/* Vista Previa de Burbuja */}
               <div className="form-group-custom">
                 <label>Vista previa en vivo del mensaje:</label>
-                <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
-                  <div style={{ background: '#18223c', borderLeft: '3px solid var(--gold-primary)', borderRadius: '8px', padding: '12px 16px', maxWidth: '450px' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
+                <div className="bot-preview-container">
+                  <div className="bot-preview-bubble">
+                    <span className="bot-preview-tag">
                       Bot de bienvenida
                     </span>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-pure)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
+                    <p className="bot-preview-text">
                       {formatBotPreview(botSettings.welcome_message)}
                     </p>
                   </div>
@@ -1106,7 +1106,7 @@ export function SettingsPage() {
 
               {/* Banner de recomendación para Facebook e Instagram */}
               {channelForm.platform !== 'whatsapp' && (
-                <div style={{ background: 'rgba(24, 119, 242, 0.1)', border: '1px solid rgba(24, 119, 242, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: '#93c5fd', lineHeight: '1.4' }}>
+                <div style={{ background: 'rgba(24, 119, 242, 0.1)', border: '1px solid rgba(24, 119, 242, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: 'var(--text-body)', lineHeight: '1.4' }}>
                   <strong>¿No quieres buscar IDs numéricos?</strong> Puedes cerrar este formulario y usar el botón <strong>Escanear páginas de Facebook</strong> en el panel principal para detectar y conectar tus páginas automáticamente en 1 clic.
                 </div>
               )}
@@ -1660,7 +1660,7 @@ export function SettingsPage() {
                   Permisos que hacen falta en Meta para ver tus páginas:
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                  El token debe contener los permisos: <code style={{ color: '#93c5fd' }}>pages_show_list</code>, <code style={{ color: '#93c5fd' }}>pages_messaging</code> y <code style={{ color: '#93c5fd' }}>pages_manage_metadata</code>.
+                  El token debe contener los permisos: <code style={{ color: 'var(--text-link)', fontWeight: 600 }}>pages_show_list</code>, <code style={{ color: 'var(--text-link)', fontWeight: 600 }}>pages_messaging</code> y <code style={{ color: 'var(--text-link)', fontWeight: 600 }}>pages_manage_metadata</code>.
                   Puedes generarlo desde <strong>Meta for Developers → Herramientas → Graph API Explorer</strong> seleccionando tu aplicación.
                 </div>
               </div>
@@ -1690,14 +1690,14 @@ export function SettingsPage() {
 
               {/* Error si ocurre */}
               {scanError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', padding: '10px 14px', color: '#fca5a5', fontSize: '0.82rem' }}>
+                <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '8px', padding: '10px 14px', color: 'var(--danger)', fontWeight: 500, fontSize: '0.82rem' }}>
                   <IconoAlerta size={14} /> {scanError}
                 </div>
               )}
 
               {/* Alerta de permisos faltantes */}
               {missingPerms.length > 0 && (
-                <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '8px', padding: '10px 14px', color: '#fcd34d', fontSize: '0.8rem' }}>
+                <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '8px', padding: '10px 14px', color: 'var(--warn)', fontWeight: 600, fontSize: '0.8rem' }}>
                   <IconoAlerta size={14} /> Al token le faltan estos permisos: {missingPerms.join(', ')}
                 </div>
               )}
@@ -1752,7 +1752,7 @@ export function SettingsPage() {
                                 <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-pure)' }}>
                                   {page.name}
                                 </span>
-                                <span style={{ fontSize: '0.72rem', background: 'rgba(24, 119, 242, 0.2)', color: '#93c5fd', padding: '2px 8px', borderRadius: '12px' }}>
+                                <span style={{ fontSize: '0.72rem', background: 'rgba(24, 119, 242, 0.15)', color: 'var(--fb-blue-hover)', fontWeight: 600, padding: '2px 8px', borderRadius: '12px' }}>
                                   {page.category}
                                 </span>
                               </div>
@@ -1760,7 +1760,7 @@ export function SettingsPage() {
                                 Identificador en Meta: <code>{page.id}</code>
                               </div>
                               {page.instagram && (
-                                <div style={{ fontSize: '0.74rem', color: '#f472b6', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ fontSize: '0.74rem', color: 'var(--ig-pink)', fontWeight: 600, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <IconoDeCanal platform="instagram" size={16} />
                                   <span>Cuenta de Instagram vinculada: <strong>@{page.instagram.username}</strong></span>
                                   {page.instagram.alreadyConnected && (
@@ -1773,11 +1773,11 @@ export function SettingsPage() {
 
                           <div>
                             {page.alreadyConnected ? (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--wa-green)', background: 'rgba(37, 211, 102, 0.15)', padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(37, 211, 102, 0.3)' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--wa-teal-dark)', fontWeight: 600, background: 'rgba(0, 168, 132, 0.12)', padding: '3px 9px', borderRadius: '12px', border: '1px solid rgba(0, 168, 132, 0.3)' }}>
                                 ✓ Ya Conectada
                               </span>
                             ) : (
-                              <span style={{ fontSize: '0.75rem', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.15)', padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(96, 165, 250, 0.3)' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--fb-blue-hover)', fontWeight: 600, background: 'rgba(24, 119, 242, 0.12)', padding: '3px 9px', borderRadius: '12px', border: '1px solid rgba(24, 119, 242, 0.3)' }}>
                                 Lista para Conectar
                               </span>
                             )}

@@ -568,6 +568,11 @@
   line-height: 1;
 }
 
+.msg-bubble.agent .msg-meta {
+  color: #54656f;
+  font-weight: 500;
+}
+
 [data-theme='dark'] .msg-bubble.agent .msg-meta,
 [data-theme='dark'] .msg-bubble.bot .msg-meta {
   color: rgba(233, 237, 239, 0.6);
@@ -590,6 +595,10 @@
   border-top: 1px solid rgba(211, 47, 47, 0.25);
   font-size: 12.5px;
   line-height: 1.45;
+  color: #c62828;
+}
+
+[data-theme='dark'] .msg-failed-note {
   color: var(--danger);
 }
 
@@ -603,13 +612,24 @@
   border: none;
   padding: 0;
   font: inherit;
-  font-weight: 600;
-  color: var(--wa-teal-dark);
-  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b71c1c;
   text-decoration: underline;
+  cursor: pointer;
 }
 
-.btn-retry-send:hover:not(:disabled) { color: var(--wa-teal-deep); }
+[data-theme='dark'] .btn-retry-send {
+  color: #fca5a5;
+}
+
+.btn-retry-send:hover:not(:disabled) {
+  color: #991b1b;
+}
+
+[data-theme='dark'] .btn-retry-send:hover:not(:disabled) {
+  color: #ffffff;
+}
 .btn-retry-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Aviso sobre el composer cuando falla un envío */
@@ -1291,6 +1311,38 @@
 .audio-player.propio .audio-player-barra {
   background: linear-gradient(
     to right,
+    var(--wa-teal-dark) 0%,
+    var(--wa-teal-dark) var(--avance, 0%),
+    rgba(0, 0, 0, 0.16) var(--avance, 0%),
+    rgba(0, 0, 0, 0.16) 100%
+  );
+}
+
+.audio-player.propio .audio-player-boton {
+  background: rgba(0, 128, 105, 0.15);
+  color: var(--wa-teal-dark);
+}
+
+.audio-player.propio .audio-player-boton:hover {
+  background: rgba(0, 128, 105, 0.25);
+}
+
+.audio-player.propio .audio-player-barra::-webkit-slider-thumb {
+  background: var(--wa-teal-dark);
+}
+
+.audio-player.propio .audio-player-barra::-moz-range-thumb {
+  background: var(--wa-teal-dark);
+}
+
+.audio-player.propio .audio-player-tiempo {
+  color: #54656f;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .audio-player.propio .audio-player-barra {
+  background: linear-gradient(
+    to right,
     #ffffff 0%,
     #ffffff var(--avance, 0%),
     rgba(255, 255, 255, 0.32) var(--avance, 0%),
@@ -1298,15 +1350,27 @@
   );
 }
 
-.audio-player.propio .audio-player-boton {
+[data-theme='dark'] .audio-player.propio .audio-player-boton {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
 
-.audio-player.propio .audio-player-boton:hover { background: rgba(255, 255, 255, 0.34); }
-.audio-player.propio .audio-player-barra::-webkit-slider-thumb { background: #fff; }
-.audio-player.propio .audio-player-barra::-moz-range-thumb { background: #fff; }
-.audio-player.propio .audio-player-tiempo { color: rgba(255, 255, 255, 0.85); }
+[data-theme='dark'] .audio-player.propio .audio-player-boton:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+
+[data-theme='dark'] .audio-player.propio .audio-player-barra::-webkit-slider-thumb {
+  background: #fff;
+}
+
+[data-theme='dark'] .audio-player.propio .audio-player-barra::-moz-range-thumb {
+  background: #fff;
+}
+
+[data-theme='dark'] .audio-player.propio .audio-player-tiempo {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
 
 /* Un mensaje fallido sigue siendo un mensaje: conserva su burbuja y el aviso va
    abajo, en una franja. Antes perdía el color y quedaba un recuadro vacío
