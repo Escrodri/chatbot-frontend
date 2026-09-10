@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { QuickRepliesManager } from '../QuickRepliesManager';
 import { TemplatesList } from '../TemplatesList';
+import { QuickRepliesSuggestions } from './QuickRepliesSuggestions';
 import { quickRepliesService } from '../../services/quickReplies.service';
 
 /**
@@ -95,7 +96,10 @@ export function ChatArea({
 
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
   const inputRef = useRef(null);
+
+  const showAutoSuggestions = !dismissedSuggestions && (inputText.startsWith('/') || (inputText.trim().length >= 2 && !selectedFile));
 
   // Atajos de teclado para respuestas rápidas (Ctrl+1 a 9)
   useEffect(() => {
@@ -389,6 +393,7 @@ export function ChatArea({
   const handleSend = (e) => {
     e.preventDefault();
     if ((!inputText.trim() && !selectedFile) || sending) return;
+    setDismissedSuggestions(false);
 
     if (selectedFile) {
       const reader = new FileReader();
@@ -779,6 +784,20 @@ export function ChatArea({
           </div>
         )}
 
+        {showAutoSuggestions && (
+          <QuickRepliesSuggestions
+            platform={conversation?.platform || 'whatsapp'}
+            inputValue={inputText}
+            visible={showAutoSuggestions}
+            onClose={() => setDismissedSuggestions(true)}
+            onSelectReply={(text) => {
+              setInputText(text);
+              setDismissedSuggestions(true);
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+          />
+        )}
+
         {isRecording ? (
           <div className="composer-recording-bar">
             <button
@@ -857,9 +876,18 @@ export function ChatArea({
               ref={inputRef}
               type="text"
               className="composer-input"
-              placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje..."}
+              placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje o usa / para respuestas rápidas..."}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                setDismissedSuggestions(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && showAutoSuggestions) {
+                  e.stopPropagation();
+                  setDismissedSuggestions(true);
+                }
+              }}
               disabled={sending}
             />
 
