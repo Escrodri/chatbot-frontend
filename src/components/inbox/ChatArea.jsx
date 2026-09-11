@@ -109,8 +109,15 @@ export function ChatArea({
   });
   const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
   const inputRef = useRef(null);
-
   const showAutoSuggestions = !dismissedSuggestions && inputText.startsWith('/') && !selectedFile;
+
+  // Auto-ajustar la altura del campo de texto según su contenido (1 línea hasta máx 140px)
+  useLayoutEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 140)}px`;
+    }
+  }, [inputText]);
 
   // Detectar usuario nuevo cuando cambia la conversación
   useEffect(() => {
@@ -486,7 +493,7 @@ export function ChatArea({
   };
 
   const handleSend = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     // ✅ CRÍTICO: Preservar saltos de línea exactamente como estén
     const messageContent = inputText;
 
@@ -498,6 +505,7 @@ export function ChatArea({
       const handled = handleProcessUserInput(messageContent);
       if (handled) {
         setInputText('');
+        if (inputRef.current) inputRef.current.style.height = 'auto';
         return;
       }
     }
@@ -513,6 +521,7 @@ export function ChatArea({
         });
         setInputText('');
         handleRemoveFile();
+        if (inputRef.current) inputRef.current.style.height = 'auto';
         setTimeout(() => scrollToBottom('smooth'), 80);
       };
       reader.readAsDataURL(selectedFile);
@@ -520,6 +529,7 @@ export function ChatArea({
       // ✅ PRESERVAR EXACTAMENTE - no usar trim()
       onSendMessage(messageContent);
       setInputText('');
+      if (inputRef.current) inputRef.current.style.height = 'auto';
       setTimeout(() => scrollToBottom('smooth'), 80);
     }
   };
@@ -970,7 +980,7 @@ export function ChatArea({
               onClick={() => fileInputRef.current?.click()}
               disabled={sending}
               title="Adjuntar archivo, imagen, audio o documento"
-              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)' }}
+              style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-gold)', height: '44px', borderRadius: '8px', boxSizing: 'border-box' }}
             >
               <PaperclipIcon />
             </button>
@@ -994,24 +1004,30 @@ export function ChatArea({
                 justifyContent: 'center',
                 background: showQuickBar ? 'rgba(0, 168, 132, 0.18)' : 'var(--bg-card)',
                 borderColor: showQuickBar ? 'var(--wa-teal)' : 'var(--border-gold)',
-                color: showQuickBar ? 'var(--wa-teal-dark)' : 'inherit'
+                color: showQuickBar ? 'var(--wa-teal-dark)' : 'inherit',
+                height: '44px',
+                borderRadius: '8px',
+                boxSizing: 'border-box'
               }}
             >
               ⚡
             </button>
 
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
               className="composer-input"
-              placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje o usa / para respuestas rápidas..."}
+              placeholder={selectedFile ? "Añadí un comentario o descripción..." : "Escribí un mensaje (Shift+Enter para salto de línea)..."}
               value={inputText}
               onChange={(e) => {
                 setInputText(e.target.value);
                 setDismissedSuggestions(false);
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Escape' && showAutoSuggestions) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent?.isComposing) {
+                  e.preventDefault();
+                  handleSend(e);
+                } else if (e.key === 'Escape' && showAutoSuggestions) {
                   e.stopPropagation();
                   setDismissedSuggestions(true);
                 }
