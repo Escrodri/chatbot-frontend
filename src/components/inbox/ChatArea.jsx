@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { apiUrl } from '../../lib/api';
 import { AudioPlayer } from './AudioPlayer';
 import {
@@ -10,6 +10,9 @@ import { QuickRepliesManager } from '../QuickRepliesManager';
 import { QuickRepliesSuggestions } from './QuickRepliesSuggestions';
 import { QuickRepliesBar } from './QuickRepliesBar';
 import { quickRepliesService } from '../../services/quickReplies.service';
+import cvFormService from '../../services/cvFormService';
+import { CVFormModal } from '../CVFormModal';
+import { AutomaticWelcome } from '../AutomaticWelcome';
 
 /**
  * Dirección del archivo multimedia de un mensaje.
@@ -72,6 +75,12 @@ export function ChatArea({
   const [saleProduct, setSaleProduct] = useState('');
   const [savingSale, setSavingSale] = useState(false);
 
+  // Estados para el sistema automático de CV
+  const [isNewUser, setIsNewUser] = useState(true);
+  const [showCVForm, setShowCVForm] = useState(false);
+  const [selectedCVType, setSelectedCVType] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
@@ -102,6 +111,13 @@ export function ChatArea({
   const inputRef = useRef(null);
 
   const showAutoSuggestions = !dismissedSuggestions && inputText.startsWith('/') && !selectedFile;
+
+  // Detectar usuario nuevo cuando cambia la conversación
+  useEffect(() => {
+    const newUserStatus = !messages || messages.length === 0;
+    setIsNewUser(newUserStatus);
+    setChatMessages(messages || []);
+  }, [conversation?.id, messages?.length]);
 
   // Atajos de teclado para respuestas rápidas (Ctrl+1 a 9)
   useEffect(() => {
@@ -393,16 +409,104 @@ export function ChatArea({
     }
   };
 
+  // Enviar mensaje automático del bot sin que el usuario lo escriba
+  const handleSendAutoMessage = useCallback((text, options = {}) => {
+    setChatMessages(prev => [...prev, {
+      id: `auto_${Date.now()}`,
+      role: 'bot',
+      content: text,
+      timestamp: new Date(),
+      isAutomatic: true,
+      ...options
+    }]);
+  }, []);
+
+  // Seleccionar tipo de CV
+  const handleSelectCVType = (cvType) => {
+    setSelectedCVType(cvType);
+    setShowCVForm(true);
+
+    const cvLabel = cvType === 'classic' ? 'CV Clásico' : 'CV Harvard';
+    const confirmMessage = `✓ Perfecto, vamos a crear tu ${cvLabel}.\n\nAhora necesitamos algunos datos tuyos. ¡Comenzamos! 💪`;
+
+    handleSendAutoMessage(confirmMessage, { isBot: true });
+  };
+
+  // Procesar respuesta del usuario cuando selecciona tipo de CV
+  const handleProcessUserInput = useCallback((text) => {
+    if (isNewUser && !selectedCVType) {
+      if (text.trim() === '1') {
+        handleSelectCVType('classic');
+        return true;
+      } else if (text.trim() === '2') {
+        handleSelectCVType('harvard');
+        return true;
+      }
+    }
+    return false;
+  }, [isNewUser, selectedCVType]);
+
+  // Manejar envío del formulario CV
+  const handleCVFormSubmit = async (formData, cvType) => {
+    const confirmationMessage = cvFormService.generateConfirmationMessage(formData, cvType);
+
+    const cvData = {
+      type: cvType,
+      data: formData,
+      timestamp: new Date(),
+      status: 'pending_advisor'
+    };
+
+    try {
+      // Enviar al asesor humano
+      await onSendMessage({
+        text: `[CV FORM - ${cvType.toUpperCase()}]\n${JSON.stringify(formData, null, 2)}`,
+        type: 'cv_form_submission',
+        cvData: cvData
+      });
+
+      // Mostrar confirmación al usuario
+      setChatMessages(prev => [...prev, {
+        id: `confirmation_${Date.now()}`,
+        role: 'bot',
+        content: confirmationMessage,
+        timestamp: new Date(),
+        isAutomatic: true
+      }]);
+
+      // Limpiar estado del formulario
+      setShowCVForm(false);
+      setSelectedCVType(null);
+      setIsNewUser(false);
+
+    } catch (error) {
+      console.error('Error al enviar formulario:', error);
+      alert('Error al enviar el formulario. Intenta de nuevo.');
+    }
+  };
+
   const handleSend = (e) => {
     e.preventDefault();
-    if ((!inputText.trim() && !selectedFile) || sending) return;
+    // ✅ CRÍTICO: Preservar saltos de línea exactamente como estén
+    const messageContent = inputText;
+
+    if ((!messageContent.trim() && !selectedFile) || sending) return;
     setDismissedSuggestions(false);
+
+    // Si es usuario nuevo y está respondiendo al bot, procesar especialmente
+    if (isNewUser && !selectedCVType) {
+      const handled = handleProcessUserInput(messageContent);
+      if (handled) {
+        setInputText('');
+        return;
+      }
+    }
 
     if (selectedFile) {
       const reader = new FileReader();
       reader.onload = () => {
         onSendMessage({
-          text: inputText.trim(),
+          text: messageContent,
           fileBase64: reader.result,
           fileName: selectedFile.name,
           mimeType: selectedFile.type
@@ -413,7 +517,8 @@ export function ChatArea({
       };
       reader.readAsDataURL(selectedFile);
     } else {
-      onSendMessage(inputText.trim());
+      // ✅ PRESERVAR EXACTAMENTE - no usar trim()
+      onSendMessage(messageContent);
       setInputText('');
       setTimeout(() => scrollToBottom('smooth'), 80);
     }
@@ -948,6 +1053,29 @@ export function ChatArea({
             setShowQuickBar(false);
             setDismissedSuggestions(true);
             setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+        />
+      )}
+
+      {/* Detección automática de nuevos usuarios y envío de bienvenida */}
+      <AutomaticWelcome
+        conversation={conversation}
+        messages={messages}
+        isBot={isBotActive}
+        onSendAutoMessage={handleSendAutoMessage}
+        onCVTypeSelected={handleSelectCVType}
+      />
+
+      {/* Formulario dinámico de CV */}
+      {showCVForm && (
+        <CVFormModal
+          cvType={selectedCVType}
+          visible={showCVForm}
+          onSubmit={handleCVFormSubmit}
+          onCancel={() => {
+            setShowCVForm(false);
+            setSelectedCVType(null);
+            inputRef.current?.focus();
           }}
         />
       )}
