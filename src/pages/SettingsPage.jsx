@@ -57,6 +57,8 @@ export function SettingsPage() {
     name: '',
     channelIdentifier: '',
     accessToken: '',
+    appId: '',
+    appSecret: '',
     colorTag: '#00a884',
     status: 'active',
     datasetId: '',
@@ -75,6 +77,16 @@ export function SettingsPage() {
     channelIds: []
   });
   const [userSubmitting, setUserSubmitting] = useState(false);
+
+  // Formulario nuevo bot
+  const [botForm, setBotForm] = useState({
+    channelId: '',
+    welcomeMessage: '',
+    active: true,
+    offHoursOnly: false,
+    delaySeconds: 1
+  });
+  const [botSubmitting, setBotSubmitting] = useState(false);
 
   // Asignación de canales a un operador ya existente (A-03)
   const [channelsModalUser, setChannelsModalUser] = useState(null);
@@ -203,6 +215,8 @@ export function SettingsPage() {
       name: channel.name || '',
       channelIdentifier: channel.channel_identifier || '',
       accessToken: '',
+      appId: channel.app_id || '',
+      appSecret: '',
       colorTag: channel.color_tag || '#00a884',
       status: channel.status || 'active',
       datasetId: channel.dataset_id || '',
@@ -221,10 +235,16 @@ export function SettingsPage() {
         name: editChannelForm.name.trim(),
         channelIdentifier: editChannelForm.channelIdentifier.trim(),
         colorTag: editChannelForm.colorTag,
-        status: editChannelForm.status
+        status: editChannelForm.status,
+        appId: editChannelForm.appId.trim() || null
       };
       if (editChannelForm.accessToken && editChannelForm.accessToken.trim()) {
         payload.accessToken = editChannelForm.accessToken.trim();
+      }
+
+      // Si se ingresó una nueva clave secreta, enviarla para cifrarla y guardarla
+      if (editChannelForm.appSecret && editChannelForm.appSecret.trim()) {
+        payload.appSecret = editChannelForm.appSecret.trim();
       }
 
       // El conjunto de datos se manda siempre: vaciarlo es una forma legítima
@@ -761,6 +781,14 @@ export function SettingsPage() {
                       </div>
                       <h4 className="channel-title">{ch.name}</h4>
                       <span className="channel-id-code">ID: {ch.channel_identifier}</span>
+                      <div style={{ marginTop: '6px', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {ch.app_id && (
+                          <span style={{ color: 'var(--text-muted)' }}>App ID: {ch.app_id}</span>
+                        )}
+                        <span style={{ color: ch.tiene_app_secret ? '#4ade80' : '#eab308' }}>
+                          {ch.tiene_app_secret ? '🔒 App Secret propio guardado' : '⚠️ Sin App Secret (usa global)'}
+                        </span>
+                      </div>
                       {ch.error_message && (
                         <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '6px' }}>
                           <IconoAlerta size={13} /> {ch.error_message}
@@ -1288,6 +1316,38 @@ export function SettingsPage() {
                   Si el token venció o lo cambiaste en Meta, pegá el nuevo acá.
                 </span>
               </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group-custom">
+                  <label>App ID de Meta (Opcional):</label>
+                  <input
+                    type="text"
+                    className="input-custom"
+                    placeholder="ID de la App de Meta"
+                    autoComplete="off"
+                    value={editChannelForm.appId}
+                    onChange={(e) => setEditChannelForm(prev => ({ ...prev, appId: e.target.value }))}
+                  />
+                </div>
+                <div className="form-group-custom">
+                  <label>Clave secreta (App Secret):</label>
+                  <input
+                    type="password"
+                    className="input-custom"
+                    placeholder={editingChannel.tiene_app_secret
+                      ? 'Ya hay una clave guardada. Escribí una nueva solo para cambiarla'
+                      : 'Pegá la Clave Secreta de Meta para este canal'}
+                    autoComplete="off"
+                    value={editChannelForm.appSecret}
+                    onChange={(e) => setEditChannelForm(prev => ({ ...prev, appSecret: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '-6px', marginBottom: '14px' }}>
+                {editingChannel.tiene_app_secret
+                  ? '🔒 Este canal valida su propia firma HMAC con su Clave Secreta cifrada en la base de datos.'
+                  : '⚠️ Sin clave propia: los webhooks intentarán validar con las variables de entorno globales.'}
+              </span>
 
               <div className="form-group-custom">
                 <label>Conjunto de datos para informar ventas (Opcional):</label>
