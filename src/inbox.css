@@ -1867,4 +1867,112 @@
   }
 }
 
+/* ==============================================================================
+   MENSAJES DE UNA SOLA VISTA (VIEW ONCE) — Estilo Oficial WhatsApp Web
+   ============================================================================== */
+.msg-view-once-container {
+  margin: 2px 0 4px;
+}
+
+.msg-view-once-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  transition: background 0.18s ease, transform 0.15s ease, border-color 0.18s ease;
+  user-select: none;
+}
+
+.msg-view-once-card.unviewed {
+  cursor: pointer;
+}
+
+.msg-view-once-card.unviewed:hover {
+  background: rgba(37, 211, 102, 0.12);
+  border-color: #25D366;
+  transform: translateY(-1px);
+}
+
+.msg-view-once-card.viewed {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.view-once-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.view-once-card-icon.unviewed {
+  background: #25D366;
+  color: #0b141a;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.view-once-card-icon.viewed {
+  background: transparent;
+  border: 2px solid var(--text-soft, #8696a0);
+  color: var(--text-soft, #8696a0);
+}
+
+.view-once-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.view-once-card-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.view-once-card-title.opened {
+  font-style: italic;
+  color: var(--text-soft, #8696a0);
+  font-weight: 600;
+}
+
+.view-once-card-sub {
+  font-size: 0.76rem;
+  color: var(--text-soft, #8696a0);
+}
+
+.view-once-floating-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2c34;
+  color: #e9edef;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: voToastIn 0.2s ease-out;
+}
+
+@keyframes voToastIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+
 

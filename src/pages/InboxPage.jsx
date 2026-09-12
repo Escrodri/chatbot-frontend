@@ -86,7 +86,8 @@ export function InboxPage() {
             if (
               lastPrev?.id === lastInc?.id &&
               lastPrev?.status === lastInc?.status &&
-              lastPrev?.media_url === lastInc?.media_url
+              lastPrev?.media_url === lastInc?.media_url &&
+              lastPrev?.viewed_at === lastInc?.viewed_at
             ) {
               return prev; // Evita re-renders innecesarios si no hay cambios
             }
@@ -282,6 +283,11 @@ export function InboxPage() {
     }
   };
 
+  // Actualizar un mensaje específico en memoria de inmediato (ej: marcado de visto)
+  const handleMessageUpdate = useCallback((messageId, updates) => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...updates } : m));
+  }, []);
+
   return (
     <div className="inbox-layout">
       {/* Columna Izquierda: Lista de Chats */}
@@ -309,6 +315,7 @@ export function InboxPage() {
           onDismissBanner={() => setSendBanner(null)}
           onRetryMessage={handleRetryMessage}
           onRegisterSale={handleRegisterSale}
+          onMessageUpdate={handleMessageUpdate}
         />
       ) : (
         <EmptyState />

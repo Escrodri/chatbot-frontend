@@ -13,6 +13,7 @@ import { quickRepliesService } from '../../services/quickReplies.service';
 import cvFormService from '../../services/cvFormService';
 import { CVFormModal } from '../CVFormModal';
 import { AutomaticWelcome } from '../AutomaticWelcome';
+import { ViewOnceModal } from './ViewOnceModal';
 
 /**
  * Dirección del archivo multimedia de un mensaje.
@@ -58,9 +59,10 @@ export function ChatArea({
   sendBanner = null,
   onDismissBanner = () => {},
   onRetryMessage = null,
-  onRegisterSale = null
+  onRegisterSale = null,
+  onMessageUpdate = null
 }) {
-  const { token } = useAuth();
+  const { token, apiFetch } = useAuth();
   const [inputText, setInputText] = useState('');
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -68,6 +70,9 @@ export function ChatArea({
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isViewOnce, setIsViewOnce] = useState(false);
+  const [viewOnceModalData, setViewOnceModalData] = useState(null);
+  const [viewOnceToast, setViewOnceToast] = useState(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleAmount, setSaleAmount] = useState('');
   const [saleCurrency, setSaleCurrency] = useState('PYG');
@@ -163,8 +168,57 @@ export function ChatArea({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
+  const convertImageToJpegIfNeeded = (file) => {
+    return new Promise((resolve) => {
+      const nameLower = file.name.toLowerCase();
+      const typeLower = (file.type || '').toLowerCase();
+      const needsConversion =
+        typeLower === 'image/webp' ||
+        typeLower === 'image/jfif' ||
+        typeLower === 'image/bmp' ||
+        ['.webp', '.jfif', '.bmp', '.tiff', '.tif', '.avif'].some(ext => nameLower.endsWith(ext));
+
+      if (!needsConversion) {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const newName = file.name.replace(/\.[a-zA-Z0-9]+$/, '') + '.jpg';
+                const convertedFile = new File([blob], newName, { type: 'image/jpeg' });
+                resolve(convertedFile);
+              } else {
+                resolve(file);
+              }
+            }, 'image/jpeg', 0.92);
+          } catch {
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e) => {
+    let file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 25 * 1024 * 1024) {
@@ -177,7 +231,13 @@ export function ChatArea({
       setAudioPreviewUrl(null);
     }
 
+    // Transcodificación automática al vuelo en cliente para formatos no aceptados por Meta
+    if (file.type.startsWith('image/') || ['.webp', '.jfif', '.bmp', '.tiff', '.tif'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+      file = await convertImageToJpegIfNeeded(file);
+    }
+
     setSelectedFile(file);
+    setIsViewOnce(false);
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => setFilePreview(ev.target.result);
@@ -197,6 +257,7 @@ export function ChatArea({
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
+    setIsViewOnce(false);
     if (audioPreviewUrl) {
       URL.revokeObjectURL(audioPreviewUrl);
       setAudioPreviewUrl(null);
@@ -492,6 +553,27 @@ export function ChatArea({
     }
   };
 
+  // Cierre y marcado de foto de una sola vista
+  const handleCloseViewOnceModal = async () => {
+    if (!viewOnceModalData) return;
+    const { messageId } = viewOnceModalData;
+    setViewOnceModalData(null);
+
+    if (messageId && conversation?.id) {
+      try {
+        await apiFetch(`/api/conversations/${conversation.id}/messages/${messageId}/view`, {
+          method: 'POST'
+        });
+      } catch (err) {
+        console.warn('⚠️ No se pudo sincronizar visto en backend:', err.message);
+      }
+
+      if (onMessageUpdate) {
+        onMessageUpdate(messageId, { viewed_at: new Date().toISOString() });
+      }
+    }
+  };
+
   const handleSend = (e) => {
     e?.preventDefault();
     // ✅ CRÍTICO: Preservar saltos de línea exactamente como estén
@@ -512,12 +594,14 @@ export function ChatArea({
 
     if (selectedFile) {
       const reader = new FileReader();
+      const viewOnceFlag = isViewOnce;
       reader.onload = () => {
         onSendMessage({
           text: messageContent,
           fileBase64: reader.result,
           fileName: selectedFile.name,
-          mimeType: selectedFile.type
+          mimeType: selectedFile.type,
+          isViewOnce: viewOnceFlag
         });
         setInputText('');
         handleRemoveFile();
@@ -739,7 +823,50 @@ export function ChatArea({
                     </div>
                   )}
 
-                  {msg.content_type === 'image' && (
+                  {/* Renderizado de foto de una sola vista al estilo WhatsApp */}
+                  {msg.is_view_once ? (
+                    <div className="msg-view-once-container">
+                      {!msg.viewed_at ? (
+                        <div
+                          className="msg-view-once-card unviewed"
+                          onClick={() => {
+                            setViewOnceModalData({
+                              imageUrl: mediaSrc(msg, token) || apiUrl(msg.media_url),
+                              caption: msg.text,
+                              senderName: !isInbound ? 'Tú (Operador)' : (conversation.contact_name || 'Contacto'),
+                              timestamp: msg.timestamp,
+                              messageId: msg.id
+                            });
+                          }}
+                          title="Haz clic para ver la foto de una sola vista"
+                        >
+                          <span className="view-once-card-icon unviewed">①</span>
+                          <div className="view-once-card-body">
+                            <span className="view-once-card-title">Foto</span>
+                            <span className="view-once-card-sub">Haz clic para ver (1 sola vista)</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="msg-view-once-card viewed"
+                          onClick={() => {
+                            setViewOnceToast('Esta foto de una sola vista ya fue abierta.');
+                            setTimeout(() => setViewOnceToast(null), 3500);
+                          }}
+                          title="Foto abierta"
+                        >
+                          <span className="view-once-card-icon viewed">①</span>
+                          <div className="view-once-card-body">
+                            <span className="view-once-card-title opened">Abierto</span>
+                            <span className="view-once-card-sub">Foto de una sola vista</span>
+                          </div>
+                        </div>
+                      )}
+                      {msg.text && !['① Foto', '📷 [Imagen]', '① [1 sola vista]'].includes(msg.text) && (
+                        <p className="msg-media-caption">{msg.text.replace(/^①\s*\[1\s*sola\s*vista\]\s*/i, '')}</p>
+                      )}
+                    </div>
+                  ) : msg.content_type === 'image' ? (
                     <div className="msg-media-container">
                       {msg.media_url ? (
                         <img
@@ -763,7 +890,7 @@ export function ChatArea({
                         <p className="msg-media-caption">{msg.text}</p>
                       )}
                     </div>
-                  )}
+                  ) : null}
 
                   {msg.content_type === 'audio' && (
                     <div className="msg-audio-container">
@@ -891,6 +1018,49 @@ export function ChatArea({
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(0)} KB)
             </span>
+
+            {/* Botón WhatsApp de Ver una sola vez ① */}
+            {(filePreview || selectedFile.type?.startsWith('image/')) && (
+              <button
+                type="button"
+                className={`btn-view-once-toggle ${isViewOnce ? 'active' : ''}`}
+                onClick={() => setIsViewOnce(prev => !prev)}
+                title={isViewOnce ? "Foto configurada para verse una sola vez (clic para desactivar)" : "Configurar foto para verse una sola vez (como en WhatsApp)"}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: isViewOnce ? 'none' : '1.5px solid var(--border-gold)',
+                  background: isViewOnce ? '#25D366' : 'var(--bg-panel)',
+                  color: isViewOnce ? '#0b141a' : 'var(--text-main)',
+                  fontWeight: '800',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0
+                }}
+              >
+                ①
+              </button>
+            )}
+
+            {isViewOnce && (
+              <span style={{
+                fontSize: '0.75rem',
+                background: 'rgba(37, 211, 102, 0.15)',
+                color: '#16a34a',
+                padding: '3px 8px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                whiteSpace: 'nowrap'
+              }}>
+                1 sola vista
+              </span>
+            )}
+
             <button
               type="button"
               onClick={handleRemoveFile}
@@ -1094,6 +1264,25 @@ export function ChatArea({
             inputRef.current?.focus();
           }}
         />
+      )}
+
+      {/* Visor de foto de una sola vista al estilo WhatsApp */}
+      {viewOnceModalData && (
+        <ViewOnceModal
+          imageUrl={viewOnceModalData.imageUrl}
+          caption={viewOnceModalData.caption}
+          senderName={viewOnceModalData.senderName}
+          timestamp={viewOnceModalData.timestamp}
+          onClose={handleCloseViewOnceModal}
+        />
+      )}
+
+      {/* Notificación flotante al tocar una foto ya abierta */}
+      {viewOnceToast && (
+        <div className="view-once-floating-toast" role="alert">
+          <span style={{ fontWeight: 800, color: '#25D366' }}>①</span>
+          <span>{viewOnceToast}</span>
+        </div>
       )}
     </section>
   );
