@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Navbar } from '../components/Navbar';
 import { ordersService, ESTADOS, ORDEN_ESTADOS } from '../services/orders.service';
 import { productsService } from '../services/products.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
@@ -90,8 +89,6 @@ export function PedidosPage() {
 
   return (
     <div className="admin-page">
-      <Navbar currentRoute="pedidos" onNavigate={(r) => navigate('/' + r)} />
-
       <main style={{ maxWidth: '1180px', margin: '0 auto', padding: '28px 20px 60px' }}>
         <header style={{ marginBottom: '22px' }}>
           <h2 style={{ margin: '0 0 6px', fontSize: '1.6rem' }}>Pedidos</h2>

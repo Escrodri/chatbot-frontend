@@ -37,6 +37,8 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
   let currentRoute = 'inbox';
   if (location.pathname.includes('teams')) currentRoute = 'teams';
   else if (location.pathname.includes('settings')) currentRoute = 'settings';
+  else if (location.pathname.includes('pedidos')) currentRoute = 'pedidos';
+  else if (location.pathname.includes('productos')) currentRoute = 'productos';
 
   return (
     <div className="admin-layout">

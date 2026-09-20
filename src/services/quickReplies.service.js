@@ -1,11 +1,15 @@
 /**
  * Quick Replies Service
  *
- * Administra atajos y respuestas rápidas para creación y optimización de CV
- * por plataforma con soporte de almacenamiento local y atajos de teclado.
+ * Administra atajos y respuestas rápidas para la venta de productos digitales,
+ * por plataforma, con almacenamiento local y atajos de teclado (Ctrl+1..9).
+ *
+ * El pack anterior era para armado de CV. Al cambiar CURRENT_VERSION, la carga
+ * detecta la versión vieja en localStorage y reemplaza los atajos sola: nadie
+ * tiene que ir a borrarlos a mano.
  */
 
-const CURRENT_VERSION = 'cv_v2';
+const CURRENT_VERSION = 'productos_v1';
 
 class QuickRepliesService {
   constructor() {
@@ -48,59 +52,63 @@ class QuickRepliesService {
    * Respuestas y preguntas predeterminadas especializadas en creación y optimización de CV
    */
   _getDefaultReplies() {
-    const cvReplies = [
+    const ventaReplies = [
       {
         id: 1,
-        title: 'Saludo inicial',
-        text: '¡Hola! 👋 Gracias por comunicarte. Te vamos a ayudar a armar o renovar tu Curriculum Vitae (CV) profesional para que te destaques en tus postulaciones laborales.'
+        title: 'Saludo',
+        text: '¡Hola! 👋 Gracias por escribirnos. Contame qué estás buscando y te paso los detalles.'
       },
       {
         id: 2,
-        title: '¿Tiene CV previo?',
-        text: 'Para empezar, contanos: ¿Ya tenés un CV armado que quieras actualizar o modernizar (podés adjuntarlo en PDF o foto), o comenzamos a armarlo desde cero?'
+        title: 'Catálogo',
+        text: 'Te muestro lo que tenemos disponible ahora mismo 👇'
       },
       {
         id: 3,
-        title: 'Datos de contacto',
-        text: 'Por favor, envianos tus datos personales básicos: Nombre completo, ciudad/localidad de residencia, teléfono de contacto, correo electrónico y si tenés perfil de LinkedIn.'
+        title: 'Datos de pago',
+        text: 'Para la transferencia:\n\n👤 Titular: [TITULAR]\n🪪 [DOCUMENTO]\n🏦 [BANCO]\n💳 Cuenta: [CUENTA]\n\nCuando transfieras, mandame la captura del comprobante por acá.'
       },
       {
         id: 4,
-        title: 'Puesto u objetivo',
-        text: '¿A qué puesto, rubro o área laboral apuntás principalmente? Esto nos permite enfocar tu perfil profesional y resaltar las palabras clave adecuadas.'
+        title: 'Pedir comprobante',
+        text: 'Mandame la captura del comprobante, que se vea el monto y la confirmación de la operación, y te habilito el acceso apenas lo verifiquemos.'
       },
       {
         id: 5,
-        title: 'Experiencia laboral',
-        text: 'Comentanos tu experiencia de trabajo (desde la más reciente): Nombre de la empresa, puesto que ocupabas, período aproximado y las tareas principales o logros que tuviste.'
+        title: 'Verificando pago',
+        text: 'Recibimos tu comprobante. Lo estamos verificando contra la cuenta y te confirmamos por acá en unos minutos.'
       },
       {
         id: 6,
-        title: 'Educación y cursos',
-        text: '¿Cuál es tu formación académica? (Secundario, terciario, universitario) y si realizaste cursos, talleres, capacitaciones o certificaciones recientes.'
+        title: 'Entregar acceso',
+        text: '✅ Pago confirmado. Acá va tu acceso:\n\n🔗 [LINK]\n\nCualquier problema para abrirlo, escribime por acá.'
       },
       {
         id: 7,
-        title: 'Habilidades e idiomas',
-        text: 'Mencioná tus habilidades y herramientas principales (por ejemplo: programas informáticos, atención al cliente, manejo de caja, etc.) y si tenés conocimientos de idiomas.'
+        title: 'No llegó el pago',
+        text: 'Revisé la cuenta y todavía no veo la transferencia acreditada. A veces tarda un rato según el banco. Si ya la hiciste, pasame el número de operación así la busco.'
       },
       {
         id: 8,
-        title: 'Foto profesional',
-        text: '¿Deseás incluir foto en tu CV? Si es así, envianos una foto nítida de frente, con buena iluminación y preferentemente fondo liso.'
+        title: 'Cómo se entrega',
+        text: 'Es un archivo digital: apenas confirmamos el pago te mando el enlace por acá y lo descargás al celular o a la computadora. No se vence y queda tuyo.'
       },
       {
         id: 9,
-        title: 'Borrador y entrega',
-        text: '¡Perfecto! Con toda la información preparamos el borrador de tu CV. Te lo enviaremos en PDF de alta calidad listo para imprimir o enviar para tu revisión y cambios necesarios.'
+        title: 'Formas de pago',
+        text: 'Por ahora aceptamos transferencia bancaria. Te paso los datos y con la captura del comprobante te habilito el acceso.'
+      },
+      {
+        id: 10,
+        title: 'Despedida',
+        text: '¡Gracias por tu compra! Cualquier cosa que necesites, escribime por acá. 🙌'
       }
     ];
 
     return {
-      whatsapp: JSON.parse(JSON.stringify(cvReplies)),
-      instagram: JSON.parse(JSON.stringify(cvReplies)),
-      facebook: JSON.parse(JSON.stringify(cvReplies)),
-      messenger: JSON.parse(JSON.stringify(cvReplies))
+      whatsapp: ventaReplies.map(r => ({ ...r })),
+      instagram: ventaReplies.map(r => ({ ...r })),
+      facebook: ventaReplies.map(r => ({ ...r }))
     };
   }
 

@@ -4,9 +4,7 @@ import { ChatList } from '../components/inbox/ChatList';
 import { ChatArea } from '../components/inbox/ChatArea';
 import { EmptyState } from '../components/inbox/EmptyState';
 import { NotesPanel } from '../components/NotesPanel';
-import { SalesDashboard } from '../components/SalesDashboard';
-import { AutomationRulesManager } from '../components/AutomationRulesManager';
-import { IntegrationsManager } from '../components/IntegrationsManager';
+import { OrderPanel } from '../components/inbox/OrderPanel';
 import { ReportBuilder } from '../components/ReportBuilder';
 import { ContactsManager } from '../components/ContactsManager';
 import { SearchResults } from '../components/SearchResults';
@@ -26,9 +24,7 @@ export function InboxPage() {
   const [sendBanner, setSendBanner] = useState(null);
 
   // Estados de modales y herramientas
-  const [showSalesDashboard, setShowSalesDashboard] = useState(false);
-  const [showAutomation, setShowAutomation] = useState(false);
-  const [showIntegrations, setShowIntegrations] = useState(false);
+  const [showOrderPanel, setShowOrderPanel] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
@@ -322,6 +318,14 @@ export function InboxPage() {
       )}
 
       {/* Panel lateral de notas del contacto */}
+      {showOrderPanel && selectedConversation && (
+        <OrderPanel
+          conversationId={selectedConversation.id}
+          contactName={selectedConversation.contact_name}
+          onClose={() => setShowOrderPanel(false)}
+        />
+      )}
+
       {showNotesPanel && selectedConversation && (
         <NotesPanel
           conversationId={selectedConversation.id}
@@ -332,14 +336,6 @@ export function InboxPage() {
 
       {/* Barra de herramientas para modales y paneles */}
       <div className="inbox-toolbar">
-        <button
-          type="button"
-          className="toolbar-btn"
-          onClick={() => setShowSalesDashboard(true)}
-          title="Panel de Ventas y Métricas"
-        >
-          📊
-        </button>
         <button
           type="button"
           className="toolbar-btn"
@@ -356,22 +352,16 @@ export function InboxPage() {
         >
           📋
         </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          onClick={() => setShowAutomation(true)}
-          title="Reglas de Automatización"
-        >
-          ⚙️
-        </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          onClick={() => setShowIntegrations(true)}
-          title="Integraciones y Webhooks"
-        >
-          🔌
-        </button>
+        {selectedConversation && (
+          <button
+            type="button"
+            className={`toolbar-btn ${showOrderPanel ? 'active' : ''}`}
+            onClick={() => setShowOrderPanel(v => !v)}
+            title="Pedido de esta conversación: estado y confirmación de pago"
+          >
+            🧾
+          </button>
+        )}
         {selectedConversation && (
           <button
             type="button"
@@ -385,13 +375,6 @@ export function InboxPage() {
       </div>
 
       {/* Modales de características avanzadas */}
-      {showSalesDashboard && (
-        <SalesDashboard
-          isOpen={showSalesDashboard}
-          onClose={() => setShowSalesDashboard(false)}
-        />
-      )}
-
       {showContacts && (
         <ContactsManager
           onClose={() => setShowContacts(false)}
@@ -401,20 +384,6 @@ export function InboxPage() {
       {showReports && (
         <ReportBuilder
           onClose={() => setShowReports(false)}
-        />
-      )}
-
-      {showAutomation && (
-        <AutomationRulesManager
-          isOpen={showAutomation}
-          onClose={() => setShowAutomation(false)}
-        />
-      )}
-
-      {showIntegrations && (
-        <IntegrationsManager
-          isOpen={showIntegrations}
-          onClose={() => setShowIntegrations(false)}
         />
       )}
 

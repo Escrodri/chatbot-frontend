@@ -1,15 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { BrandMark } from './BrandMark';
-import { IconoMensajes, IconoAjustes, IconoDeCanal } from './Icons';
+import { IconoMensajes, IconoAjustes, IconoDeCanal, IconoVenta, IconoRegistro } from './Icons';
 
 export function Navbar({ currentRoute, onNavigate }) {
   const { user, logout } = useAuth();
-  // Navegacion propia para las pantallas nuevas: no depende de que la pagina
-  // contenedora conozca estas rutas en su onNavigate.
-  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -51,10 +47,10 @@ export function Navbar({ currentRoute, onNavigate }) {
             <button
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'pedidos' ? 'active' : ''}`}
-              onClick={() => navigate('/pedidos')}
+              onClick={() => onNavigate('pedidos')}
               title="Quién pagó y quién no"
             >
-              <span style={{ fontSize: '15px' }}>🧾</span>
+              <IconoVenta size={17} />
               <span>Pedidos</span>
             </button>
           )}
@@ -63,10 +59,10 @@ export function Navbar({ currentRoute, onNavigate }) {
             <button
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'productos' ? 'active' : ''}`}
-              onClick={() => navigate('/productos')}
+              onClick={() => onNavigate('productos')}
               title="Catálogo que usa el bot"
             >
-              <span style={{ fontSize: '15px' }}>📦</span>
+              <IconoRegistro size={17} />
               <span>Productos</span>
             </button>
           )}

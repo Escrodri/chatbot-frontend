@@ -59,6 +59,30 @@ export const productsService = {
     return parse(res);
   },
 
+  /**
+   * Sube la portada y devuelve su URL pública.
+   *
+   * Es la misma tubería que usa el chat para mandar una foto: se lee el archivo
+   * a base64 en el navegador y el backend lo guarda. Así el admin elige un
+   * archivo de su computadora en vez de tener que conseguir una URL pública.
+   */
+  async subirImagen(token, file) {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetch(apiUrl('/api/products/upload-image'), {
+      method: 'POST',
+      headers: authHeaders(token),
+      credentials: 'include',
+      body: JSON.stringify({ fileBase64: base64, fileName: file.name, mimeType: file.type })
+    });
+    return parse(res);
+  },
+
   formatearPrecio(valor, moneda = 'PYG') {
     const n = Number(valor) || 0;
     const locales = { PYG: 'es-PY', USD: 'en-US', BRL: 'pt-BR', ARS: 'es-AR' };

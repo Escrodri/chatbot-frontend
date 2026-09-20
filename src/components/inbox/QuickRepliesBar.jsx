@@ -24,7 +24,7 @@ export function QuickRepliesBar({
   return (
     <div className="quick-replies-bar">
       <div className="replies-header">
-        <span className="bar-label">⚡ Atajos para CV</span>
+        <span className="bar-label">⚡ Respuestas rápidas</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {onOpenManager && (
             <button
