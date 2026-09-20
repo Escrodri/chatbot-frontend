@@ -59,7 +59,6 @@ export function Navbar({ currentRoute, onNavigate }) {
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'teams' ? 'active' : ''}`}
               onClick={() => onNavigate('teams')}
-              style={{ borderColor: 'rgba(234, 179, 8, 0.5)', color: '#facc15', background: 'rgba(234, 179, 8, 0.08)' }}
             >
               <span style={{ fontSize: '15px' }}>🏢</span>
               <span>Equipos y Empresas</span>
@@ -78,12 +77,13 @@ export function Navbar({ currentRoute, onNavigate }) {
                 {user.role === 'superadmin' && (
                   <span style={{
                     fontSize: '10px',
-                    background: 'rgba(234, 179, 8, 0.2)',
-                    border: '1px solid rgba(234, 179, 8, 0.45)',
-                    color: '#facc15',
+                    background: 'rgba(255, 255, 255, 0.22)',
+                    border: '1px solid rgba(255, 255, 255, 0.45)',
+                    color: '#ffffff',
                     borderRadius: '4px',
-                    padding: '1px 5px',
-                    fontWeight: 700
+                    padding: '1px 6px',
+                    fontWeight: 700,
+                    letterSpacing: '0.4px'
                   }}>
                     Superadmin
                   </span>

@@ -817,11 +817,11 @@ export function SettingsPage() {
                     alignItems: 'center',
                     gap: '6px',
                     padding: '7px 12px',
-                    background: 'rgba(34, 197, 94, 0.08)',
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    background: 'rgba(14, 163, 111, 0.1)',
+                    border: '1px solid rgba(14, 163, 111, 0.3)',
                     borderRadius: '8px',
                     fontSize: '0.78rem',
-                    color: '#4ade80'
+                    color: 'var(--ok)'
                   }}>
                     <span>✅ App Conectada: <strong>{scanAppId}</strong></span>
                     <button
@@ -830,7 +830,7 @@ export function SettingsPage() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#60a5fa',
+                        color: 'var(--wa-blue)',
                         textDecoration: 'underline',
                         cursor: 'pointer',
                         fontSize: '0.75rem',
@@ -1025,14 +1025,14 @@ export function SettingsPage() {
                       <span className="channel-id-code">ID: {ch.channel_identifier}</span>
                       <div style={{ marginTop: '6px', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         {ch.app_id && (
-                          <span style={{ color: 'var(--text-muted)' }}>App ID: {ch.app_id}</span>
+                          <span style={{ color: 'var(--text-soft)' }}>App ID: {ch.app_id}</span>
                         )}
-                        <span style={{ color: ch.tiene_app_secret ? '#4ade80' : '#eab308' }}>
+                        <span style={{ color: ch.tiene_app_secret ? 'var(--ok)' : 'var(--warn)' }}>
                           {ch.tiene_app_secret ? '🔒 App Secret propio guardado' : '⚠️ Sin App Secret (usa global)'}
                         </span>
                       </div>
                       {ch.error_message && (
-                        <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '6px' }}>
+                        <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '6px' }}>
                           <IconoAlerta size={13} /> {ch.error_message}
                         </p>
                       )}
@@ -1098,8 +1098,8 @@ export function SettingsPage() {
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
                 <div style={{
-                  background: 'rgba(0,0,0,0.25)',
-                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   display: 'flex',
@@ -1108,8 +1108,8 @@ export function SettingsPage() {
                   gap: '8px'
                 }}>
                   <div style={{ overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Callback URL:</span>
-                    <code style={{ fontSize: '0.78rem', color: '#60a5fa', wordBreak: 'break-all' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-soft)', display: 'block' }}>Callback URL:</span>
+                    <code style={{ fontSize: '0.78rem', color: 'var(--wa-blue)', wordBreak: 'break-all' }}>
                       {typeof window !== 'undefined' ? `${window.location.origin}/api/webhook` : '/api/webhook'}
                     </code>
                   </div>
@@ -1125,8 +1125,8 @@ export function SettingsPage() {
                   </button>
                 </div>
                 <div style={{
-                  background: 'rgba(0,0,0,0.25)',
-                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   display: 'flex',
@@ -1135,8 +1135,8 @@ export function SettingsPage() {
                   gap: '8px'
                 }}>
                   <div style={{ overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Verify Token:</span>
-                    <code style={{ fontSize: '0.8rem', color: '#4ade80', wordBreak: 'break-all' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-soft)', display: 'block' }}>Verify Token:</span>
+                    <code style={{ fontSize: '0.8rem', color: 'var(--ok)', wordBreak: 'break-all' }}>
                       {metaVerifyToken}
                     </code>
                   </div>
@@ -1998,10 +1998,10 @@ export function SettingsPage() {
                   flexDirection: 'column',
                   gap: '12px'
                 }}>
-                  <strong style={{ fontSize: '0.92rem', color: '#60a5fa' }}>
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--wa-blue)' }}>
                     ⚙️ Paso 1: Conectar Aplicativo de Meta (Solo 1 vez)
                   </strong>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: '1.4' }}>
                     Para habilitar el inicio de sesión oficial con Facebook y escanear tus activos de Business Manager, ingresa el <strong>App ID</strong> de tu aplicación en developers.facebook.com:
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -2048,8 +2048,8 @@ export function SettingsPage() {
                 /* App ID configurado: Vista directa y amigable de Facebook Login */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-sunken)',
+                    border: '1px solid var(--border)',
                     borderRadius: '8px',
                     padding: '10px 14px',
                     display: 'flex',
@@ -2057,8 +2057,8 @@ export function SettingsPage() {
                     justifyContent: 'space-between',
                     fontSize: '0.8rem'
                   }}>
-                    <span style={{ color: 'var(--text-muted)' }}>
-                      Aplicación de Meta: <code style={{ color: '#60a5fa' }}>{scanAppId}</code>
+                    <span style={{ color: 'var(--text-body)' }}>
+                      Aplicación de Meta: <code style={{ color: 'var(--wa-blue)' }}>{scanAppId}</code>
                     </span>
                     <button
                       type="button"
@@ -2216,7 +2216,7 @@ export function SettingsPage() {
                                   {page.instagram.alreadyConnected ? (
                                     <span style={{ color: 'var(--wa-green)', fontWeight: 600 }}>(Ya vinculada)</span>
                                   ) : (
-                                    <span style={{ color: '#60a5fa', fontWeight: 500 }}>(Se conectará automáticamente)</span>
+                                    <span style={{ color: 'var(--wa-blue)', fontWeight: 500 }}>(Se conectará automáticamente)</span>
                                   )}
                                 </div>
                               )}
@@ -2325,7 +2325,7 @@ export function SettingsPage() {
                     marginRight: 'auto',
                     background: 'rgba(239, 68, 68, 0.12)',
                     border: '1px solid rgba(239, 68, 68, 0.35)',
-                    color: '#f87171',
+                    color: 'var(--danger)',
                     borderRadius: '8px',
                     padding: '7px 14px',
                     fontSize: '0.8rem',

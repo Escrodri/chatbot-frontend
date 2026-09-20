@@ -81,18 +81,24 @@ export function DataDeletionPage() {
           </form>
 
           {searchResult && (
-            <div style={{ marginTop: '20px', padding: '14px', borderRadius: '8px', background: searchResult.found ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${searchResult.found ? '#4ade80' : '#ef4444'}` }}>
+            <div style={{
+              marginTop: '20px',
+              padding: '14px',
+              borderRadius: '8px',
+              background: searchResult.found ? 'rgba(14, 163, 111, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${searchResult.found ? 'var(--ok)' : 'var(--danger)'}`
+            }}>
               {searchResult.found ? (
                 <>
-                  <div style={{ fontWeight: 700, color: '#4ade80', marginBottom: '4px' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--ok)', marginBottom: '4px' }}>
                     Estado: {searchResult.status} (Código: {searchResult.code})
                   </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0 }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-strong)', margin: 0 }}>
                     {searchResult.message}
                   </p>
                 </>
               ) : (
-                <div style={{ color: '#f87171', fontSize: '0.85rem' }}>
+                <div style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 600 }}>
                   {searchResult.message}
                 </div>
               )}
