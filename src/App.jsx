@@ -7,6 +7,8 @@ import { LoginPage } from './pages/LoginPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { InboxPage } from './pages/InboxPage';
+import { ProductosPage } from './pages/ProductosPage';
+import { PedidosPage } from './pages/PedidosPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { DataDeletionPage } from './pages/DataDeletionPage';
@@ -39,6 +41,26 @@ export function App() {
             }
           />
           <Route path="/inbox.html" element={<Navigate to="/inbox" replace />} />
+
+          {/* Catálogo de productos digitales */}
+          <Route
+            path="/productos"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <ProductosPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Pedidos: quién pagó y quién no */}
+          <Route
+            path="/pedidos"
+            element={
+              <ProtectedRoute>
+                <PedidosPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Ruta Exclusiva de Administración */}
           <Route

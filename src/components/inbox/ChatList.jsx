@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { IconoDeCanal } from '../Icons';
 import { conversationNotesService } from '../../services/conversationNotes.service';
 import { ConversationTags } from '../ConversationTags';
+import { OrderBadge } from './OrderBadge';
 const PLATFORM_COLORS = {
   whatsapp: '#25d366',
   instagram: '#e1306c',
@@ -24,12 +25,20 @@ export function ChatList({
   searchQuery,
   onSearchChange
 }) {
+  // Filtro por estado de venta. 'verificar' es el que importa en el dia a dia:
+  // son los que mandaron comprobante y estan esperando que alguien lo mire.
+  const [filtroVenta, setFiltroVenta] = React.useState('all');
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {
       // Filtro de plataforma
       if (selectedPlatform && selectedPlatform !== 'all') {
         if (c.platform !== selectedPlatform) return false;
       }
+      // Filtro por estado de venta
+      if (filtroVenta === 'verificar' && c.order_status !== 'comprobante_recibido') return false;
+      if (filtroVenta === 'pagaron' && c.order_status !== 'pagado' && c.order_status !== 'entregado') return false;
+      if (filtroVenta === 'no_pagaron' && c.order_status !== 'interesado') return false;
+
       // Filtro de búsqueda
       if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -40,7 +49,11 @@ export function ChatList({
       }
       return true;
     });
-  }, [conversations, selectedPlatform, searchQuery]);
+  }, [conversations, selectedPlatform, searchQuery, filtroVenta]);
+
+  const porVerificar = useMemo(() => {
+    return conversations.filter(c => c.order_status === 'comprobante_recibido').length;
+  }, [conversations]);
 
   const totalUnread = useMemo(() => {
     return conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
@@ -111,6 +124,35 @@ export function ChatList({
             Messenger
           </button>
         </div>
+
+        {/* Estado de venta: reemplaza la consulta a la planilla */}
+        <div className="filter-pills" style={{ marginTop: '6px' }}>
+          <button
+            className={`filter-pill ${filtroVenta === 'all' ? 'active' : ''}`}
+            onClick={() => setFiltroVenta('all')}
+          >
+            Todas
+          </button>
+          <button
+            className={`filter-pill ${filtroVenta === 'verificar' ? 'active' : ''}`}
+            onClick={() => setFiltroVenta('verificar')}
+            title="Mandaron comprobante y falta verificar el pago"
+          >
+            Verificar{porVerificar > 0 ? ` (${porVerificar})` : ''}
+          </button>
+          <button
+            className={`filter-pill ${filtroVenta === 'pagaron' ? 'active' : ''}`}
+            onClick={() => setFiltroVenta('pagaron')}
+          >
+            Pagaron
+          </button>
+          <button
+            className={`filter-pill ${filtroVenta === 'no_pagaron' ? 'active' : ''}`}
+            onClick={() => setFiltroVenta('no_pagaron')}
+          >
+            Sin pagar
+          </button>
+        </div>
       </div>
 
       {/* Lista de chats */}
@@ -171,6 +213,9 @@ export function ChatList({
                     </span>
 
                     <div className="chat-badges-row">
+                      {chat.order_status && (
+                        <OrderBadge status={chat.order_status} compacto />
+                      )}
                       {isBotActive && (
                         <span className="bot-chip bot">Bot</span>
                       )}

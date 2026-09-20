@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { BrandMark } from './BrandMark';
@@ -6,6 +7,9 @@ import { IconoMensajes, IconoAjustes, IconoDeCanal } from './Icons';
 
 export function Navbar({ currentRoute, onNavigate }) {
   const { user, logout } = useAuth();
+  // Navegacion propia para las pantallas nuevas: no depende de que la pagina
+  // contenedora conozca estas rutas en su onNavigate.
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -40,6 +44,30 @@ export function Navbar({ currentRoute, onNavigate }) {
             >
               <IconoMensajes size={17} />
               <span>Mensajes</span>
+            </button>
+          )}
+
+          {user.role !== 'superadmin' && (
+            <button
+              type="button"
+              className={`btn-nav-inbox ${currentRoute === 'pedidos' ? 'active' : ''}`}
+              onClick={() => navigate('/pedidos')}
+              title="Quién pagó y quién no"
+            >
+              <span style={{ fontSize: '15px' }}>🧾</span>
+              <span>Pedidos</span>
+            </button>
+          )}
+
+          {user.role === 'admin' && (
+            <button
+              type="button"
+              className={`btn-nav-inbox ${currentRoute === 'productos' ? 'active' : ''}`}
+              onClick={() => navigate('/productos')}
+              title="Catálogo que usa el bot"
+            >
+              <span style={{ fontSize: '15px' }}>📦</span>
+              <span>Productos</span>
             </button>
           )}
 
