@@ -186,6 +186,15 @@ export function SettingsPage() {
   // Handler: Crear Canal
   const handleCreateChannel = async (e) => {
     e.preventDefault();
+
+    if (channelForm.platform === 'whatsapp') {
+      const numericId = String(channelForm.channelIdentifier || '').replace(/[^\d]/g, '');
+      if (numericId.length < 10) {
+        addToast('El Phone Number ID de WhatsApp debe ser el identificador numérico de Meta (15-16 dígitos), no tu número con prefijo (+54...). Lo obtienes en Meta for Developers > WhatsApp > Primeros pasos.', 'error');
+        return;
+      }
+    }
+
     setChannelSubmitting(true);
 
     try {
