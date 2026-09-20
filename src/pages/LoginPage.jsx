@@ -16,10 +16,16 @@ export function LoginPage() {
   const [message, setMessage] = useState(null);
   const [serverHealth, setServerHealth] = useState('checking');
 
-  // Si ya está autenticado, redirigir automáticamente
+  // Si ya está autenticado, redirigir automáticamente según su rol
   useEffect(() => {
     if (user) {
-      navigate(user.role === 'admin' ? '/settings' : '/inbox', { replace: true });
+      if (user.role === 'superadmin') {
+        navigate('/teams', { replace: true });
+      } else if (user.role === 'admin') {
+        navigate('/settings', { replace: true });
+      } else {
+        navigate('/inbox', { replace: true });
+      }
     }
   }, [user, navigate]);
 
@@ -67,7 +73,13 @@ export function LoginPage() {
         text: `¡Hola ${loggedUser.name}! Acceso autorizado.`
       });
       setTimeout(() => {
-        navigate(loggedUser.role === 'admin' ? '/settings' : '/inbox', { replace: true });
+        if (loggedUser.role === 'superadmin') {
+          navigate('/teams', { replace: true });
+        } else if (loggedUser.role === 'admin') {
+          navigate('/settings', { replace: true });
+        } else {
+          navigate('/inbox', { replace: true });
+        }
       }, 400);
     } catch (err) {
       setMessage({

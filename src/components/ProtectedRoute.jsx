@@ -21,11 +21,16 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // El Superadmin es exclusivo de la gestión de Equipos y Empresas; no opera chats de canales
+  if (user.role === 'superadmin' && !location.pathname.includes('teams')) {
+    return <Navigate to="/teams" replace />;
+  }
+
   if (requireSuperAdmin && user.role !== 'superadmin') {
     return <Navigate to="/inbox" replace />;
   }
 
-  if (requireAdmin && user.role !== 'admin' && user.role !== 'superadmin') {
+  if (requireAdmin && user.role !== 'admin') {
     return <Navigate to="/inbox" replace />;
   }
 

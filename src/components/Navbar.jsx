@@ -32,16 +32,18 @@ export function Navbar({ currentRoute, onNavigate }) {
         </div>
 
         <div className="nav-actions">
-          <button
-            type="button"
-            className={`btn-nav-inbox ${currentRoute === 'inbox' ? 'active' : ''}`}
-            onClick={() => onNavigate('inbox')}
-          >
-            <IconoMensajes size={17} />
-            <span>Mensajes</span>
-          </button>
+          {user.role !== 'superadmin' && (
+            <button
+              type="button"
+              className={`btn-nav-inbox ${currentRoute === 'inbox' ? 'active' : ''}`}
+              onClick={() => onNavigate('inbox')}
+            >
+              <IconoMensajes size={17} />
+              <span>Mensajes</span>
+            </button>
+          )}
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {user.role === 'admin' && (
             <button
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'settings' ? 'active' : ''}`}
@@ -57,10 +59,10 @@ export function Navbar({ currentRoute, onNavigate }) {
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'teams' ? 'active' : ''}`}
               onClick={() => onNavigate('teams')}
-              style={{ borderColor: 'rgba(234, 179, 8, 0.4)', color: '#facc15' }}
+              style={{ borderColor: 'rgba(234, 179, 8, 0.5)', color: '#facc15', background: 'rgba(234, 179, 8, 0.08)' }}
             >
               <span style={{ fontSize: '15px' }}>🏢</span>
-              <span>Equipos</span>
+              <span>Equipos y Empresas</span>
             </button>
           )}
 
@@ -71,7 +73,22 @@ export function Navbar({ currentRoute, onNavigate }) {
               {(user.name || user.email || 'A').charAt(0).toUpperCase()}
             </div>
             <div className="user-info-text">
-              <span style={{ fontWeight: 600, display: 'block' }}>{user.name}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: 600, display: 'block' }}>{user.name}</span>
+                {user.role === 'superadmin' && (
+                  <span style={{
+                    fontSize: '10px',
+                    background: 'rgba(234, 179, 8, 0.2)',
+                    border: '1px solid rgba(234, 179, 8, 0.45)',
+                    color: '#facc15',
+                    borderRadius: '4px',
+                    padding: '1px 5px',
+                    fontWeight: 700
+                  }}>
+                    Superadmin
+                  </span>
+                )}
+              </div>
               <span style={{ fontSize: '11.5px', display: 'block' }}>{user.email}</span>
             </div>
           </div>
