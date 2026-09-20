@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from './Navbar';
 
-export function ProtectedRoute({ children, requireAdmin = false }) {
+export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdmin = false }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,11 +21,17 @@ export function ProtectedRoute({ children, requireAdmin = false }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && user.role !== 'admin') {
+  if (requireSuperAdmin && user.role !== 'superadmin') {
     return <Navigate to="/inbox" replace />;
   }
 
-  const currentRoute = location.pathname.includes('settings') ? 'settings' : 'inbox';
+  if (requireAdmin && user.role !== 'admin' && user.role !== 'superadmin') {
+    return <Navigate to="/inbox" replace />;
+  }
+
+  let currentRoute = 'inbox';
+  if (location.pathname.includes('teams')) currentRoute = 'teams';
+  else if (location.pathname.includes('settings')) currentRoute = 'settings';
 
   return (
     <div className="admin-layout">

@@ -41,7 +41,7 @@ export function Navbar({ currentRoute, onNavigate }) {
             <span>Mensajes</span>
           </button>
 
-          {user.role === 'admin' && (
+          {(user.role === 'admin' || user.role === 'superadmin') && (
             <button
               type="button"
               className={`btn-nav-inbox ${currentRoute === 'settings' ? 'active' : ''}`}
@@ -49,6 +49,18 @@ export function Navbar({ currentRoute, onNavigate }) {
             >
               <IconoAjustes size={17} />
               <span>Configuración</span>
+            </button>
+          )}
+
+          {user.role === 'superadmin' && (
+            <button
+              type="button"
+              className={`btn-nav-inbox ${currentRoute === 'teams' ? 'active' : ''}`}
+              onClick={() => onNavigate('teams')}
+              style={{ borderColor: 'rgba(234, 179, 8, 0.4)', color: '#facc15' }}
+            >
+              <span style={{ fontSize: '15px' }}>🏢</span>
+              <span>Equipos</span>
             </button>
           )}
 

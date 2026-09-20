@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { TeamsPage } from './pages/TeamsPage';
 import { InboxPage } from './pages/InboxPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
@@ -49,6 +50,17 @@ export function App() {
             }
           />
           <Route path="/settings.html" element={<Navigate to="/settings" replace />} />
+
+          {/* Ruta Exclusiva de Superadministrador */}
+          <Route
+            path="/teams"
+            element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <TeamsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/teams.html" element={<Navigate to="/teams" replace />} />
 
           {/* Fallback a inicio */}
           <Route path="*" element={<Navigate to="/" replace />} />
