@@ -429,13 +429,17 @@ export function SettingsPage() {
     // y se pierde al cerrar la pestaña, por seguridad.
   };
 
-  // Traer del servidor el token de verificación de webhooks de Meta
+  // Traer del servidor el token de verificación y el App ID guardado en BD para el equipo
   const loadMetaAppInfo = async () => {
     try {
       const res = await apiFetch('/api/settings/channels/meta-app-info');
       if (!res.ok) return;
       const data = await res.json();
       if (data.verifyToken) setMetaVerifyToken(data.verifyToken);
+      if (data.appId) {
+        updateScanAppId(data.appId);
+        setMetaFormAppId(prev => prev || data.appId);
+      }
     } catch (err) {
       console.warn('No se pudo obtener la configuración de verificación de Meta:', err.message);
     }
@@ -2329,16 +2333,19 @@ export function SettingsPage() {
                     fontWeight: 600,
                     transition: 'all 0.2s'
                   }}
-                  onClick={() => {
+                  onClick={async () => {
+                    try {
+                      await apiFetch('/api/settings/channels/meta-config', { method: 'DELETE' });
+                    } catch (e) {}
                     updateScanAppId('');
                     updateScanAppSecret('');
                     setMetaFormAppId('');
                     setMetaFormAppSecret('');
                     setShowMetaConfigModal(false);
-                    addToast('Credenciales de Meta eliminadas de este navegador', 'info');
+                    addToast('Credenciales de Meta eliminadas de tu equipo', 'info');
                   }}
                 >
-                  🗑️ Desconectar App de este navegador
+                  🗑️ Desconectar App de este equipo
                 </button>
               )}
               <button
@@ -2352,11 +2359,23 @@ export function SettingsPage() {
                 type="button"
                 className="btn-primary-gold"
                 disabled={!metaFormAppId.trim()}
-                onClick={() => {
+                onClick={async () => {
                   updateScanAppId(metaFormAppId);
                   updateScanAppSecret(metaFormAppSecret);
                   setShowMetaConfigModal(false);
-                  addToast('Credenciales de Meta guardadas localmente', 'success');
+                  try {
+                    const res = await apiFetch('/api/settings/channels/meta-config', {
+                      method: 'POST',
+                      body: JSON.stringify({ appId: metaFormAppId, appSecret: metaFormAppSecret })
+                    });
+                    if (res.ok) {
+                      addToast('Credenciales de Meta guardadas en la base de datos para tu equipo', 'success');
+                    } else {
+                      addToast('Credenciales guardadas localmente', 'success');
+                    }
+                  } catch (e) {
+                    addToast('Credenciales guardadas localmente', 'success');
+                  }
                 }}
               >
                 Guardar Configuración
