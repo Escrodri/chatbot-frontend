@@ -44,6 +44,7 @@ export function SettingsPage() {
       return '';
     }
   });
+  const isAppConnected = Boolean(scanAppId && scanAppId.trim());
   const [scanToken, setScanToken] = useState('');
   const [showManualToken, setShowManualToken] = useState(false);
   const [metaAppId, setMetaAppId] = useState('');
@@ -680,9 +681,7 @@ export function SettingsPage() {
             setScanError('Meta autorizó pero no devolvió ni código ni token.');
           }
         }, {
-          // Flujo clásico por permisos: es el que funciona con esta app una vez
-          // habilitado el inicio de sesión con el SDK de JavaScript en Meta.
-          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,instagram_basic,instagram_manage_messages',
+          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,instagram_basic,instagram_manage_messages,business_management',
           return_scopes: true
         });
       } catch (err) {
@@ -830,28 +829,86 @@ export function SettingsPage() {
               <p>Los números y páginas desde donde recibís y respondés mensajes.</p>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={handleOpenScanner}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: '#1877F2',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '9px 16px',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                  boxShadow: '0 2px 10px rgba(24, 119, 242, 0.3)',
-                  cursor: 'pointer'
-                }}
-                title="Conectar con Facebook para escanear y sincronizar todas tus Fan Pages y cuentas de Instagram vinculadas"
-              >
-                <span style={{ fontSize: '1.15rem', fontWeight: 900 }}>f</span>
-                <span>Conectar con Facebook (Escanear Perfil)</span>
-              </button>
+              {isAppConnected ? (
+                <>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 12px',
+                    background: 'rgba(34, 197, 94, 0.08)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: '8px',
+                    fontSize: '0.78rem',
+                    color: '#4ade80'
+                  }}>
+                    <span>✅ App Conectada: <strong>{scanAppId}</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => setShowMetaConfigModal(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#60a5fa',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        padding: '0 2px'
+                      }}
+                      title="Modificar credenciales de la App de Meta"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenScanner}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: '#1877F2',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '9px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      boxShadow: '0 2px 10px rgba(24, 119, 242, 0.3)',
+                      cursor: 'pointer'
+                    }}
+                    title="Iniciar sesión con Facebook para escanear páginas y activos de Business Manager"
+                  >
+                    <span style={{ fontSize: '1.15rem', fontWeight: 900 }}>f</span>
+                    <span>Escanear Páginas y Business Manager</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowMetaConfigModal(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#1877F2',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '9px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    boxShadow: '0 2px 10px rgba(24, 119, 242, 0.3)',
+                    cursor: 'pointer'
+                  }}
+                  title="Paso 1: Conecta tu aplicativo de Meta (App ID) para habilitar el escaneo de páginas y Business Manager"
+                >
+                  <span>🔗</span>
+                  <span>Conectar Aplicativo de Meta (Paso 1)</span>
+                </button>
+              )}
+
               <button
                 className="btn-secondary"
                 onClick={() => {
@@ -879,20 +936,7 @@ export function SettingsPage() {
                 <IconoDeCanal platform="whatsapp" size={15} />
                 <span>+ Conectar WhatsApp</span>
               </button>
-              <button
-                className="btn-secondary"
-                onClick={() => setShowMetaConfigModal(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.82rem'
-                }}
-                title="Configurar credenciales globales de Meta App (App ID y Secret)"
-              >
-                <span>⚙️</span>
-                <span>Configurar App de Meta</span>
-              </button>
+
               <button
                 type="button"
                 className="btn-secondary"
@@ -912,34 +956,73 @@ export function SettingsPage() {
             <div className="empty-state-box">
               <div className="empty-state-icon"><IconoCanales size={28} /></div>
               <h4>No hay canales conectados</h4>
-              <p>Conecta tu perfil de Facebook para escanear automáticamente tus páginas e Instagram, o registra tu número de WhatsApp.</p>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={handleOpenScanner}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: '#1877F2',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '10px 18px',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>f</span>
-                  <span>Conectar con Facebook (Escanear Perfil)</span>
-                </button>
-                <button
-                  className="btn-primary-gold"
-                  onClick={() => setShowChannelModal(true)}
-                >
-                  Conectar Manual
-                </button>
-              </div>
+              {!isAppConnected ? (
+                <>
+                  <p>
+                    <strong>Paso 1:</strong> Conecta tu aplicativo de Meta para habilitar la vinculación de Facebook, Instagram y Business Manager.
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowMetaConfigModal(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: '#1877F2',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span>🔗</span>
+                      <span>Conectar Aplicativo de Meta (Paso 1)</span>
+                    </button>
+                    <button
+                      className="btn-primary-gold"
+                      onClick={() => setShowChannelModal(true)}
+                    >
+                      Conectar Manual
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong>Paso 2:</strong> Tu aplicativo de Meta está conectado (ID: <code>{scanAppId}</code>). Inicia sesión con Facebook para detectar y suscribir tus Fan Pages, cuentas de Instagram y activos de Business Manager.
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleOpenScanner}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: '#1877F2',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>f</span>
+                      <span>Escanear Páginas y Business Manager (Paso 2)</span>
+                    </button>
+                    <button
+                      className="btn-primary-gold"
+                      onClick={() => setShowChannelModal(true)}
+                    >
+                      Conectar Manual
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="channels-grid">
@@ -2089,9 +2172,9 @@ export function SettingsPage() {
                   <IconoDeCanal platform="facebook" size={24} />
                 </span>
                 <div>
-                  <h3 style={{ margin: 0 }}>Conectar Cuentas de Meta (Facebook e Instagram)</h3>
+                  <h3 style={{ margin: 0 }}>Escanear Páginas y Business Manager (Facebook e Instagram)</h3>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Inicia sesión con cualquier perfil de Facebook para detectar automáticamente todas las páginas y cuentas de Instagram vinculadas.
+                    Inicia sesión con Facebook para detectar automáticamente todas las páginas de tu perfil y de tus portafolios comerciales de Business Manager.
                   </p>
                 </div>
               </div>
@@ -2111,10 +2194,10 @@ export function SettingsPage() {
                   gap: '12px'
                 }}>
                   <strong style={{ fontSize: '0.92rem', color: '#60a5fa' }}>
-                    ⚙️ Configuración Inicial del Aplicativo de Meta (Solo 1 vez)
+                    ⚙️ Paso 1: Conectar Aplicativo de Meta (Solo 1 vez)
                   </strong>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                    Para habilitar el inicio de sesión oficial con Facebook y escanear tus páginas, ingresa el <strong>App ID</strong> de tu aplicación en developers.facebook.com:
+                    Para habilitar el inicio de sesión oficial con Facebook y escanear tus activos de Business Manager, ingresa el <strong>App ID</strong> de tu aplicación en developers.facebook.com:
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div className="form-group-custom" style={{ margin: 0 }}>
@@ -2201,10 +2284,10 @@ export function SettingsPage() {
                       }}
                     >
                       <span style={{ fontSize: '1.25rem', fontWeight: 900 }}>f</span>
-                      <span>{scanning ? 'Escaneando con Meta...' : 'Iniciar Sesión con Facebook y Escanear Perfil'}</span>
+                      <span>{scanning ? 'Escaneando Páginas y Business Manager...' : 'Iniciar Sesión y Escanear (Páginas y Business Manager)'}</span>
                     </button>
                     <p style={{ margin: '8px 0 0 0', fontSize: '0.76rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                      Inicia sesión con <strong>cualquier perfil de Facebook</strong> que administre tus páginas o cuentas comerciales de Instagram.
+                      Inicia sesión con Facebook. Se consultarán automáticamente las Fan Pages de tu perfil y los activos asociados a tus <strong>Business Managers</strong>.
                     </p>
                   </div>
 
