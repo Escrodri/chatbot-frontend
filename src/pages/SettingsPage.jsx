@@ -34,6 +34,7 @@ export function SettingsPage() {
   const [scanToken, setScanToken] = useState('');
   const [metaAppId, setMetaAppId] = useState('');
   const [metaConfigId, setMetaConfigId] = useState('');
+  const [metaVerifyToken, setMetaVerifyToken] = useState('meta_webhook_verify_token_secure_2026');
   const [scanning, setScanning] = useState(false);
   const [scannedPages, setScannedPages] = useState([]);
   const [selectedPagesToConnect, setSelectedPagesToConnect] = useState([]);
@@ -52,6 +53,22 @@ export function SettingsPage() {
     colorTag: '#00a884'
   });
   const [channelSubmitting, setChannelSubmitting] = useState(false);
+
+  // Estados de Conexión de Instagram Direct
+  const [showInstagramModal, setShowInstagramModal] = useState(false);
+  const [igForm, setIgForm] = useState({
+    name: '',
+    channelIdentifier: '',
+    accessToken: '',
+    appId: '',
+    appSecret: '',
+    colorTag: '#E1306C'
+  });
+  const [igSubmitting, setIgSubmitting] = useState(false);
+  const [igDetecting, setIgDetecting] = useState(false);
+  const [igDetectedInfo, setIgDetectedInfo] = useState(null);
+  const [igError, setIgError] = useState('');
+  const [showIgSecret, setShowIgSecret] = useState(false);
 
   // Formulario editar canal
   const [editingChannel, setEditingChannel] = useState(null);
@@ -207,6 +224,96 @@ export function SettingsPage() {
       addToast('Error al conectar canal: ' + err.message, 'error');
     } finally {
       setChannelSubmitting(false);
+    }
+  };
+
+  // Handler: Detectar cuenta de Instagram automáticamente usando el Access Token
+  const handleDetectInstagram = async () => {
+    if (!igForm.accessToken || !igForm.accessToken.trim()) {
+      setIgError('Pega primero el Access Token para poder detectar la cuenta de Instagram.');
+      return;
+    }
+    setIgDetecting(true);
+    setIgError('');
+    setIgDetectedInfo(null);
+
+    try {
+      const res = await apiFetch('/api/settings/channels/instagram-lookup', {
+        method: 'POST',
+        body: JSON.stringify({ accessToken: igForm.accessToken.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setIgError(data.error || 'No se pudo detectar la cuenta automáticamente. Puedes ingresar el ID a mano.');
+        return;
+      }
+
+      const acc = data.account;
+      setIgDetectedInfo(acc);
+      setIgForm(prev => ({
+        ...prev,
+        channelIdentifier: acc.id,
+        name: prev.name || (acc.username ? `Instagram @${acc.username}` : `Instagram ${acc.name}`)
+      }));
+      addToast(`Cuenta @${acc.username || acc.name} detectada con éxito.`, 'success');
+    } catch (err) {
+      setIgError('Error al contactar Meta Graph API: ' + err.message);
+    } finally {
+      setIgDetecting(false);
+    }
+  };
+
+  // Handler: Crear / Conectar Canal de Instagram Direct
+  const handleCreateInstagramChannel = async (e) => {
+    e.preventDefault();
+    if (!igForm.channelIdentifier || !igForm.channelIdentifier.trim()) {
+      setIgError('El identificador de la cuenta de Instagram (Business ID) es obligatorio.');
+      return;
+    }
+    if (!igForm.accessToken || !igForm.accessToken.trim()) {
+      setIgError('El Access Token permanente es obligatorio.');
+      return;
+    }
+
+    setIgSubmitting(true);
+    setIgError('');
+
+    try {
+      const res = await apiFetch('/api/settings/channels', {
+        method: 'POST',
+        body: JSON.stringify({
+          platform: 'instagram',
+          name: igForm.name.trim() || `Instagram @${igForm.channelIdentifier}`,
+          channelIdentifier: igForm.channelIdentifier.trim(),
+          accessToken: igForm.accessToken.trim(),
+          appId: igForm.appId.trim() || null,
+          appSecret: igForm.appSecret.trim() || null,
+          colorTag: igForm.colorTag || '#E1306C'
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setIgError(data.error || 'Error al guardar el canal de Instagram');
+        return;
+      }
+
+      addToast('Canal de Instagram conectado. App ID y Clave Secreta guardados y cifrados.', 'success');
+      setShowInstagramModal(false);
+      setIgForm({
+        name: '',
+        channelIdentifier: '',
+        accessToken: '',
+        appId: '952383644572923',
+        appSecret: 'f3dc334032d662be54a6e0d6492f605f',
+        colorTag: '#E1306C'
+      });
+      setIgDetectedInfo(null);
+      loadChannels();
+    } catch (err) {
+      setIgError('Error al conectar: ' + err.message);
+    } finally {
+      setIgSubmitting(false);
     }
   };
 
@@ -416,6 +523,7 @@ export function SettingsPage() {
         setScanAppId(prev => prev || data.appId);
       }
       if (data.loginConfigId) setMetaConfigId(data.loginConfigId);
+      if (data.verifyToken) setMetaVerifyToken(data.verifyToken);
     } catch (err) {
       console.warn('No se pudo obtener la configuración de Meta:', err.message);
     }
@@ -775,11 +883,61 @@ export function SettingsPage() {
               <h3>Cuentas de Mensajería Conectadas</h3>
               <p>Los números y páginas desde donde recibís y respondés mensajes.</p>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setChannelForm({
+                    platform: 'whatsapp',
+                    name: '',
+                    channelIdentifier: '',
+                    accessToken: '',
+                    appId: '',
+                    appSecret: '',
+                    colorTag: '#25D366'
+                  });
+                  setShowChannelModal(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  borderColor: 'rgba(37, 211, 102, 0.45)',
+                  color: '#25D366',
+                  background: 'rgba(37, 211, 102, 0.08)'
+                }}
+                title="Conectar número de WhatsApp Cloud API manualmente"
+              >
+                <IconoDeCanal platform="whatsapp" size={15} />
+                <span>+ Conectar WhatsApp</span>
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => setShowInstagramModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  borderColor: 'rgba(225, 48, 108, 0.45)',
+                  color: '#e1306c',
+                  background: 'rgba(225, 48, 108, 0.08)'
+                }}
+                title="Conectar cuenta de Instagram Direct con App ID y App Secret manual"
+              >
+                <IconoDeCanal platform="instagram" size={15} />
+                <span>+ Conectar Instagram</span>
+              </button>
               <button
                 className="btn-secondary"
                 onClick={handleOpenScanner}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  borderColor: 'rgba(24, 119, 242, 0.45)',
+                  color: '#60a5fa',
+                  background: 'rgba(24, 119, 242, 0.08)'
+                }}
                 title="Conectar aplicativo de Facebook y escanear Fan Pages"
               >
                 <IconoBuscarPaginas size={15} />
@@ -790,8 +948,94 @@ export function SettingsPage() {
                 onClick={() => setShowChannelModal(true)}
               >
                 <span>+</span>
-                <span>Conectar Canal Manual</span>
+                <span>Conectar Manual</span>
               </button>
+            </div>
+          </div>
+
+          {/* Tarjeta de configuración Webhook para Meta Developers */}
+          <div style={{
+            background: 'rgba(212, 175, 55, 0.04)',
+            border: '1px solid rgba(212, 175, 55, 0.25)',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>🔗</span>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', color: 'var(--text-pure)' }}>
+                    Webhook de Meta Graph API
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Conexión manual y descentralizada: no requieres configurar variables de Meta en el <code>.env</code>. Configura esta URL en tu app de Meta Developers.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{
+                background: 'rgba(0,0,0,0.25)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px'
+              }}>
+                <div style={{ overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>URL de devolución de llamada (Callback URL):</span>
+                  <code style={{ fontSize: '0.8rem', color: '#60a5fa', wordBreak: 'break-all' }}>
+                    {typeof window !== 'undefined' ? `${window.location.origin}/api/webhook` : '/api/webhook'}
+                  </code>
+                </div>
+                <button
+                  type="button"
+                  className="btn-card-action"
+                  title="Copiar URL"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/api/webhook`);
+                    addToast('URL del webhook copiada', 'info');
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
+
+              <div style={{
+                background: 'rgba(0,0,0,0.25)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px'
+              }}>
+                <div style={{ overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Token de verificación (Verify Token):</span>
+                  <code style={{ fontSize: '0.82rem', color: '#4ade80', wordBreak: 'break-all' }}>
+                    {metaVerifyToken}
+                  </code>
+                </div>
+                <button
+                  type="button"
+                  className="btn-card-action"
+                  title="Copiar Verify Token"
+                  onClick={() => {
+                    navigator.clipboard.writeText(metaVerifyToken);
+                    addToast('Token de verificación copiado', 'info');
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1302,6 +1546,185 @@ export function SettingsPage() {
         </div>
       )}
 
+      {/* MODAL: CONECTAR INSTAGRAM DIRECT MANUALMENTE */}
+      {showInstagramModal && (
+        <div className="modal-overlay active" onClick={() => setShowInstagramModal(false)}>
+          <div className="modal-dialog" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <IconoDeCanal platform="instagram" size={24} />
+                <div>
+                  <h3 style={{ margin: 0 }}>Conectar Instagram Direct</h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Configuración manual con credenciales de tu aplicación de Meta
+                  </p>
+                </div>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowInstagramModal(false)}>&times;</button>
+            </div>
+
+            <form onSubmit={handleCreateInstagramChannel} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px 24px' }}>
+              {igError && (
+                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.82rem', color: '#f87171' }}>
+                  {igError}
+                </div>
+              )}
+
+              {/* Credenciales de la App de Meta */}
+              <div style={{
+                background: 'rgba(225, 48, 108, 0.05)',
+                border: '1px solid rgba(225, 48, 108, 0.25)',
+                borderRadius: '10px',
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <strong style={{ fontSize: '0.88rem', color: '#e1306c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IconoDeCanal platform="instagram" size={16} /> Credenciales de la App de Meta
+                  </strong>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(225, 48, 108, 0.15)', color: '#f472b6', padding: '2px 8px', borderRadius: '4px' }}>
+                    Cifrado AES-256-GCM
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="form-group-custom" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.8rem' }}>Identificador de App (App ID):</label>
+                    <input
+                      type="text"
+                      className="input-custom"
+                      value={igForm.appId}
+                      onChange={(e) => setIgForm(prev => ({ ...prev, appId: e.target.value }))}
+                      placeholder="Ej: 123456789012345"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.8rem' }}>Clave secreta (App Secret):</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showIgSecret ? 'text' : 'password'}
+                        className="input-custom"
+                        style={{ paddingRight: '60px' }}
+                        value={igForm.appSecret}
+                        onChange={(e) => setIgForm(prev => ({ ...prev, appSecret: e.target.value }))}
+                        placeholder="App Secret"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowIgSecret(!showIgSecret)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        {showIgSecret ? 'Ocultar' : 'Ver'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Access Token */}
+              <div className="form-group-custom" style={{ margin: 0 }}>
+                <label style={{ fontSize: '0.82rem' }}>Access Token Permanente (Graph API):</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="password"
+                    className="input-custom"
+                    placeholder="EAAB..."
+                    required
+                    autoComplete="off"
+                    value={igForm.accessToken}
+                    onChange={(e) => setIgForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleDetectInstagram}
+                    disabled={igDetecting || !igForm.accessToken.trim()}
+                    style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', padding: '0 12px' }}
+                    title="Detecta automáticamente el ID y usuario de tu cuenta de Instagram con el token"
+                  >
+                    {igDetecting ? 'Detectando...' : '🔍 Detectar ID'}
+                  </button>
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  Token con permisos <code>instagram_manage_messages</code> e <code>instagram_basic</code>.
+                </span>
+              </div>
+
+              {igDetectedInfo && (
+                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.82rem', color: '#4ade80' }}>
+                  ✅ Cuenta detectada: <strong>@{igDetectedInfo.username || igDetectedInfo.name}</strong> (ID: <code>{igDetectedInfo.id}</code>)
+                  {igDetectedInfo.source && <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.85 }}>{igDetectedInfo.source}</span>}
+                </div>
+              )}
+
+              {/* ID de cuenta de Instagram y Nombre */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group-custom" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.82rem' }}>ID de Cuenta Instagram Business:</label>
+                  <input
+                    type="text"
+                    className="input-custom"
+                    placeholder="Ej: 17841400123456789"
+                    required
+                    value={igForm.channelIdentifier}
+                    onChange={(e) => setIgForm(prev => ({ ...prev, channelIdentifier: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group-custom" style={{ margin: 0 }}>
+                  <label style={{ fontSize: '0.82rem' }}>Nombre para la Bandeja:</label>
+                  <input
+                    type="text"
+                    className="input-custom"
+                    placeholder="Ej: Instagram @tucuenta"
+                    value={igForm.name}
+                    onChange={(e) => setIgForm(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Recordatorio de webhook en developers.facebook.com */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                💡 <strong>Recordatorio importante:</strong> En tu app de Meta Developers (ID: <code>{igForm.appId || 'tu-app'}</code>), el Webhook debe apuntar a tu URL y tener suscrito el objeto <strong>Instagram</strong> al campo <code>messages</code>. Además, en tu celular activa <em>Configuración &gt; Mensajes &gt; Permitir acceso a los mensajes</em>.
+              </div>
+
+              <div className="modal-footer-custom" style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowInstagramModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-gold"
+                  disabled={igSubmitting}
+                  style={{ background: 'linear-gradient(135deg, #E1306C, #C13584)', borderColor: '#E1306C' }}
+                >
+                  {igSubmitting ? 'Guardando...' : 'Conectar Instagram Direct'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: EDITAR CANAL */}
       {editingChannel && (
         <div className="modal-overlay active" onClick={() => setEditingChannel(null)}>
@@ -1335,7 +1758,11 @@ export function SettingsPage() {
 
               <div className="form-group-custom">
                 <label>
-                  {editingChannel.platform === 'whatsapp' ? 'Identificador del Número de Teléfono (Phone Number ID):' : 'Identificador de la Fan Page (Page ID):'}
+                  {editingChannel.platform === 'whatsapp'
+                    ? 'Identificador del Número de Teléfono (Phone Number ID):'
+                    : editingChannel.platform === 'instagram'
+                    ? 'Identificador de la Cuenta de Instagram (Instagram Business ID):'
+                    : 'Identificador de la Fan Page (Page ID):'}
                 </label>
                 <input
                   type="text"
@@ -1748,7 +2175,7 @@ export function SettingsPage() {
                     <input
                       type="text"
                       className="input-custom"
-                      placeholder="Ej: 2381150255623992"
+                      placeholder="Ej: 123456789012345"
                       value={scanAppId}
                       onChange={(e) => setScanAppId(e.target.value)}
                     />
