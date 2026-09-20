@@ -47,8 +47,6 @@ export function SettingsPage() {
   const isAppConnected = Boolean(scanAppId && scanAppId.trim());
   const [scanToken, setScanToken] = useState('');
   const [showManualToken, setShowManualToken] = useState(false);
-  const [metaAppId, setMetaAppId] = useState('');
-  const [metaConfigId, setMetaConfigId] = useState('');
   const [metaVerifyToken, setMetaVerifyToken] = useState('meta_webhook_verify_token_secure_2026');
   const [scanning, setScanning] = useState(false);
   const [scannedPages, setScannedPages] = useState([]);
@@ -437,50 +435,27 @@ export function SettingsPage() {
     } catch (e) {}
   };
 
-  // Traer del servidor el App ID y el ID de configuración del login de Meta.
+  // Traer del servidor el token de verificación de webhooks de Meta
   const loadMetaAppInfo = async () => {
     try {
       const res = await apiFetch('/api/settings/channels/meta-app-info');
       if (!res.ok) return;
       const data = await res.json();
-      const serverAppId = data.facebookAppId || data.appId || '';
-      if (serverAppId) {
-        setMetaAppId(serverAppId);
-        setScanAppId(prev => {
-          if (!prev) {
-            try { localStorage.setItem('meta_scan_app_id', serverAppId); } catch (e) {}
-            return serverAppId;
-          }
-          return prev;
-        });
-      }
-      if (data.loginConfigId) setMetaConfigId(data.loginConfigId);
       if (data.verifyToken) setMetaVerifyToken(data.verifyToken);
     } catch (err) {
-      console.warn('No se pudo obtener la configuración de Meta:', err.message);
+      console.warn('No se pudo obtener la configuración de verificación de Meta:', err.message);
     }
   };
 
-  // Handler: abrir modal de escaneo de Facebook con app ID precargado si existe
+  // Handler: abrir modal de escaneo de Facebook con credenciales locales del operador
   const handleOpenScanner = () => {
     setShowScannerModal(true);
     setScanError('');
-    let idToUse = scanAppId;
-    if (!idToUse) {
+    if (!scanAppId) {
       try {
-        idToUse = localStorage.getItem('meta_scan_app_id') || '';
+        const savedId = localStorage.getItem('meta_scan_app_id') || '';
+        if (savedId) updateScanAppId(savedId);
       } catch (e) {}
-      if (!idToUse) {
-        const existingFb = channels.find(c => c.app_id);
-        if (existingFb?.app_id) {
-          idToUse = existingFb.app_id;
-        } else if (metaAppId) {
-          idToUse = metaAppId;
-        }
-      }
-      if (idToUse) {
-        updateScanAppId(idToUse);
-      }
     }
     if (!scanAppSecret) {
       try {
@@ -633,7 +608,7 @@ export function SettingsPage() {
   // Si Meta llegara a devolver un 'code' en vez de un token, también se soporta:
   // el backend lo canjea en /channels/facebook-exchange-code.
   const handleFacebookConnect = () => {
-    const effectiveAppId = (scanAppId || metaAppId || '').trim();
+    const effectiveAppId = (scanAppId || '').trim();
     if (!effectiveAppId) {
       setScanError('Por favor ingresa el App ID de tu aplicación de Facebook en el Paso 1 antes de conectar.');
       return;
@@ -2507,7 +2482,32 @@ export function SettingsPage() {
               </div>
             </div>
 
-            <div className="modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div className="modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
+              {(scanAppId || scanAppSecret) && (
+                <button
+                  type="button"
+                  style={{
+                    marginRight: 'auto',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#f87171',
+                    borderRadius: '8px',
+                    padding: '7px 14px',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={() => {
+                    updateScanAppId('');
+                    updateScanAppSecret('');
+                    setShowMetaConfigModal(false);
+                    addToast('Credenciales de Meta eliminadas de este navegador', 'info');
+                  }}
+                >
+                  🗑️ Desconectar App de este navegador
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-secondary"
@@ -2520,7 +2520,7 @@ export function SettingsPage() {
                 className="btn-primary-gold"
                 onClick={() => {
                   setShowMetaConfigModal(false);
-                  addToast('Credenciales de Meta guardadas correctamente', 'success');
+                  addToast('Credenciales de Meta guardadas localmente', 'success');
                 }}
               >
                 Guardar Configuración
