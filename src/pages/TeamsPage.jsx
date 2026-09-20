@@ -708,8 +708,21 @@ export function TeamsPage() {
                     </div>
                   </div>
 
-                  {/* Configuración Meta */}
-                  <div style={{ fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {/* Administrador y Configuración */}
+                  <div style={{ fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text-soft)' }}>👑 Admin Empresa:</span>
+                      {t.admin_name ? (
+                        <span style={{ fontWeight: 600, color: 'var(--text-strong)' }}>
+                          {t.admin_name} <span style={{ color: 'var(--text-soft)', fontWeight: 400, fontSize: '0.76rem' }}>({t.admin_email})</span>
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-soft)', fontStyle: 'italic', fontSize: '0.78rem' }}>
+                          Sin administrador asignado
+                        </span>
+                      )}
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ color: 'var(--text-soft)' }}>Meta App ID:</span>
                       {t.meta_app_id ? (
