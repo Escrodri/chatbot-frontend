@@ -44,6 +44,7 @@ export function SettingsPage() {
   const [scanToken, setScanToken] = useState('');
   const [showManualToken, setShowManualToken] = useState(false);
   const [metaVerifyToken, setMetaVerifyToken] = useState('meta_webhook_verify_token_secure_2026');
+  const [metaAppInfo, setMetaAppInfo] = useState({ appId: '', verifyToken: 'meta_webhook_verify_token_secure_2026' });
   const [scanning, setScanning] = useState(false);
   const [scannedPages, setScannedPages] = useState([]);
   const [selectedPagesToConnect, setSelectedPagesToConnect] = useState([]);
@@ -453,6 +454,7 @@ export function SettingsPage() {
       const res = await apiFetch('/api/settings/channels/meta-app-info');
       if (!res.ok) return;
       const data = await res.json();
+      setMetaAppInfo(data);
       if (data.verifyToken) setMetaVerifyToken(data.verifyToken);
       if (data.appId) {
         updateScanAppId(data.appId);
