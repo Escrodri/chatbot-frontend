@@ -13,7 +13,6 @@ import { quickRepliesService } from '../../services/quickReplies.service';
 import cvFormService from '../../services/cvFormService';
 import { CVFormModal } from '../CVFormModal';
 import { AutomaticWelcome } from '../AutomaticWelcome';
-import { ViewOnceModal } from './ViewOnceModal';
 
 /**
  * Dirección del archivo multimedia de un mensaje.
@@ -70,9 +69,6 @@ export function ChatArea({
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const [isViewOnce, setIsViewOnce] = useState(false);
-  const [viewOnceModalData, setViewOnceModalData] = useState(null);
-  const [viewOnceToast, setViewOnceToast] = useState(null);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [saleAmount, setSaleAmount] = useState('');
   const [saleCurrency, setSaleCurrency] = useState('PYG');
@@ -237,7 +233,6 @@ export function ChatArea({
     }
 
     setSelectedFile(file);
-    setIsViewOnce(false);
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => setFilePreview(ev.target.result);
@@ -257,7 +252,6 @@ export function ChatArea({
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
-    setIsViewOnce(false);
     if (audioPreviewUrl) {
       URL.revokeObjectURL(audioPreviewUrl);
       setAudioPreviewUrl(null);
@@ -553,27 +547,6 @@ export function ChatArea({
     }
   };
 
-  // Cierre y marcado de foto de una sola vista
-  const handleCloseViewOnceModal = async () => {
-    if (!viewOnceModalData) return;
-    const { messageId } = viewOnceModalData;
-    setViewOnceModalData(null);
-
-    if (messageId && conversation?.id) {
-      try {
-        await apiFetch(`/api/conversations/${conversation.id}/messages/${messageId}/view`, {
-          method: 'POST'
-        });
-      } catch (err) {
-        console.warn('⚠️ No se pudo sincronizar visto en backend:', err.message);
-      }
-
-      if (onMessageUpdate) {
-        onMessageUpdate(messageId, { viewed_at: new Date().toISOString() });
-      }
-    }
-  };
-
   const handleSend = (e) => {
     e?.preventDefault();
     // ✅ CRÍTICO: Preservar saltos de línea exactamente como estén
@@ -594,14 +567,12 @@ export function ChatArea({
 
     if (selectedFile) {
       const reader = new FileReader();
-      const viewOnceFlag = isViewOnce;
       reader.onload = () => {
         onSendMessage({
           text: messageContent,
           fileBase64: reader.result,
           fileName: selectedFile.name,
-          mimeType: selectedFile.type,
-          isViewOnce: viewOnceFlag
+          mimeType: selectedFile.type
         });
         setInputText('');
         handleRemoveFile();
@@ -823,50 +794,8 @@ export function ChatArea({
                     </div>
                   )}
 
-                  {/* Renderizado de foto de una sola vista al estilo WhatsApp */}
-                  {msg.is_view_once ? (
-                    <div className="msg-view-once-container">
-                      {!msg.viewed_at ? (
-                        <div
-                          className="msg-view-once-card unviewed"
-                          onClick={() => {
-                            setViewOnceModalData({
-                              imageUrl: mediaSrc(msg, token) || apiUrl(msg.media_url),
-                              caption: msg.text,
-                              senderName: !isInbound ? 'Tú (Operador)' : (conversation.contact_name || 'Contacto'),
-                              timestamp: msg.timestamp,
-                              messageId: msg.id
-                            });
-                          }}
-                          title="Haz clic para ver la foto de una sola vista"
-                        >
-                          <span className="view-once-card-icon unviewed">①</span>
-                          <div className="view-once-card-body">
-                            <span className="view-once-card-title">Foto</span>
-                            <span className="view-once-card-sub">Haz clic para ver (1 sola vista)</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="msg-view-once-card viewed"
-                          onClick={() => {
-                            setViewOnceToast('Esta foto de una sola vista ya fue abierta.');
-                            setTimeout(() => setViewOnceToast(null), 3500);
-                          }}
-                          title="Foto abierta"
-                        >
-                          <span className="view-once-card-icon viewed">①</span>
-                          <div className="view-once-card-body">
-                            <span className="view-once-card-title opened">Abierto</span>
-                            <span className="view-once-card-sub">Foto de una sola vista</span>
-                          </div>
-                        </div>
-                      )}
-                      {msg.text && !['① Foto', '📷 [Imagen]', '① [1 sola vista]'].includes(msg.text) && (
-                        <p className="msg-media-caption">{msg.text.replace(/^①\s*\[1\s*sola\s*vista\]\s*/i, '')}</p>
-                      )}
-                    </div>
-                  ) : msg.content_type === 'image' ? (
+                  {/* Renderizado de imagen */}
+                  {msg.content_type === 'image' ? (
                     <div className="msg-media-container">
                       {msg.media_url ? (
                         <img
@@ -883,11 +812,16 @@ export function ChatArea({
                           }}
                           onClick={() => window.open(mediaSrc(msg, token) || apiUrl(msg.media_url), '_blank')}
                         />
+                      ) : msg.is_view_once ? (
+                        <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1.1rem', color: '#25D366' }}>①</span>
+                          <span>Foto de una sola vista enviada por el cliente (bloqueada por privacidad de WhatsApp)</span>
+                        </div>
                       ) : (
                         <span className="msg-fallback-tag">[Imagen]</span>
                       )}
-                      {msg.text && msg.text !== '📷 [Imagen]' && (
-                        <p className="msg-media-caption">{msg.text}</p>
+                      {msg.text && !['① Foto', '📷 [Imagen]', '① [1 sola vista]'].includes(msg.text) && (
+                        <p className="msg-media-caption">{msg.text.replace(/^①\s*\[1\s*sola\s*vista\]\s*/i, '').replace(/^[①⏱]\s*Foto\s*\(Ver\s*una\s*sola\s*vez\)\s*/i, '')}</p>
                       )}
                     </div>
                   ) : null}
@@ -1018,48 +952,6 @@ export function ChatArea({
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(0)} KB)
             </span>
-
-            {/* Botón WhatsApp de Ver una sola vez ① */}
-            {(filePreview || selectedFile.type?.startsWith('image/')) && (
-              <button
-                type="button"
-                className={`btn-view-once-toggle ${isViewOnce ? 'active' : ''}`}
-                onClick={() => setIsViewOnce(prev => !prev)}
-                title={isViewOnce ? "Foto configurada para verse una sola vez (clic para desactivar)" : "Configurar foto para verse una sola vez (como en WhatsApp)"}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  border: isViewOnce ? 'none' : '1.5px solid var(--border-gold)',
-                  background: isViewOnce ? '#25D366' : 'var(--bg-panel)',
-                  color: isViewOnce ? '#0b141a' : 'var(--text-main)',
-                  fontWeight: '800',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0
-                }}
-              >
-                ①
-              </button>
-            )}
-
-            {isViewOnce && (
-              <span style={{
-                fontSize: '0.75rem',
-                background: 'rgba(37, 211, 102, 0.15)',
-                color: '#16a34a',
-                padding: '3px 8px',
-                borderRadius: '12px',
-                fontWeight: 600,
-                whiteSpace: 'nowrap'
-              }}>
-                1 sola vista
-              </span>
-            )}
 
             <button
               type="button"
@@ -1264,25 +1156,6 @@ export function ChatArea({
             inputRef.current?.focus();
           }}
         />
-      )}
-
-      {/* Visor de foto de una sola vista al estilo WhatsApp */}
-      {viewOnceModalData && (
-        <ViewOnceModal
-          imageUrl={viewOnceModalData.imageUrl}
-          caption={viewOnceModalData.caption}
-          senderName={viewOnceModalData.senderName}
-          timestamp={viewOnceModalData.timestamp}
-          onClose={handleCloseViewOnceModal}
-        />
-      )}
-
-      {/* Notificación flotante al tocar una foto ya abierta */}
-      {viewOnceToast && (
-        <div className="view-once-floating-toast" role="alert">
-          <span style={{ fontWeight: 800, color: '#25D366' }}>①</span>
-          <span>{viewOnceToast}</span>
-        </div>
       )}
     </section>
   );
