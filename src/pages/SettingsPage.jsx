@@ -27,11 +27,25 @@ export function SettingsPage() {
   const [showChannelModal, setShowChannelModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [jsonModalContent, setJsonModalContent] = useState(null);
-  // Estados de Escáner de Facebook / Messenger
+  // Estados de Escáner de Facebook / Meta
   const [showScannerModal, setShowScannerModal] = useState(false);
-  const [scanAppId, setScanAppId] = useState('');
-  const [scanAppSecret, setScanAppSecret] = useState('');
+  const [showMetaConfigModal, setShowMetaConfigModal] = useState(false);
+  const [scanAppId, setScanAppId] = useState(() => {
+    try {
+      return (typeof window !== 'undefined' && localStorage.getItem('meta_scan_app_id')) || '';
+    } catch (e) {
+      return '';
+    }
+  });
+  const [scanAppSecret, setScanAppSecret] = useState(() => {
+    try {
+      return (typeof window !== 'undefined' && localStorage.getItem('meta_scan_app_secret')) || '';
+    } catch (e) {
+      return '';
+    }
+  });
   const [scanToken, setScanToken] = useState('');
+  const [showManualToken, setShowManualToken] = useState(false);
   const [metaAppId, setMetaAppId] = useState('');
   const [metaConfigId, setMetaConfigId] = useState('');
   const [metaVerifyToken, setMetaVerifyToken] = useState('meta_webhook_verify_token_secure_2026');
@@ -53,22 +67,6 @@ export function SettingsPage() {
     colorTag: '#00a884'
   });
   const [channelSubmitting, setChannelSubmitting] = useState(false);
-
-  // Estados de Conexión de Instagram Direct
-  const [showInstagramModal, setShowInstagramModal] = useState(false);
-  const [igForm, setIgForm] = useState({
-    name: '',
-    channelIdentifier: '',
-    accessToken: '',
-    appId: '',
-    appSecret: '',
-    colorTag: '#E1306C'
-  });
-  const [igSubmitting, setIgSubmitting] = useState(false);
-  const [igDetecting, setIgDetecting] = useState(false);
-  const [igDetectedInfo, setIgDetectedInfo] = useState(null);
-  const [igError, setIgError] = useState('');
-  const [showIgSecret, setShowIgSecret] = useState(false);
 
   // Formulario editar canal
   const [editingChannel, setEditingChannel] = useState(null);
@@ -227,95 +225,7 @@ export function SettingsPage() {
     }
   };
 
-  // Handler: Detectar cuenta de Instagram automáticamente usando el Access Token
-  const handleDetectInstagram = async () => {
-    if (!igForm.accessToken || !igForm.accessToken.trim()) {
-      setIgError('Pega primero el Access Token para poder detectar la cuenta de Instagram.');
-      return;
-    }
-    setIgDetecting(true);
-    setIgError('');
-    setIgDetectedInfo(null);
 
-    try {
-      const res = await apiFetch('/api/settings/channels/instagram-lookup', {
-        method: 'POST',
-        body: JSON.stringify({ accessToken: igForm.accessToken.trim() })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setIgError(data.error || 'No se pudo detectar la cuenta automáticamente. Puedes ingresar el ID a mano.');
-        return;
-      }
-
-      const acc = data.account;
-      setIgDetectedInfo(acc);
-      setIgForm(prev => ({
-        ...prev,
-        channelIdentifier: acc.id,
-        name: prev.name || (acc.username ? `Instagram @${acc.username}` : `Instagram ${acc.name}`)
-      }));
-      addToast(`Cuenta @${acc.username || acc.name} detectada con éxito.`, 'success');
-    } catch (err) {
-      setIgError('Error al contactar Meta Graph API: ' + err.message);
-    } finally {
-      setIgDetecting(false);
-    }
-  };
-
-  // Handler: Crear / Conectar Canal de Instagram Direct
-  const handleCreateInstagramChannel = async (e) => {
-    e.preventDefault();
-    if (!igForm.channelIdentifier || !igForm.channelIdentifier.trim()) {
-      setIgError('El identificador de la cuenta de Instagram (Business ID) es obligatorio.');
-      return;
-    }
-    if (!igForm.accessToken || !igForm.accessToken.trim()) {
-      setIgError('El Access Token permanente es obligatorio.');
-      return;
-    }
-
-    setIgSubmitting(true);
-    setIgError('');
-
-    try {
-      const res = await apiFetch('/api/settings/channels', {
-        method: 'POST',
-        body: JSON.stringify({
-          platform: 'instagram',
-          name: igForm.name.trim() || `Instagram @${igForm.channelIdentifier}`,
-          channelIdentifier: igForm.channelIdentifier.trim(),
-          accessToken: igForm.accessToken.trim(),
-          appId: igForm.appId.trim() || null,
-          appSecret: igForm.appSecret.trim() || null,
-          colorTag: igForm.colorTag || '#E1306C'
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setIgError(data.error || 'Error al guardar el canal de Instagram');
-        return;
-      }
-
-      addToast('Canal de Instagram conectado. App ID y Clave Secreta guardados y cifrados.', 'success');
-      setShowInstagramModal(false);
-      setIgForm({
-        name: '',
-        channelIdentifier: '',
-        accessToken: '',
-        appId: '952383644572923',
-        appSecret: 'f3dc334032d662be54a6e0d6492f605f',
-        colorTag: '#E1306C'
-      });
-      setIgDetectedInfo(null);
-      loadChannels();
-    } catch (err) {
-      setIgError('Error al conectar: ' + err.message);
-    } finally {
-      setIgSubmitting(false);
-    }
-  };
 
   // Handler: Abrir Modal Editar Canal
   const handleOpenEditChannel = (channel) => {
@@ -508,19 +418,40 @@ export function SettingsPage() {
     }
   };
 
-  // Traer del servidor el App ID y el ID de configuración del login de Meta.
+  const updateScanAppId = (id) => {
+    const val = (id || '').trim();
+    setScanAppId(val);
+    try {
+      if (val) localStorage.setItem('meta_scan_app_id', val);
+      else localStorage.removeItem('meta_scan_app_id');
+    } catch (e) {}
+  };
+
+  const updateScanAppSecret = (sec) => {
+    const val = (sec || '').trim();
+    setScanAppSecret(val);
+    try {
+      if (val) localStorage.setItem('meta_scan_app_secret', val);
+      else localStorage.removeItem('meta_scan_app_secret');
+    } catch (e) {}
+  };
+
   // Traer del servidor el App ID y el ID de configuración del login de Meta.
   const loadMetaAppInfo = async () => {
     try {
       const res = await apiFetch('/api/settings/channels/meta-app-info');
       if (!res.ok) return;
       const data = await res.json();
-      if (data.facebookAppId) {
-        setMetaAppId(data.facebookAppId);
-        setScanAppId(prev => prev || data.facebookAppId);
-      } else if (data.appId) {
-        setMetaAppId(data.appId);
-        setScanAppId(prev => prev || data.appId);
+      const serverAppId = data.facebookAppId || data.appId || '';
+      if (serverAppId) {
+        setMetaAppId(serverAppId);
+        setScanAppId(prev => {
+          if (!prev) {
+            try { localStorage.setItem('meta_scan_app_id', serverAppId); } catch (e) {}
+            return serverAppId;
+          }
+          return prev;
+        });
       }
       if (data.loginConfigId) setMetaConfigId(data.loginConfigId);
       if (data.verifyToken) setMetaVerifyToken(data.verifyToken);
@@ -533,13 +464,28 @@ export function SettingsPage() {
   const handleOpenScanner = () => {
     setShowScannerModal(true);
     setScanError('');
-    if (!scanAppId) {
-      const existingFb = channels.find(c => c.platform === 'facebook' && c.app_id);
-      if (existingFb?.app_id) {
-        setScanAppId(existingFb.app_id);
-      } else if (metaAppId) {
-        setScanAppId(metaAppId);
+    let idToUse = scanAppId;
+    if (!idToUse) {
+      try {
+        idToUse = localStorage.getItem('meta_scan_app_id') || '';
+      } catch (e) {}
+      if (!idToUse) {
+        const existingFb = channels.find(c => c.app_id);
+        if (existingFb?.app_id) {
+          idToUse = existingFb.app_id;
+        } else if (metaAppId) {
+          idToUse = metaAppId;
+        }
       }
+      if (idToUse) {
+        updateScanAppId(idToUse);
+      }
+    }
+    if (!scanAppSecret) {
+      try {
+        const savedSecret = localStorage.getItem('meta_scan_app_secret') || '';
+        if (savedSecret) updateScanAppSecret(savedSecret);
+      } catch (e) {}
     }
   };
 
@@ -885,6 +831,28 @@ export function SettingsPage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
+                type="button"
+                onClick={handleOpenScanner}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#1877F2',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                  boxShadow: '0 2px 10px rgba(24, 119, 242, 0.3)',
+                  cursor: 'pointer'
+                }}
+                title="Conectar con Facebook para escanear y sincronizar todas tus Fan Pages y cuentas de Instagram vinculadas"
+              >
+                <span style={{ fontSize: '1.15rem', fontWeight: 900 }}>f</span>
+                <span>Conectar con Facebook (Escanear Perfil)</span>
+              </button>
+              <button
                 className="btn-secondary"
                 onClick={() => {
                   setChannelForm({
@@ -899,143 +867,44 @@ export function SettingsPage() {
                   setShowChannelModal(true);
                 }}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
                   borderColor: 'rgba(37, 211, 102, 0.45)',
                   color: '#25D366',
                   background: 'rgba(37, 211, 102, 0.08)'
                 }}
-                title="Conectar número de WhatsApp Cloud API manualmente"
+                title="Conectar número de WhatsApp Cloud API"
               >
                 <IconoDeCanal platform="whatsapp" size={15} />
                 <span>+ Conectar WhatsApp</span>
               </button>
               <button
                 className="btn-secondary"
-                onClick={() => setShowInstagramModal(true)}
+                onClick={() => setShowMetaConfigModal(true)}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  borderColor: 'rgba(225, 48, 108, 0.45)',
-                  color: '#e1306c',
-                  background: 'rgba(225, 48, 108, 0.08)'
+                  gap: '6px',
+                  fontSize: '0.82rem'
                 }}
-                title="Conectar cuenta de Instagram Direct con App ID y App Secret manual"
+                title="Configurar credenciales globales de Meta App (App ID y Secret)"
               >
-                <IconoDeCanal platform="instagram" size={15} />
-                <span>+ Conectar Instagram</span>
+                <span>⚙️</span>
+                <span>Configurar App de Meta</span>
               </button>
               <button
+                type="button"
                 className="btn-secondary"
-                onClick={handleOpenScanner}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  borderColor: 'rgba(24, 119, 242, 0.45)',
-                  color: '#60a5fa',
-                  background: 'rgba(24, 119, 242, 0.08)'
-                }}
-                title="Conectar aplicativo de Facebook y escanear Fan Pages"
-              >
-                <IconoBuscarPaginas size={15} />
-                <span>Escanear Páginas de Facebook</span>
-              </button>
-              <button
-                className="btn-primary-gold"
                 onClick={() => setShowChannelModal(true)}
+                style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--text-muted)'
+                }}
+                title="Conectar canal manualmente pegando tokens directos"
               >
-                <span>+</span>
-                <span>Conectar Manual</span>
+                <span>+ Conectar Manual</span>
               </button>
-            </div>
-          </div>
-
-          {/* Tarjeta de configuración Webhook para Meta Developers */}
-          <div style={{
-            background: 'rgba(212, 175, 55, 0.04)',
-            border: '1px solid rgba(212, 175, 55, 0.25)',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.2rem' }}>🔗</span>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '0.92rem', color: 'var(--text-pure)' }}>
-                    Webhook de Meta Graph API
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Conexión manual y descentralizada: no requieres configurar variables de Meta en el <code>.env</code>. Configura esta URL en tu app de Meta Developers.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-              <div style={{
-                background: 'rgba(0,0,0,0.25)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px'
-              }}>
-                <div style={{ overflow: 'hidden' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>URL de devolución de llamada (Callback URL):</span>
-                  <code style={{ fontSize: '0.8rem', color: '#60a5fa', wordBreak: 'break-all' }}>
-                    {typeof window !== 'undefined' ? `${window.location.origin}/api/webhook` : '/api/webhook'}
-                  </code>
-                </div>
-                <button
-                  type="button"
-                  className="btn-card-action"
-                  title="Copiar URL"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/api/webhook`);
-                    addToast('URL del webhook copiada', 'info');
-                  }}
-                >
-                  Copiar
-                </button>
-              </div>
-
-              <div style={{
-                background: 'rgba(0,0,0,0.25)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px'
-              }}>
-                <div style={{ overflow: 'hidden' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Token de verificación (Verify Token):</span>
-                  <code style={{ fontSize: '0.82rem', color: '#4ade80', wordBreak: 'break-all' }}>
-                    {metaVerifyToken}
-                  </code>
-                </div>
-                <button
-                  type="button"
-                  className="btn-card-action"
-                  title="Copiar Verify Token"
-                  onClick={() => {
-                    navigator.clipboard.writeText(metaVerifyToken);
-                    addToast('Token de verificación copiado', 'info');
-                  }}
-                >
-                  Copiar
-                </button>
-              </div>
             </div>
           </div>
 
@@ -1043,13 +912,34 @@ export function SettingsPage() {
             <div className="empty-state-box">
               <div className="empty-state-icon"><IconoCanales size={28} /></div>
               <h4>No hay canales conectados</h4>
-              <p>Conectá tu primer número de WhatsApp o tu página de Facebook para empezar a recibir mensajes.</p>
-              <button
-                className="btn-primary-gold"
-                onClick={() => setShowChannelModal(true)}
-              >
-                Conectar Primer Canal
-              </button>
+              <p>Conecta tu perfil de Facebook para escanear automáticamente tus páginas e Instagram, o registra tu número de WhatsApp.</p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleOpenScanner}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#1877F2',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>f</span>
+                  <span>Conectar con Facebook (Escanear Perfil)</span>
+                </button>
+                <button
+                  className="btn-primary-gold"
+                  onClick={() => setShowChannelModal(true)}
+                >
+                  Conectar Manual
+                </button>
+              </div>
             </div>
           ) : (
             <div className="channels-grid">
@@ -1125,6 +1015,81 @@ export function SettingsPage() {
               })}
             </div>
           )}
+
+          {/* Datos técnicos de Webhook colapsados para configuración en Meta Developers */}
+          <details style={{
+            marginTop: '24px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            fontSize: '0.82rem'
+          }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--text-muted)' }}>
+              🔧 Datos técnicos de Webhook para developers.facebook.com (Opcional / Consulta)
+            </summary>
+            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Solo necesitas ingresar estos datos una vez en tu aplicación de <strong>developers.facebook.com</strong> para recibir mensajes en tiempo real.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                <div style={{
+                  background: 'rgba(0,0,0,0.25)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Callback URL:</span>
+                    <code style={{ fontSize: '0.78rem', color: '#60a5fa', wordBreak: 'break-all' }}>
+                      {typeof window !== 'undefined' ? `${window.location.origin}/api/webhook` : '/api/webhook'}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-card-action"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/api/webhook`);
+                      addToast('URL del webhook copiada', 'info');
+                    }}
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <div style={{
+                  background: 'rgba(0,0,0,0.25)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Verify Token:</span>
+                    <code style={{ fontSize: '0.8rem', color: '#4ade80', wordBreak: 'break-all' }}>
+                      {metaVerifyToken}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-card-action"
+                    onClick={() => {
+                      navigator.clipboard.writeText(metaVerifyToken);
+                      addToast('Token de verificación copiado', 'info');
+                    }}
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </details>
         </section>
       )}
 
@@ -2114,17 +2079,19 @@ export function SettingsPage() {
         </div>
       )}
 
-      {/* MODAL: ESCÁNER DE PÁGINAS DE FACEBOOK */}
+      {/* MODAL: CONEXIÓN Y ESCÁNER DE META (FACEBOOK E INSTAGRAM) */}
       {showScannerModal && (
         <div className="modal-overlay active" onClick={() => setShowScannerModal(false)}>
           <div className="modal-dialog" style={{ maxWidth: '720px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <IconoBuscarPaginas size={20} />
+                <span style={{ fontSize: '1.4rem' }}>
+                  <IconoDeCanal platform="facebook" size={24} />
+                </span>
                 <div>
-                  <h3>Escanear y Conectar Fan Pages de Facebook</h3>
+                  <h3 style={{ margin: 0 }}>Conectar Cuentas de Meta (Facebook e Instagram)</h3>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Detecta automáticamente todas las páginas de tu perfil y suscríbelas a Messenger e Instagram
+                    Inicia sesión con cualquier perfil de Facebook para detectar automáticamente todas las páginas y cuentas de Instagram vinculadas.
                   </p>
                 </div>
               </div>
@@ -2132,162 +2099,151 @@ export function SettingsPage() {
             </div>
 
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {/* PASO 1: CONECTAR APLICATIVO DE FACEBOOK */}
-              <div style={{
-                background: 'rgba(24, 119, 242, 0.06)',
-                border: '1px solid rgba(24, 119, 242, 0.28)',
-                borderRadius: '10px',
-                padding: '16px 18px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      background: '#1877F2',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem',
-                      fontWeight: 700
-                    }}>1</span>
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-pure)' }}>
-                      Conectar Aplicativo de Facebook (Meta Developers)
-                    </strong>
-                  </div>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(24, 119, 242, 0.15)', color: '#60a5fa', padding: '3px 8px', borderRadius: '6px', fontWeight: 600 }}>
-                    Independiente de WhatsApp
-                  </span>
-                </div>
-
-                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                  Ingresa las credenciales del aplicativo de Facebook para conectar tus páginas. Estos datos se vincularán y guardarán cifrados en cada canal para que sus webhooks no interfieran con tu app de WhatsApp.
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="form-group-custom" style={{ margin: 0 }}>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>App ID de Facebook:</label>
-                    <input
-                      type="text"
-                      className="input-custom"
-                      placeholder="Ej: 123456789012345"
-                      value={scanAppId}
-                      onChange={(e) => setScanAppId(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group-custom" style={{ margin: 0 }}>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Clave secreta (App Secret):</label>
-                    <input
-                      type="password"
-                      className="input-custom"
-                      placeholder="Pega el App Secret de Facebook"
-                      autoComplete="off"
-                      value={scanAppSecret}
-                      onChange={(e) => setScanAppSecret(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* PASO 2: ESCANEAR PÁGINAS */}
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '10px',
-                padding: '16px 18px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    background: 'var(--gold-primary)',
-                    color: '#000',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: 700
-                  }}>2</span>
-                  <strong style={{ fontSize: '0.95rem', color: 'var(--text-pure)' }}>
-                    Escanear y Detectar Fan Pages
+              {/* Si falta el App ID, pedimos configurarlo una sola vez */}
+              {!scanAppId.trim() ? (
+                <div style={{
+                  background: 'rgba(24, 119, 242, 0.08)',
+                  border: '1px solid rgba(24, 119, 242, 0.3)',
+                  borderRadius: '10px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <strong style={{ fontSize: '0.92rem', color: '#60a5fa' }}>
+                    ⚙️ Configuración Inicial del Aplicativo de Meta (Solo 1 vez)
                   </strong>
-                </div>
-
-                {/* Opción A: Botón 1-Click con Facebook */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleFacebookConnect}
-                    disabled={scanning || !scanAppId.trim()}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      width: '100%',
-                      padding: '13px 20px',
-                      background: !scanAppId.trim() ? '#374151' : '#1877F2',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 700,
-                      fontSize: '0.92rem',
-                      cursor: scanning || !scanAppId.trim() ? 'not-allowed' : 'pointer',
-                      boxShadow: '0 4px 15px rgba(24, 119, 242, 0.25)',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.2rem', fontWeight: 900 }}>f</span>
-                    <span>{scanning ? 'Escaneando con Meta...' : 'Iniciar Sesión y Escanear Páginas con esta App'}</span>
-                  </button>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'center' }}>
-                    {!scanAppId.trim()
-                      ? '⚠️ Completa el App ID de Facebook arriba en el Paso 1 para habilitar el botón'
-                      : 'Abre la ventana oficial de Meta para conceder acceso a tus Fan Pages'}
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                    Para habilitar el inicio de sesión oficial con Facebook y escanear tus páginas, ingresa el <strong>App ID</strong> de tu aplicación en developers.facebook.com:
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group-custom" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>App ID de Facebook:</label>
+                      <input
+                        type="text"
+                        className="input-custom"
+                        placeholder="Ej: 123456789012345"
+                        value={scanAppId}
+                        onChange={(e) => updateScanAppId(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group-custom" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>App Secret (Opcional):</label>
+                      <input
+                        type="password"
+                        className="input-custom"
+                        placeholder="Pega el App Secret"
+                        autoComplete="off"
+                        value={scanAppSecret}
+                        onChange={(e) => updateScanAppSecret(e.target.value)}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                {/* Separador */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '2px 0' }}>
-                  <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    O ingresa un User Access Token manualmente
-                  </span>
-                  <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
-                </div>
-
-                {/* Input de Token */}
-                <div className="form-group-custom" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.78rem' }}>Token de Acceso de Usuario de Meta (User Access Token):</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                      type="password"
-                      className="input-custom"
-                      placeholder="EAAB... (Pega tu User Access Token con permisos de páginas)"
-                      value={scanToken}
-                      onChange={(e) => setScanToken(e.target.value)}
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                     <button
                       type="button"
                       className="btn-primary-gold"
-                      onClick={() => handleScanFacebook()}
-                      disabled={scanning || !scanToken.trim()}
-                      style={{ whiteSpace: 'nowrap' }}
+                      disabled={!scanAppId.trim()}
+                      onClick={handleFacebookConnect}
+                      style={{ background: '#1877F2', borderColor: '#1877F2' }}
                     >
-                      {scanning ? 'Escaneando…' : <><IconoBuscar size={14} /> Escanear</>}
+                      Guardar y Continuar con Facebook
                     </button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* App ID configurado: Vista directa y amigable de Facebook Login */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.8rem'
+                  }}>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      Aplicación de Meta: <code style={{ color: '#60a5fa' }}>{scanAppId}</code>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-card-action"
+                      onClick={() => setShowMetaConfigModal(true)}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      Modificar App ID
+                    </button>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleFacebookConnect}
+                      disabled={scanning}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '14px 20px',
+                        background: scanning ? '#374151' : '#1877F2',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        cursor: scanning ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 15px rgba(24, 119, 242, 0.3)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900 }}>f</span>
+                      <span>{scanning ? 'Escaneando con Meta...' : 'Iniciar Sesión con Facebook y Escanear Perfil'}</span>
+                    </button>
+                    <p style={{ margin: '8px 0 0 0', fontSize: '0.76rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                      Inicia sesión con <strong>cualquier perfil de Facebook</strong> que administre tus páginas o cuentas comerciales de Instagram.
+                    </p>
+                  </div>
+
+                  {/* Alternativa de token manual colapsada */}
+                  <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualToken(!showManualToken)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.76rem', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      {showManualToken ? 'Ocultar ingreso de token manual' : '¿Prefieres ingresar un User Access Token manualmente? (Avanzado)'}
+                    </button>
+                  </div>
+
+                  {showManualToken && (
+                    <div className="form-group-custom" style={{ margin: 0, background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px' }}>
+                      <label style={{ fontSize: '0.78rem' }}>Token de Acceso de Usuario de Meta (User Access Token):</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="password"
+                          className="input-custom"
+                          placeholder="EAAB... (User Access Token con permisos de páginas)"
+                          value={scanToken}
+                          onChange={(e) => setScanToken(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn-primary-gold"
+                          onClick={() => handleScanFacebook()}
+                          disabled={scanning || !scanToken.trim()}
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
+                          {scanning ? 'Escaneando…' : 'Escanear'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Error si ocurre */}
               {scanError && (
@@ -2308,10 +2264,10 @@ export function SettingsPage() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                      Páginas encontradas ({scannedPages.length}):
+                      Páginas y cuentas encontradas ({scannedPages.length}):
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Selecciona las que deseas dar de alta en el sistema
+                      Selecciona las que deseas dar de alta. Instagram se conecta automáticamente.
                     </span>
                   </div>
 
@@ -2361,11 +2317,13 @@ export function SettingsPage() {
                                 Identificador en Meta: <code>{page.id}</code>
                               </div>
                               {page.instagram && (
-                                <div style={{ fontSize: '0.74rem', color: 'var(--ig-pink)', fontWeight: 600, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <IconoDeCanal platform="instagram" size={16} />
-                                  <span>Cuenta de Instagram vinculada: <strong>@{page.instagram.username}</strong></span>
-                                  {page.instagram.alreadyConnected && (
+                                <div style={{ fontSize: '0.76rem', color: '#E1306C', fontWeight: 600, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <IconoDeCanal platform="instagram" size={15} />
+                                  <span>Cuenta de Instagram: <strong>@{page.instagram.username}</strong></span>
+                                  {page.instagram.alreadyConnected ? (
                                     <span style={{ color: 'var(--wa-green)', fontWeight: 600 }}>(Ya vinculada)</span>
+                                  ) : (
+                                    <span style={{ color: '#60a5fa', fontWeight: 500 }}>(Se conectará automáticamente)</span>
                                   )}
                                 </div>
                               )}
@@ -2409,9 +2367,81 @@ export function SettingsPage() {
                 >
                   {connectingPages
                     ? 'Conectando y suscribiendo...'
-                    : `Conectar ${selectedPagesToConnect.length} Página(s)`}
+                    : `Conectar ${selectedPagesToConnect.length} Canal(es)`}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIGURAR CREDENCIALES DE APP DE META */}
+      {showMetaConfigModal && (
+        <div className="modal-overlay active" onClick={() => setShowMetaConfigModal(false)}>
+          <div className="modal-dialog" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.4rem' }}>⚙️</span>
+                <div>
+                  <h3 style={{ margin: 0 }}>Configurar App de Meta</h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Credenciales de tu aplicación en developers.facebook.com
+                  </p>
+                </div>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowMetaConfigModal(false)}>&times;</button>
+            </div>
+
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                Configura el <strong>App ID</strong> y <strong>App Secret</strong> de tu aplicación de Meta Developers. Estos datos se guardan y permiten iniciar sesión con cualquier perfil de Facebook sin volver a pedirlos.
+              </p>
+
+              <div className="form-group-custom" style={{ margin: 0 }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Identificador de App (App ID):</label>
+                <input
+                  type="text"
+                  className="input-custom"
+                  placeholder="Ej: 123456789012345"
+                  value={scanAppId}
+                  onChange={(e) => updateScanAppId(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group-custom" style={{ margin: 0 }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Clave secreta de la App (App Secret):</label>
+                <input
+                  type="password"
+                  className="input-custom"
+                  placeholder="Pega el App Secret de Facebook"
+                  autoComplete="off"
+                  value={scanAppSecret}
+                  onChange={(e) => updateScanAppSecret(e.target.value)}
+                />
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  🔒 Se almacena localmente y se cifra con AES-256-GCM al conectar canales.
+                </span>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowMetaConfigModal(false)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="btn-primary-gold"
+                onClick={() => {
+                  setShowMetaConfigModal(false);
+                  addToast('Credenciales de Meta guardadas correctamente', 'success');
+                }}
+              >
+                Guardar Configuración
+              </button>
             </div>
           </div>
         </div>
