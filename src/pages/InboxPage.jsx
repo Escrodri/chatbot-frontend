@@ -5,7 +5,6 @@ import { ChatArea } from '../components/inbox/ChatArea';
 import { EmptyState } from '../components/inbox/EmptyState';
 import { NotesPanel } from '../components/NotesPanel';
 import { OrderPanel } from '../components/inbox/OrderPanel';
-import { ReportBuilder } from '../components/ReportBuilder';
 import { ContactsManager } from '../components/ContactsManager';
 import { SearchResults } from '../components/SearchResults';
 import { messageSearchService } from '../services/messageSearch.service';
@@ -25,7 +24,6 @@ export function InboxPage() {
 
   // Estados de modales y herramientas
   const [showOrderPanel, setShowOrderPanel] = useState(false);
-  const [showReports, setShowReports] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -344,14 +342,6 @@ export function InboxPage() {
         >
           👥
         </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          onClick={() => setShowReports(true)}
-          title="Generador de Reportes"
-        >
-          📋
-        </button>
         {selectedConversation && (
           <button
             type="button"
@@ -378,12 +368,7 @@ export function InboxPage() {
       {showContacts && (
         <ContactsManager
           onClose={() => setShowContacts(false)}
-        />
-      )}
-
-      {showReports && (
-        <ReportBuilder
-          onClose={() => setShowReports(false)}
+          onAbrirChat={handleSelectChat}
         />
       )}
 

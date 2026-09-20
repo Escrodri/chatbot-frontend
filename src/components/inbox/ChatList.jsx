@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { IconoDeCanal } from '../Icons';
 import { conversationNotesService } from '../../services/conversationNotes.service';
-import { ConversationTags } from '../ConversationTags';
 import { OrderBadge } from './OrderBadge';
 const PLATFORM_COLORS = {
   whatsapp: '#25d366',
@@ -203,8 +202,20 @@ export function ChatList({
                     <span className="chat-time">{formatChatTime(chat.last_message_time)}</span>
                   </div>
 
-                  {note?.tags && note.tags.length > 0 && (
-                    <ConversationTags tags={note.tags} />
+                  {Array.isArray(chat.tags) && chat.tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '3px' }}>
+                      {chat.tags.map(t => (
+                        <span key={t.id} title={t.name} style={{
+                          fontSize: '9.5px', fontWeight: 700, lineHeight: 1,
+                          padding: '3px 6px', borderRadius: '4px',
+                          color: '#fff', background: t.color || '#6b7280',
+                          maxWidth: '110px', overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                        }}>
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
                   )}
 
                   <div className="chat-info-bottom">
