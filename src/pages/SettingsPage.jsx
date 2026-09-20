@@ -189,9 +189,18 @@ export function SettingsPage() {
     setChannelSubmitting(true);
 
     try {
+      const payload = {
+        ...channelForm,
+        name: channelForm.name.trim(),
+        channelIdentifier: String(channelForm.channelIdentifier || '').trim().replace(/\s+/g, ''),
+        accessToken: channelForm.accessToken.trim(),
+        appId: channelForm.appId?.trim() || (metaAppInfo?.appId || ''),
+        appSecret: channelForm.appSecret?.trim() || ''
+      };
+
       const res = await apiFetch('/api/settings/channels', {
         method: 'POST',
-        body: JSON.stringify(channelForm)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -201,18 +210,18 @@ export function SettingsPage() {
         return;
       }
 
-      addToast('Canal conectado. Sus credenciales quedaron guardadas de forma cifrada.', 'success');
+      addToast('Canal conectado exitosamente. Guardado de forma cifrada.', 'success');
       setShowChannelModal(false);
       setChannelForm({
         platform: 'whatsapp',
         name: '',
         channelIdentifier: '',
         accessToken: '',
-        appId: '',
+        appId: metaAppInfo?.appId || '',
         appSecret: '',
-        colorTag: '#00a884'
+        colorTag: '#25D366'
       });
-      loadChannels();
+      await loadChannels();
     } catch (err) {
       addToast('Error al conectar canal: ' + err.message, 'error');
     } finally {
@@ -898,7 +907,7 @@ export function SettingsPage() {
                     name: '',
                     channelIdentifier: '',
                     accessToken: '',
-                    appId: '',
+                    appId: metaAppInfo?.appId || '',
                     appSecret: '',
                     colorTag: '#25D366'
                   });
@@ -921,7 +930,18 @@ export function SettingsPage() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => setShowChannelModal(true)}
+                onClick={() => {
+                  setChannelForm({
+                    platform: 'whatsapp',
+                    name: '',
+                    channelIdentifier: '',
+                    accessToken: '',
+                    appId: metaAppInfo?.appId || '',
+                    appSecret: '',
+                    colorTag: '#25D366'
+                  });
+                  setShowChannelModal(true);
+                }}
                 style={{
                   fontSize: '0.8rem',
                   color: 'var(--text-muted)'
@@ -940,9 +960,33 @@ export function SettingsPage() {
               {!isAppConnected ? (
                 <>
                   <p>
-                    <strong>Paso 1:</strong> Conecta tu aplicativo de Meta para habilitar la vinculación de Facebook, Instagram y Business Manager.
+                    Puedes conectar tu número de WhatsApp Cloud API directamente, o conectar tu aplicativo de Meta para vincular Facebook e Instagram.
                   </p>
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-primary-gold"
+                      onClick={() => {
+                        setChannelForm({
+                          platform: 'whatsapp',
+                          name: '',
+                          channelIdentifier: '',
+                          accessToken: '',
+                          appId: metaAppInfo?.appId || '',
+                          appSecret: '',
+                          colorTag: '#25D366'
+                        });
+                        setShowChannelModal(true);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <IconoDeCanal platform="whatsapp" size={16} />
+                      <span>+ Conectar WhatsApp</span>
+                    </button>
                     <button
                       type="button"
                       onClick={openMetaConfigModal}
@@ -963,7 +1007,7 @@ export function SettingsPage() {
                       <span>Conectar Aplicativo de Meta (Paso 1)</span>
                     </button>
                     <button
-                      className="btn-primary-gold"
+                      className="btn-secondary"
                       onClick={() => setShowChannelModal(true)}
                     >
                       Conectar Manual
@@ -1456,6 +1500,20 @@ export function SettingsPage() {
                 </div>
               )}
 
+              {/* Banner de guía para WhatsApp Cloud API */}
+              {channelForm.platform === 'whatsapp' && (
+                <div style={{ background: 'rgba(37, 211, 102, 0.1)', border: '1px solid rgba(37, 211, 102, 0.35)', borderRadius: '8px', padding: '12px 14px', fontSize: '0.82rem', color: 'var(--text-body)', lineHeight: '1.45' }}>
+                  <div style={{ fontWeight: 600, color: '#25D366', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <span>📌</span>
+                    <span>Requisitos para WhatsApp Cloud API</span>
+                  </div>
+                  <div>
+                    1. <strong>Identificador de número (Phone Number ID):</strong> ID numérico de 15 o 16 dígitos generado por Meta (ej: <code>105948305938492</code>). <em>No es tu número móvil personal ni lleva prefijo (+54...).</em> Lo encuentras en Meta for Developers → Tu App → WhatsApp → Primeros pasos.<br/>
+                    2. <strong>Access Token Permanente:</strong> Token de Sistema o Graph API con permiso <code>whatsapp_business_messaging</code>.
+                  </div>
+                </div>
+              )}
+
               <div className="form-group-custom">
                 <label>Nombre descriptivo / Alias:</label>
                 <input
@@ -1487,17 +1545,17 @@ export function SettingsPage() {
                   className="input-custom"
                   placeholder={
                     channelForm.platform === 'whatsapp'
-                      ? 'Ej: 1111313208738572 (15 o 16 dígitos)'
+                      ? 'Ej: 1111313208738572 (15 o 16 dígitos de Meta)'
                       : channelForm.platform === 'facebook'
                       ? 'Ej: 104589218938291 (ID de tu Fan Page)'
                       : 'Ej: 17841400123456789 (ID de cuenta Instagram Business)'
                   }
                   required
                   value={channelForm.channelIdentifier}
-                  onChange={(e) => setChannelForm(prev => ({ ...prev, channelIdentifier: e.target.value }))}
+                  onChange={(e) => setChannelForm(prev => ({ ...prev, channelIdentifier: e.target.value.replace(/\s+/g, '') }))}
                 />
                 <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                  {channelForm.platform === 'whatsapp' && 'Cópialo desde Meta for Developers → WhatsApp → Primeros pasos → Identificador de número de teléfono.'}
+                  {channelForm.platform === 'whatsapp' && 'Cópialo desde Meta for Developers → WhatsApp → Primeros pasos → "Identificador de número de teléfono" (NO tu número con +54).'}
                   {channelForm.platform === 'facebook' && 'Lo encuentras en tu Página de Facebook → Configuración → Información de la página → ID de la página.'}
                   {channelForm.platform === 'instagram' && 'Identificador de la cuenta de Instagram Business vinculada a tu Fan Page de Facebook.'}
                 </span>
