@@ -38,6 +38,8 @@ export function SettingsPage() {
     }
   });
   const [scanAppSecret, setScanAppSecret] = useState('');
+  const [metaFormAppId, setMetaFormAppId] = useState(scanAppId);
+  const [metaFormAppSecret, setMetaFormAppSecret] = useState(scanAppSecret);
   const isAppConnected = Boolean(scanAppId && scanAppId.trim());
   const [scanToken, setScanToken] = useState('');
   const [showManualToken, setShowManualToken] = useState(false);
@@ -439,14 +441,26 @@ export function SettingsPage() {
     }
   };
 
+  // Handler: abrir modal de configuración de la App de Meta
+  const openMetaConfigModal = () => {
+    setMetaFormAppId(scanAppId);
+    setMetaFormAppSecret(scanAppSecret);
+    setShowMetaConfigModal(true);
+  };
+
   // Handler: abrir modal de escaneo de Facebook con credenciales locales del operador
   const handleOpenScanner = () => {
+    setMetaFormAppId(scanAppId);
+    setMetaFormAppSecret(scanAppSecret);
     setShowScannerModal(true);
     setScanError('');
     if (!scanAppId) {
       try {
         const savedId = localStorage.getItem('meta_scan_app_id') || '';
-        if (savedId) updateScanAppId(savedId);
+        if (savedId) {
+          updateScanAppId(savedId);
+          setMetaFormAppId(savedId);
+        }
       } catch (e) {}
     }
     // El App Secret no se recupera de localStorage por seguridad.
@@ -595,8 +609,8 @@ export function SettingsPage() {
   // SDK de JavaScript y que el dominio figure entre los permitidos.
   // Si Meta llegara a devolver un 'code' en vez de un token, también se soporta:
   // el backend lo canjea en /channels/facebook-exchange-code.
-  const handleFacebookConnect = () => {
-    const effectiveAppId = (scanAppId || '').trim();
+  const handleFacebookConnect = (overrideAppId) => {
+    const effectiveAppId = (typeof overrideAppId === 'string' ? overrideAppId : (scanAppId || '')).trim();
     if (!effectiveAppId) {
       setScanError('Por favor ingresa el App ID de tu aplicación de Facebook en el Paso 1 antes de conectar.');
       return;
@@ -808,7 +822,7 @@ export function SettingsPage() {
                     <span>✅ App Conectada: <strong>{scanAppId}</strong></span>
                     <button
                       type="button"
-                      onClick={() => setShowMetaConfigModal(true)}
+                      onClick={openMetaConfigModal}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -850,7 +864,7 @@ export function SettingsPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setShowMetaConfigModal(true)}
+                  onClick={openMetaConfigModal}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -927,7 +941,7 @@ export function SettingsPage() {
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      onClick={() => setShowMetaConfigModal(true)}
+                      onClick={openMetaConfigModal}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1993,8 +2007,8 @@ export function SettingsPage() {
                         type="text"
                         className="input-custom"
                         placeholder="Ej: 123456789012345"
-                        value={scanAppId}
-                        onChange={(e) => updateScanAppId(e.target.value)}
+                        value={metaFormAppId}
+                        onChange={(e) => setMetaFormAppId(e.target.value)}
                       />
                     </div>
                     <div className="form-group-custom" style={{ margin: 0 }}>
@@ -2004,8 +2018,8 @@ export function SettingsPage() {
                         className="input-custom"
                         placeholder="Pega el App Secret"
                         autoComplete="off"
-                        value={scanAppSecret}
-                        onChange={(e) => updateScanAppSecret(e.target.value)}
+                        value={metaFormAppSecret}
+                        onChange={(e) => setMetaFormAppSecret(e.target.value)}
                       />
                     </div>
                   </div>
@@ -2013,8 +2027,13 @@ export function SettingsPage() {
                     <button
                       type="button"
                       className="btn-primary-gold"
-                      disabled={!scanAppId.trim()}
-                      onClick={handleFacebookConnect}
+                      disabled={!metaFormAppId.trim()}
+                      onClick={() => {
+                        if (!metaFormAppId.trim()) return;
+                        updateScanAppId(metaFormAppId);
+                        updateScanAppSecret(metaFormAppSecret);
+                        handleFacebookConnect(metaFormAppId);
+                      }}
                       style={{ background: '#1877F2', borderColor: '#1877F2' }}
                     >
                       Guardar y Continuar con Facebook
@@ -2273,8 +2292,8 @@ export function SettingsPage() {
                   type="text"
                   className="input-custom"
                   placeholder="Ej: 123456789012345"
-                  value={scanAppId}
-                  onChange={(e) => updateScanAppId(e.target.value)}
+                  value={metaFormAppId}
+                  onChange={(e) => setMetaFormAppId(e.target.value)}
                 />
               </div>
 
@@ -2285,8 +2304,8 @@ export function SettingsPage() {
                   className="input-custom"
                   placeholder="Pega el App Secret de Facebook"
                   autoComplete="off"
-                  value={scanAppSecret}
-                  onChange={(e) => updateScanAppSecret(e.target.value)}
+                  value={metaFormAppSecret}
+                  onChange={(e) => setMetaFormAppSecret(e.target.value)}
                 />
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                   🔒 Se almacena localmente y se cifra con AES-256-GCM al conectar canales.
@@ -2295,7 +2314,7 @@ export function SettingsPage() {
             </div>
 
             <div className="modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
-              {(scanAppId || scanAppSecret) && (
+              {(scanAppId || scanAppSecret || metaFormAppId || metaFormAppSecret) && (
                 <button
                   type="button"
                   style={{
@@ -2313,6 +2332,8 @@ export function SettingsPage() {
                   onClick={() => {
                     updateScanAppId('');
                     updateScanAppSecret('');
+                    setMetaFormAppId('');
+                    setMetaFormAppSecret('');
                     setShowMetaConfigModal(false);
                     addToast('Credenciales de Meta eliminadas de este navegador', 'info');
                   }}
@@ -2330,7 +2351,10 @@ export function SettingsPage() {
               <button
                 type="button"
                 className="btn-primary-gold"
+                disabled={!metaFormAppId.trim()}
                 onClick={() => {
+                  updateScanAppId(metaFormAppId);
+                  updateScanAppSecret(metaFormAppSecret);
                   setShowMetaConfigModal(false);
                   addToast('Credenciales de Meta guardadas localmente', 'success');
                 }}
