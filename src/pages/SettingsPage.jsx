@@ -37,13 +37,7 @@ export function SettingsPage() {
       return '';
     }
   });
-  const [scanAppSecret, setScanAppSecret] = useState(() => {
-    try {
-      return (typeof window !== 'undefined' && localStorage.getItem('meta_scan_app_secret')) || '';
-    } catch (e) {
-      return '';
-    }
-  });
+  const [scanAppSecret, setScanAppSecret] = useState('');
   const isAppConnected = Boolean(scanAppId && scanAppId.trim());
   const [scanToken, setScanToken] = useState('');
   const [showManualToken, setShowManualToken] = useState(false);
@@ -429,10 +423,8 @@ export function SettingsPage() {
   const updateScanAppSecret = (sec) => {
     const val = (sec || '').trim();
     setScanAppSecret(val);
-    try {
-      if (val) localStorage.setItem('meta_scan_app_secret', val);
-      else localStorage.removeItem('meta_scan_app_secret');
-    } catch (e) {}
+    // No se persiste en localStorage: el App Secret solo vive en memoria
+    // y se pierde al cerrar la pestaña, por seguridad.
   };
 
   // Traer del servidor el token de verificación de webhooks de Meta
@@ -457,12 +449,8 @@ export function SettingsPage() {
         if (savedId) updateScanAppId(savedId);
       } catch (e) {}
     }
-    if (!scanAppSecret) {
-      try {
-        const savedSecret = localStorage.getItem('meta_scan_app_secret') || '';
-        if (savedSecret) updateScanAppSecret(savedSecret);
-      } catch (e) {}
-    }
+    // El App Secret no se recupera de localStorage por seguridad.
+    // El operador debe reingresarlo en cada sesión.
   };
 
   // Handler: abrir el editor de canales de un operador
@@ -1569,184 +1557,8 @@ export function SettingsPage() {
         </div>
       )}
 
-      {/* MODAL: CONECTAR INSTAGRAM DIRECT MANUALMENTE */}
-      {showInstagramModal && (
-        <div className="modal-overlay active" onClick={() => setShowInstagramModal(false)}>
-          <div className="modal-dialog" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <IconoDeCanal platform="instagram" size={24} />
-                <div>
-                  <h3 style={{ margin: 0 }}>Conectar Instagram Direct</h3>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Configuración manual con credenciales de tu aplicación de Meta
-                  </p>
-                </div>
-              </div>
-              <button className="btn-close-modal" onClick={() => setShowInstagramModal(false)}>&times;</button>
-            </div>
 
-            <form onSubmit={handleCreateInstagramChannel} style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px 24px' }}>
-              {igError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.82rem', color: '#f87171' }}>
-                  {igError}
-                </div>
-              )}
 
-              {/* Credenciales de la App de Meta */}
-              <div style={{
-                background: 'rgba(225, 48, 108, 0.05)',
-                border: '1px solid rgba(225, 48, 108, 0.25)',
-                borderRadius: '10px',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <strong style={{ fontSize: '0.88rem', color: '#e1306c', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <IconoDeCanal platform="instagram" size={16} /> Credenciales de la App de Meta
-                  </strong>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(225, 48, 108, 0.15)', color: '#f472b6', padding: '2px 8px', borderRadius: '4px' }}>
-                    Cifrado AES-256-GCM
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="form-group-custom" style={{ margin: 0 }}>
-                    <label style={{ fontSize: '0.8rem' }}>Identificador de App (App ID):</label>
-                    <input
-                      type="text"
-                      className="input-custom"
-                      value={igForm.appId}
-                      onChange={(e) => setIgForm(prev => ({ ...prev, appId: e.target.value }))}
-                      placeholder="Ej: 123456789012345"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group-custom" style={{ margin: 0 }}>
-                    <label style={{ fontSize: '0.8rem' }}>Clave secreta (App Secret):</label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type={showIgSecret ? 'text' : 'password'}
-                        className="input-custom"
-                        style={{ paddingRight: '60px' }}
-                        value={igForm.appSecret}
-                        onChange={(e) => setIgForm(prev => ({ ...prev, appSecret: e.target.value }))}
-                        placeholder="App Secret"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowIgSecret(!showIgSecret)}
-                        style={{
-                          position: 'absolute',
-                          right: '8px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem'
-                        }}
-                      >
-                        {showIgSecret ? 'Ocultar' : 'Ver'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Access Token */}
-              <div className="form-group-custom" style={{ margin: 0 }}>
-                <label style={{ fontSize: '0.82rem' }}>Access Token Permanente (Graph API):</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="password"
-                    className="input-custom"
-                    placeholder="EAAB..."
-                    required
-                    autoComplete="off"
-                    value={igForm.accessToken}
-                    onChange={(e) => setIgForm(prev => ({ ...prev, accessToken: e.target.value }))}
-                  />
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={handleDetectInstagram}
-                    disabled={igDetecting || !igForm.accessToken.trim()}
-                    style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', padding: '0 12px' }}
-                    title="Detecta automáticamente el ID y usuario de tu cuenta de Instagram con el token"
-                  >
-                    {igDetecting ? 'Detectando...' : '🔍 Detectar ID'}
-                  </button>
-                </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                  Token con permisos <code>instagram_manage_messages</code> e <code>instagram_basic</code>.
-                </span>
-              </div>
-
-              {igDetectedInfo && (
-                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.82rem', color: '#4ade80' }}>
-                  ✅ Cuenta detectada: <strong>@{igDetectedInfo.username || igDetectedInfo.name}</strong> (ID: <code>{igDetectedInfo.id}</code>)
-                  {igDetectedInfo.source && <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.85 }}>{igDetectedInfo.source}</span>}
-                </div>
-              )}
-
-              {/* ID de cuenta de Instagram y Nombre */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group-custom" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.82rem' }}>ID de Cuenta Instagram Business:</label>
-                  <input
-                    type="text"
-                    className="input-custom"
-                    placeholder="Ej: 17841400123456789"
-                    required
-                    value={igForm.channelIdentifier}
-                    onChange={(e) => setIgForm(prev => ({ ...prev, channelIdentifier: e.target.value }))}
-                  />
-                </div>
-
-                <div className="form-group-custom" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.82rem' }}>Nombre para la Bandeja:</label>
-                  <input
-                    type="text"
-                    className="input-custom"
-                    placeholder="Ej: Instagram @tucuenta"
-                    value={igForm.name}
-                    onChange={(e) => setIgForm(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Recordatorio de webhook en developers.facebook.com */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                💡 <strong>Recordatorio importante:</strong> En tu app de Meta Developers (ID: <code>{igForm.appId || 'tu-app'}</code>), el Webhook debe apuntar a tu URL y tener suscrito el objeto <strong>Instagram</strong> al campo <code>messages</code>. Además, en tu celular activa <em>Configuración &gt; Mensajes &gt; Permitir acceso a los mensajes</em>.
-              </div>
-
-              <div className="modal-footer-custom" style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowInstagramModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary-gold"
-                  disabled={igSubmitting}
-                  style={{ background: 'linear-gradient(135deg, #E1306C, #C13584)', borderColor: '#E1306C' }}
-                >
-                  {igSubmitting ? 'Guardando...' : 'Conectar Instagram Direct'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* MODAL: EDITAR CANAL */}
       {editingChannel && (
