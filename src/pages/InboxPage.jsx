@@ -7,7 +7,9 @@ import { NotesPanel } from '../components/NotesPanel';
 import { OrderPanel } from '../components/inbox/OrderPanel';
 import { ContactsManager } from '../components/ContactsManager';
 import { SearchResults } from '../components/SearchResults';
+import { AutomationAlert } from '../components/inbox/AutomationAlert';
 import { messageSearchService } from '../services/messageSearch.service';
+import { automationService } from '../services/automation.service';
 import '../inbox.css';
 
 export function InboxPage() {
@@ -28,6 +30,11 @@ export function InboxPage() {
   const [showNotesPanel, setShowNotesPanel] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Estado de la automatización. Se consulta cada 20 segundos: no hace falta
+  // más, porque el aviso es para que una persona tome el chat, no para
+  // reaccionar al milisegundo.
+  const [automationEstado, setAutomationEstado] = useState(null);
 
   // Indexar conversaciones para búsqueda avanzada de mensajes
   useEffect(() => {
@@ -114,6 +121,23 @@ export function InboxPage() {
     const interval = setInterval(loadConversations, 5000);
     return () => clearInterval(interval);
   }, [loadConversations]);
+
+  // Vigilancia de la automatización. Si n8n deja de atender, el cliente escribe
+  // y nadie contesta: sin esto, el silencio no se distingue de un chat tranquilo.
+  const loadAutomationEstado = useCallback(async () => {
+    try {
+      setAutomationEstado(await automationService.obtenerEstado(apiFetch));
+    } catch (err) {
+      // Que falle la consulta de diagnóstico no puede ensuciar la bandeja.
+      console.error('Error al consultar el estado de la automatización:', err);
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    loadAutomationEstado();
+    const interval = setInterval(loadAutomationEstado, 20000);
+    return () => clearInterval(interval);
+  }, [loadAutomationEstado]);
 
   // Al cambiar conversación seleccionada
   useEffect(() => {
@@ -284,6 +308,13 @@ export function InboxPage() {
 
   return (
     <div className="inbox-layout">
+      {/* Aviso de que las respuestas automáticas no están saliendo */}
+      <AutomationAlert
+        estado={automationEstado}
+        apiFetch={apiFetch}
+        onCerrar={() => setAutomationEstado(prev => (prev ? { ...prev, hayProblema: false } : prev))}
+      />
+
       {/* Columna Izquierda: Lista de Chats */}
       <ChatList
         conversations={conversations}
