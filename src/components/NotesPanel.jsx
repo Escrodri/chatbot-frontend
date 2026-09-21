@@ -4,12 +4,22 @@ import { conversationNotesService } from '../services/conversationNotes.service'
 import { IconoEditar, IconoEliminar, IconoAgregar } from './Icons';
 
 /**
- * Notes Panel component
+ * Panel lateral de notas y etiquetas de una conversación.
  *
- * Shows notes and tags for a conversation in a side panel.
- * Allows editing notes, adding/removing tags, and renaming contact.
+ * Dos cosas distintas conviven acá. Las NOTAS son privadas del equipo y no las
+ * ve el cliente: sirven para dejar escrito lo que no entra en ningún estado,
+ * del tipo "pidió factura a nombre de la escuela" o "avisó que paga el viernes".
+ * Las ETIQUETAS son compartidas por todo el equipo y viven en la base, así que
+ * lo que marque uno lo ve el resto; son para clasificar y después filtrar la
+ * bandeja.
+ *
+ * Recibe la conversación entera, no solo el id: necesita el nombre y el
+ * teléfono para el bloque de contacto. Antes la bandeja le pasaba
+ * `conversationId` suelto, así que `conversation` llegaba indefinido, el
+ * componente se cortaba en el `if (!conversation)` de abajo y el panel se abría
+ * vacío. Ese era el motivo de que el botón pareciera muerto.
  */
-export function NotesPanel({ conversation }) {
+export function NotesPanel({ conversation, onClose = null }) {
   const [noteText, setNoteText] = useState('');
   const [tags, setTags] = useState([]);
   const [contactName, setContactName] = useState('');
@@ -66,6 +76,22 @@ export function NotesPanel({ conversation }) {
   return (
     <div className="notes-panel">
       <div className="notes-panel-content">
+        {onClose && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <strong style={{ fontSize: '.95rem' }}>Notas y etiquetas</strong>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                fontSize: '.82rem', textDecoration: 'underline', color: 'inherit', padding: '4px'
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+
         {/* Contact Name Section */}
         <div className="notes-section">
           <h4 className="section-title">Contacto</h4>

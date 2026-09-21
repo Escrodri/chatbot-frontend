@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ChatList } from '../components/inbox/ChatList';
 import { ChatArea } from '../components/inbox/ChatArea';
@@ -10,10 +11,15 @@ import { SearchResults } from '../components/SearchResults';
 import { AutomationAlert } from '../components/inbox/AutomationAlert';
 import { messageSearchService } from '../services/messageSearch.service';
 import { automationService } from '../services/automation.service';
+import { ordersService } from '../services/orders.service';
 import '../inbox.css';
 
 export function InboxPage() {
-  const { apiFetch, user } = useAuth();
+  const { apiFetch, user, token } = useAuth();
+
+  // "Abrir chat" desde el tablero de Pedidos llega como /inbox?conversation=12.
+  // Sin esto la bandeja se abría vacía y el botón parecía roto.
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -35,6 +41,10 @@ export function InboxPage() {
   // más, porque el aviso es para que una persona tome el chat, no para
   // reaccionar al milisegundo.
   const [automationEstado, setAutomationEstado] = useState(null);
+
+  // Estado del pedido manejado desde el propio chat, sin ir al tablero.
+  const [cambiandoPedido, setCambiandoPedido] = useState(false);
+  const [avisoPedido, setAvisoPedido] = useState(null);
 
   // Indexar conversaciones para búsqueda avanzada de mensajes
   useEffect(() => {
@@ -110,6 +120,7 @@ export function InboxPage() {
   const handleSelectChat = useCallback((id) => {
     if (id === selectedId) return;
     setSendBanner(null);
+    setAvisoPedido(null);
     setMessages([]);
     setLoadingMessages(true);
     setSelectedId(id);
@@ -121,6 +132,23 @@ export function InboxPage() {
     const interval = setInterval(loadConversations, 5000);
     return () => clearInterval(interval);
   }, [loadConversations]);
+
+  // Selección por dirección: se aplica una sola vez, cuando la conversación ya
+  // está en la lista. Después se limpia el parámetro para que refrescar la
+  // página no vuelva a arrastrar al asesor al mismo chat.
+  useEffect(() => {
+    const pedido = searchParams.get('conversation');
+    if (!pedido) return;
+
+    const id = parseInt(pedido, 10);
+    if (isNaN(id)) return;
+
+    if (conversations.some(c => c.id === id)) {
+      setSelectedId(id);
+      searchParams.delete('conversation');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, conversations]);
 
   // Vigilancia de la automatización. Si n8n deja de atender, el cliente escribe
   // y nadie contesta: sin esto, el silencio no se distingue de un chat tranquilo.
@@ -301,6 +329,42 @@ export function InboxPage() {
     }
   };
 
+  /**
+   * Confirma o rechaza el pedido del chat abierto.
+   *
+   * Confirmar dispara la entrega del enlace; rechazar manda el aviso de que la
+   * transferencia todavía no figura. Los dos avisan al cliente: el backend se
+   * encarga, acá solo se muestra qué pasó.
+   */
+  const cambiarEstadoPedido = useCallback(async (nuevoEstado) => {
+    const conv = conversations.find(c => c.id === selectedId);
+    if (!conv?.order_id) return;
+
+    const texto = nuevoEstado === 'pagado'
+      ? `Vas a confirmar el pago de ${conv.contact_name || 'este cliente'} y mandarle el material.\n\nHacelo solo si ya viste la transferencia en el extracto del banco.`
+      : `Le vas a avisar a ${conv.contact_name || 'este cliente'} que la transferencia todavía no figura acreditada, y que mande la captura de nuevo.`;
+
+    if (!window.confirm(texto)) return;
+
+    setCambiandoPedido(true);
+    setAvisoPedido(null);
+    try {
+      const res = await ordersService.cambiarEstado(token, conv.order_id, nuevoEstado);
+      const entrega = res.entrega;
+      setAvisoPedido(
+        entrega?.enviado
+          ? { ok: true, texto: 'Mensaje enviado al cliente.' }
+          : { ok: false, texto: entrega?.detalle || 'Se guardó el estado, pero el mensaje no salió.' }
+      );
+      await loadConversations();
+      await loadMessages(conv.id, false);
+    } catch (err) {
+      setAvisoPedido({ ok: false, texto: err.message });
+    } finally {
+      setCambiandoPedido(false);
+    }
+  }, [conversations, selectedId, token, loadConversations, loadMessages]);
+
   // Actualizar un mensaje específico en memoria de inmediato (ej: marcado de visto)
   const handleMessageUpdate = useCallback((messageId, updates) => {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...updates } : m));
@@ -357,40 +421,89 @@ export function InboxPage() {
 
       {showNotesPanel && selectedConversation && (
         <NotesPanel
-          conversationId={selectedConversation.id}
-          contactName={selectedConversation.contact_name}
+          conversation={selectedConversation}
           onClose={() => setShowNotesPanel(false)}
         />
       )}
 
-      {/* Barra de herramientas para modales y paneles */}
-      <div className="inbox-toolbar">
-        <button
-          type="button"
-          className="toolbar-btn"
-          onClick={() => setShowContacts(true)}
-          title="Directorio de Contactos"
-        >
-          👥
-        </button>
+      {/* Barra lateral del chat: estado del pedido y accesos a los paneles.
+          Antes eran tres emojis sin texto y nadie sabía qué hacía cada uno. */}
+      <div className="inbox-toolbar" style={{ minWidth: '168px', alignItems: 'stretch', gap: '8px' }}>
         {selectedConversation && (
-          <button
-            type="button"
-            className={`toolbar-btn ${showOrderPanel ? 'active' : ''}`}
-            onClick={() => setShowOrderPanel(v => !v)}
-            title="Pedido de esta conversación: estado y confirmación de pago"
-          >
-            🧾
+          <div style={{
+            padding: '10px', borderRadius: '8px',
+            border: '1px solid var(--border)', background: 'var(--bg-hover)',
+            fontSize: '.78rem', lineHeight: 1.45
+          }}>
+            <div style={{ color: 'var(--text-soft)', marginBottom: '3px' }}>Pedido</div>
+            <div style={{ fontWeight: 600 }}>
+              {selectedConversation.order_status
+                ? ordersService.estado(selectedConversation.order_status).etiqueta
+                : 'Sin pedido'}
+            </div>
+            {selectedConversation.order_product_name && (
+              <div style={{ color: 'var(--text-soft)', marginTop: '2px' }}>
+                {selectedConversation.order_product_name}
+              </div>
+            )}
+
+            {selectedConversation.order_id && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '9px' }}>
+                {['comprobante_recibido', 'interesado', 'pagado'].includes(selectedConversation.order_status) && (
+                  <button
+                    type="button"
+                    disabled={cambiandoPedido}
+                    onClick={() => cambiarEstadoPedido('pagado')}
+                    style={{
+                      fontSize: '.76rem', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
+                      border: '1px solid #04785733', background: 'rgba(16,185,129,.16)', color: '#047857', fontWeight: 600
+                    }}
+                  >
+                    {cambiandoPedido ? 'Enviando…' : 'Confirmar y entregar'}
+                  </button>
+                )}
+                {selectedConversation.order_status === 'comprobante_recibido' && (
+                  <button
+                    type="button"
+                    disabled={cambiandoPedido}
+                    onClick={() => cambiarEstadoPedido('rechazado')}
+                    style={{
+                      fontSize: '.76rem', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
+                      border: '1px solid #b91c1c33', background: 'rgba(239,68,68,.12)', color: '#b91c1c', fontWeight: 600
+                    }}
+                  >
+                    No figura aún
+                  </button>
+                )}
+              </div>
+            )}
+
+            {avisoPedido && (
+              <div style={{ marginTop: '8px', color: avisoPedido.ok ? '#065f46' : '#b45309' }}>
+                {avisoPedido.texto}
+              </div>
+            )}
+          </div>
+        )}
+
+        <button type="button" className="toolbar-btn" style={{ width: 'auto', height: 'auto', padding: '8px', fontSize: '.78rem' }}
+          onClick={() => setShowContacts(true)}>
+          Contactos
+        </button>
+
+        {selectedConversation && (
+          <button type="button" className={`toolbar-btn ${showOrderPanel ? 'active' : ''}`}
+            style={{ width: 'auto', height: 'auto', padding: '8px', fontSize: '.78rem' }}
+            onClick={() => setShowOrderPanel(v => !v)}>
+            Ver pedidos
           </button>
         )}
+
         {selectedConversation && (
-          <button
-            type="button"
-            className={`toolbar-btn ${showNotesPanel ? 'active' : ''}`}
-            onClick={() => setShowNotesPanel(v => !v)}
-            title="Notas del contacto y etiquetas"
-          >
-            📝
+          <button type="button" className={`toolbar-btn ${showNotesPanel ? 'active' : ''}`}
+            style={{ width: 'auto', height: 'auto', padding: '8px', fontSize: '.78rem' }}
+            onClick={() => setShowNotesPanel(v => !v)}>
+            Notas y etiquetas
           </button>
         )}
       </div>
