@@ -46,6 +46,9 @@ export function InboxPage() {
   const [cambiandoPedido, setCambiandoPedido] = useState(false);
   const [avisoPedido, setAvisoPedido] = useState(null);
 
+  // Reinicio de un chat de prueba, para volver a correr el flujo desde cero.
+  const [reiniciando, setReiniciando] = useState(false);
+
   // Indexar conversaciones para búsqueda avanzada de mensajes
   useEffect(() => {
     if (conversations.length > 0) {
@@ -371,6 +374,56 @@ export function InboxPage() {
     }
   }, [conversations, selectedId, token, loadConversations, loadMessages]);
 
+  /**
+   * Deja el chat de prueba en cero para volver a correr el flujo.
+   *
+   * Borra los mensajes y el pedido. Lo segundo es lo que importa: el guion no
+   * decide qué contestar mirando la conversación, la mira en la tabla de
+   * pedidos, así que un chat vacío con el pedido vivo sigue contestando como
+   * si la charla viniera de antes.
+   *
+   * El botón que llama a esto solo existe en los números de prueba, y el
+   * backend vuelve a comprobarlo antes de borrar nada.
+   */
+  const reiniciarConversacion = useCallback(async () => {
+    const conv = conversations.find(c => c.id === selectedId);
+    if (!conv?.es_prueba || reiniciando) return;
+
+    const quien = conv.contact_name || conv.contact_phone || 'este chat';
+    const confirmado = window.confirm(
+      `Vas a dejar en cero la conversación de prueba con ${quien}.\n\n` +
+      'Se borran todos los mensajes y el pedido, así el bot vuelve a tratarte como ' +
+      'alguien que escribe por primera vez: saludo, portada, presentación y cierre.\n\n' +
+      'No se puede deshacer.'
+    );
+    if (!confirmado) return;
+
+    setReiniciando(true);
+    setAvisoPedido(null);
+    setSendBanner(null);
+
+    try {
+      const res = await apiFetch(`/api/conversations/${conv.id}/reset`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setAvisoPedido({ ok: false, texto: data.error || 'No se pudo reiniciar la conversación.' });
+        return;
+      }
+
+      setMessages([]);
+      setAvisoPedido({
+        ok: true,
+        texto: `Listo. Se borraron ${data.mensajes} mensaje(s) y ${data.pedidos} pedido(s). Escribí "hola" desde el celular para arrancar de nuevo.`
+      });
+      await loadConversations();
+    } catch (err) {
+      setAvisoPedido({ ok: false, texto: 'No se pudo contactar al servidor. No se borró nada.' });
+    } finally {
+      setReiniciando(false);
+    }
+  }, [conversations, selectedId, reiniciando, apiFetch, loadConversations]);
+
   // Actualizar un mensaje específico en memoria de inmediato (ej: marcado de visto)
   const handleMessageUpdate = useCallback((messageId, updates) => {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...updates } : m));
@@ -558,6 +611,36 @@ export function InboxPage() {
             onClick={() => setShowNotesPanel(v => !v)}>
             Notas y etiquetas
           </button>
+        )}
+
+        {/* Herramienta de prueba, no de atención. Aparece solo en los números
+            declarados en TEST_PHONES y va separada del resto, con borde
+            punteado, para que nadie la confunda con una acción de la bandeja:
+            lo que hace es borrar mensajes y pedido sin vuelta atrás. */}
+        {selectedConversation?.es_prueba && (
+          <div style={{
+            marginTop: 'auto', paddingTop: '10px', borderTop: '1px dashed var(--border)'
+          }}>
+            <div style={{ fontSize: '.7rem', color: 'var(--text-soft)', marginBottom: '6px' }}>
+              Chat de prueba
+            </div>
+            <button
+              type="button"
+              disabled={reiniciando}
+              onClick={reiniciarConversacion}
+              style={{
+                width: '100%', fontSize: '.76rem', padding: '7px 8px', borderRadius: '6px',
+                cursor: reiniciando ? 'default' : 'pointer', fontWeight: 600,
+                border: '1px dashed #b91c1c66', background: 'transparent', color: '#b91c1c',
+                opacity: reiniciando ? 0.6 : 1
+              }}
+            >
+              {reiniciando ? 'Reiniciando…' : 'Reiniciar conversación'}
+            </button>
+            <div style={{ fontSize: '.68rem', color: 'var(--text-soft)', marginTop: '5px', lineHeight: 1.4 }}>
+              Borra mensajes y pedido para volver a correr el flujo desde el saludo.
+            </div>
+          </div>
         )}
       </div>
 
