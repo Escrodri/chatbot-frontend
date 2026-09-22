@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ordersService, ESTADOS, ORDEN_ESTADOS } from '../services/orders.service';
 import { productsService } from '../services/products.service';
+import { analyticsService } from '../services/analytics.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
 
 /**
@@ -28,6 +29,7 @@ export function PedidosPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [trabajando, setTrabajando] = useState(null);
+  const [ventasHoy, setVentasHoy] = useState(null);
 
   // Resultado de la última entrega, por pedido. Confirmar un pago dispara el
   // envío del enlace, y hay que decir si salió o no: antes esto era mudo.
@@ -37,12 +39,14 @@ export function PedidosPage() {
     setCargando(true);
     setError(null);
     try {
-      const [lista, sum] = await Promise.all([
+      const [lista, sum, dashboard] = await Promise.all([
         ordersService.list(token, { status: filtro === 'todos' ? null : filtro }),
-        ordersService.resumen(token)
+        ordersService.resumen(token),
+        analyticsService.getDashboard(token, { periodo: 'hoy' }).catch(() => null)
       ]);
       setPedidos(Array.isArray(lista) ? lista : []);
       setResumen(Array.isArray(sum) ? sum : []);
+      if (dashboard?.hoy) setVentasHoy(dashboard.hoy);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -179,12 +183,47 @@ export function PedidosPage() {
   return (
     <div className="admin-page">
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 20px 60px' }}>
-        <header style={{ marginBottom: '22px' }}>
-          <h2 style={{ margin: '0 0 6px', fontSize: '1.6rem' }}>Pedidos</h2>
-          <p style={{ margin: 0, color: 'var(--text-soft)', fontSize: '.92rem' }}>
-            Quién pagó y quién no, agrupado por cliente. Al confirmar un pago, el enlace
-            de descarga se le manda solo.
-          </p>
+        <header style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: '14px', marginBottom: '22px'
+        }}>
+          <div>
+            <h2 style={{ margin: '0 0 6px', fontSize: '1.6rem' }}>Pedidos</h2>
+            <p style={{ margin: 0, color: 'var(--text-soft)', fontSize: '.92rem' }}>
+              Quién pagó y quién no, agrupado por cliente. Al confirmar un pago, el enlace
+              de descarga se le manda solo.
+            </p>
+          </div>
+
+          {ventasHoy && (
+            <div
+              onClick={() => navigate('/metricas')}
+              title="Ver análisis completo de ventas, productos y leads"
+              style={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                border: '1px solid #10b98155',
+                background: 'rgba(16,185,129,.08)',
+                transition: 'all .15s'
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '.72rem', fontWeight: 700, color: '#047857', letterSpacing: '.04em' }}>
+                  ⚡ VENTAS DE HOY
+                </div>
+                <div style={{ fontSize: '1.18rem', fontWeight: 800, color: '#047857', fontVariantNumeric: 'tabular-nums' }}>
+                  {analyticsService.formatearMonto(ventasHoy.monto_hoy)}
+                </div>
+              </div>
+              <span style={{ fontSize: '.78rem', color: '#047857', fontWeight: 700 }}>
+                Ver métricas →
+              </span>
+            </div>
+          )}
         </header>
 
         <div style={{

@@ -9,6 +9,7 @@ import { TeamsPage } from './pages/TeamsPage';
 import { InboxPage } from './pages/InboxPage';
 import { ProductosPage } from './pages/ProductosPage';
 import { PedidosPage } from './pages/PedidosPage';
+import { MetricasPage } from './pages/MetricasPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { DataDeletionPage } from './pages/DataDeletionPage';
@@ -61,6 +62,17 @@ export function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Métricas: control de leads, ventas del día y rendimiento */}
+          <Route
+            path="/metricas"
+            element={
+              <ProtectedRoute>
+                <MetricasPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/metricas.html" element={<Navigate to="/metricas" replace />} />
 
           {/* Ruta Exclusiva de Administración */}
           <Route

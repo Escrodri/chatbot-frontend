@@ -55,6 +55,18 @@ export function Navbar({ currentRoute, onNavigate }) {
             </button>
           )}
 
+          {user.role !== 'superadmin' && (
+            <button
+              type="button"
+              className={`btn-nav-inbox ${currentRoute === 'metricas' ? 'active' : ''}`}
+              onClick={() => onNavigate('metricas')}
+              title="Control de leads, ventas del día y rendimiento"
+            >
+              <span style={{ fontSize: '15px' }}>📊</span>
+              <span>Métricas</span>
+            </button>
+          )}
+
           {user.role === 'admin' && (
             <button
               type="button"

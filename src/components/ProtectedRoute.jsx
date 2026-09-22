@@ -39,6 +39,7 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
   else if (location.pathname.includes('settings')) currentRoute = 'settings';
   else if (location.pathname.includes('pedidos')) currentRoute = 'pedidos';
   else if (location.pathname.includes('productos')) currentRoute = 'productos';
+  else if (location.pathname.includes('metricas')) currentRoute = 'metricas';
 
   return (
     <div className="admin-layout">
