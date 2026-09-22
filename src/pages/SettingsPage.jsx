@@ -577,8 +577,9 @@ export function SettingsPage() {
 
       setScannedPages(data.pages || []);
       setMissingPerms(data.missingRecommended || []);
-      const unconn = [...new Set((data.pages || []).filter(p => !p.alreadyConnected).map(p => p.id))];
-      setSelectedPagesToConnect(unconn);
+      // Seleccionar por defecto todas las páginas para poder conectar nuevas o renovar tokens de las ya conectadas
+      const allPageIds = [...new Set((data.pages || []).map(p => p.id))];
+      setSelectedPagesToConnect(allPageIds);
 
       if ((data.pages || []).length === 0) {
         setScanError('Meta no devolvió ninguna Fan Page para este token. Asegúrate de que el token cuente con los permisos "pages_show_list" y "pages_messaging" en Meta Developers.');
@@ -615,6 +616,8 @@ export function SettingsPage() {
 
       setScannedPages(data.pages || []);
       setMissingPerms(data.missingRecommended || []);
+      const allPageIds = [...new Set((data.pages || []).map(p => p.id))];
+      setSelectedPagesToConnect(allPageIds);
       setScanError('');
 
       if ((data.pages || []).length === 0) {
@@ -683,6 +686,7 @@ export function SettingsPage() {
           }
         }, {
           scope: 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,instagram_basic,instagram_manage_messages,business_management',
+          auth_type: 'rerequest',
           return_scopes: true
         });
       } catch (err) {
@@ -2252,7 +2256,6 @@ export function SettingsPage() {
                         <div
                           key={page.id}
                           onClick={() => {
-                            if (page.alreadyConnected) return;
                             setSelectedPagesToConnect(prev =>
                               prev.includes(page.id) ? prev.filter(x => x !== page.id) : [...prev, page.id]
                             );
@@ -2265,17 +2268,15 @@ export function SettingsPage() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            cursor: page.alreadyConnected ? 'default' : 'pointer',
-                            opacity: page.alreadyConnected ? 0.6 : 1
+                            cursor: 'pointer'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              disabled={page.alreadyConnected}
                               onChange={() => {}}
-                              style={{ width: '18px', height: '18px', accentColor: 'var(--gold-primary)' }}
+                              style={{ width: '18px', height: '18px', accentColor: 'var(--gold-primary)', cursor: 'pointer' }}
                             />
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -2295,7 +2296,7 @@ export function SettingsPage() {
                                   <IconoDeCanal platform="instagram" size={15} />
                                   <span>Cuenta de Instagram: <strong>@{page.instagram.username}</strong></span>
                                   {page.instagram.alreadyConnected ? (
-                                    <span style={{ color: 'var(--wa-green)', fontWeight: 600 }}>(Ya vinculada)</span>
+                                    <span style={{ color: 'var(--wa-green)', fontWeight: 600 }}>(Se actualizará token)</span>
                                   ) : (
                                     <span style={{ color: 'var(--wa-blue)', fontWeight: 500 }}>(Se conectará automáticamente)</span>
                                   )}
@@ -2306,12 +2307,20 @@ export function SettingsPage() {
 
                           <div>
                             {page.alreadyConnected ? (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--wa-teal-dark)', fontWeight: 600, background: 'rgba(0, 168, 132, 0.12)', padding: '3px 9px', borderRadius: '12px', border: '1px solid rgba(0, 168, 132, 0.3)' }}>
-                                ✓ Ya Conectada
+                              <span style={{
+                                fontSize: '0.75rem',
+                                color: isSelected ? 'var(--wa-green)' : 'var(--text-muted)',
+                                fontWeight: 600,
+                                background: isSelected ? 'rgba(37, 211, 102, 0.14)' : 'rgba(255, 255, 255, 0.05)',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                border: isSelected ? '1px solid rgba(37, 211, 102, 0.35)' : '1px solid var(--border)'
+                              }}>
+                                {isSelected ? '🔄 Actualizar Token' : '✓ Ya Conectada'}
                               </span>
                             ) : (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--fb-blue-hover)', fontWeight: 600, background: 'rgba(24, 119, 242, 0.12)', padding: '3px 9px', borderRadius: '12px', border: '1px solid rgba(24, 119, 242, 0.3)' }}>
-                                Lista para Conectar
+                              <span style={{ fontSize: '0.75rem', color: 'var(--fb-blue-hover)', fontWeight: 600, background: 'rgba(24, 119, 242, 0.12)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(24, 119, 242, 0.3)' }}>
+                                {isSelected ? '✓ Lista para Conectar' : 'Sin conectar'}
                               </span>
                             )}
                           </div>
@@ -2340,8 +2349,8 @@ export function SettingsPage() {
                   onClick={handleConnectSelectedPages}
                 >
                   {connectingPages
-                    ? 'Conectando y suscribiendo...'
-                    : `Conectar ${selectedPagesToConnect.length} Canal(es)`}
+                    ? 'Guardando cambios y suscribiendo...'
+                    : `Guardar / Actualizar ${selectedPagesToConnect.length} Canal(es)`}
                 </button>
               )}
             </div>
