@@ -4,7 +4,8 @@ import { productsService } from '../services/products.service';
 
 const VACIO = {
   slug: '', name: '', description: '', price: '', currency: 'PYG',
-  delivery_url: '', delivery_note: '', cover_url: '', is_active: true, sort_order: 0
+  delivery_url: '', delivery_note: '', cover_url: '', is_active: true, sort_order: 0,
+  precio_recuperacion: '', preview_urls: ''
 };
 
 /**
@@ -67,6 +68,8 @@ export function ProductosPage() {
       delivery_url: p.delivery_url || '',
       delivery_note: p.delivery_note || '',
       cover_url: p.cover_url || '',
+      precio_recuperacion: p.precio_recuperacion ?? '',
+      preview_urls: Array.isArray(p.preview_urls) ? p.preview_urls.join('\n') : (p.preview_urls || ''),
       is_active: p.is_active !== false,
       sort_order: p.sort_order || 0
     });
@@ -403,6 +406,32 @@ export function ProductosPage() {
               <small style={ayuda}>
                 El enlace al archivo. No viaja en el catálogo: el backend solo lo entrega
                 cuando el pedido está pagado.
+              </small>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={label} htmlFor="p-precio-rec">Precio de recuperación</label>
+              <input id="p-precio-rec" type="number" min="0" style={{ ...input, maxWidth: '160px' }}
+                value={form.precio_recuperacion}
+                onChange={(e) => campo('precio_recuperacion', e.target.value)}
+                placeholder="15000" />
+              <small style={ayuda}>
+                El precio con el que el bot le insiste a quien se quedó a mitad de camino, varias
+                horas después. Dejalo vacío y no hay descuento: sigue insistiendo al precio de
+                siempre. Conviene vaciarlo cada tanto — un descuento que está siempre se aprende,
+                y esperar termina saliendo gratis.
+              </small>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={label} htmlFor="p-previews">Páginas de muestra</label>
+              <textarea id="p-previews" rows={3} style={{ ...input, resize: 'vertical', fontSize: '.82rem' }}
+                value={form.preview_urls}
+                onChange={(e) => campo('preview_urls', e.target.value)}
+                placeholder={'https://.../pagina-1.jpg\nhttps://.../pagina-2.jpg'} />
+              <small style={ayuda}>
+                Una URL por línea. Son las que manda el bot cuando tocan "VER PÁGINAS".
+                Poné dos o tres, no más: quien ya vio todo el material no tiene nada que comprar.
               </small>
             </div>
 
