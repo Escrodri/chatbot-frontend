@@ -80,6 +80,42 @@ export const ordersService = {
 
   estado(clave) {
     return ESTADOS[clave] || ESTADOS.interesado;
+  },
+
+  /**
+   * Traduce el resultado de la entrega a algo que se pueda leer.
+   *
+   * Vive acá y no en cada pantalla porque el chat y el tablero tienen que decir
+   * lo mismo. Y porque el detalle técnico que devuelve el backend —"El producto
+   * X no tiene enlace de entrega cargado"— se lee como si algo se hubiera roto,
+   * cuando en realidad el pago quedó bien registrado y lo único que falta es un
+   * dato de configuración.
+   *
+   * @param {object|null|undefined} entrega Lo que devolvió el backend en `entrega`
+   * @returns {{ok: boolean, texto: string}}
+   */
+  describirEntrega(entrega) {
+    if (entrega === null || entrega === undefined) {
+      return { ok: true, texto: 'Estado actualizado.' };
+    }
+
+    if (entrega.enviado) {
+      return { ok: true, texto: 'Mensaje enviado al cliente.' };
+    }
+
+    const motivos = {
+      sin_enlace: 'El pago quedó registrado, pero este producto no tiene enlace de entrega. Cargalo en Productos y mandáselo a mano desde el chat.',
+      sin_token: 'El pago quedó registrado, pero el canal no tiene token de Meta, así que el mensaje no salió.',
+      sin_canal: 'El pago quedó registrado, pero el canal de este chat ya no existe.',
+      meta_rechazo: 'El pago quedó registrado, pero Meta rechazó el envío. Podés reintentarlo con el mismo botón.',
+      sin_conversacion: 'El pago quedó registrado, pero no se encontró la conversación.',
+      sin_pedido: 'No se encontró el pedido.'
+    };
+
+    return {
+      ok: false,
+      texto: motivos[entrega.motivo] || 'El estado quedó guardado, pero el mensaje no salió.'
+    };
   }
 };
 

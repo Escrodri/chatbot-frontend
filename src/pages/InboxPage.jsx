@@ -11,7 +11,7 @@ import { SearchResults } from '../components/SearchResults';
 import { AutomationAlert } from '../components/inbox/AutomationAlert';
 import { messageSearchService } from '../services/messageSearch.service';
 import { automationService } from '../services/automation.service';
-import { ordersService } from '../services/orders.service';
+import { ordersService, ESTADOS, ORDEN_ESTADOS } from '../services/orders.service';
 import '../inbox.css';
 
 export function InboxPage() {
@@ -336,26 +336,32 @@ export function InboxPage() {
    * transferencia todavía no figura. Los dos avisan al cliente: el backend se
    * encarga, acá solo se muestra qué pasó.
    */
-  const cambiarEstadoPedido = useCallback(async (nuevoEstado) => {
+  const cambiarEstadoPedido = useCallback(async (nuevoEstado, extra = {}) => {
     const conv = conversations.find(c => c.id === selectedId);
     if (!conv?.order_id) return;
 
-    const texto = nuevoEstado === 'pagado'
-      ? `Vas a confirmar el pago de ${conv.contact_name || 'este cliente'} y mandarle el material.\n\nHacelo solo si ya viste la transferencia en el extracto del banco.`
-      : `Le vas a avisar a ${conv.contact_name || 'este cliente'} que la transferencia todavía no figura acreditada, y que mande la captura de nuevo.`;
+    const quien = conv.contact_name || 'este cliente';
+
+    // Si el producto no tiene enlace cargado, bloquear la entrega y avisar antes
+    if (nuevoEstado === 'pagado' && conv.order_entregable === false && extra.notify !== false) {
+      alert(`El producto "${conv.order_product_name || 'este producto'}" no tiene enlace de entrega cargado.\n\nCárgalo en Productos antes de confirmar la entrega.`);
+      return;
+    }
+
+    const textos = {
+      pagado: `Vas a confirmar el pago de ${quien} y mandarle el material por WhatsApp.\n\nHacelo solo si ya viste la transferencia en el extracto del banco.`,
+      rechazado: `Le vas a avisar a ${quien} que la transferencia todavía no figura acreditada, y que mande la captura de nuevo.`
+    };
+    const texto = textos[nuevoEstado]
+      || `Vas a cambiar el estado del pedido de ${quien} a "${ESTADOS[nuevoEstado]?.etiqueta || nuevoEstado}".\n\nEsto no le manda ningún mensaje: solo corrige el registro.`;
 
     if (!window.confirm(texto)) return;
 
     setCambiandoPedido(true);
     setAvisoPedido(null);
     try {
-      const res = await ordersService.cambiarEstado(token, conv.order_id, nuevoEstado);
-      const entrega = res.entrega;
-      setAvisoPedido(
-        entrega?.enviado
-          ? { ok: true, texto: 'Mensaje enviado al cliente.' }
-          : { ok: false, texto: entrega?.detalle || 'Se guardó el estado, pero el mensaje no salió.' }
-      );
+      const res = await ordersService.cambiarEstado(token, conv.order_id, nuevoEstado, extra);
+      setAvisoPedido(ordersService.describirEntrega(res.entrega));
       await loadConversations();
       await loadMessages(conv.id, false);
     } catch (err) {
@@ -435,7 +441,21 @@ export function InboxPage() {
             border: '1px solid var(--border)', background: 'var(--bg-hover)',
             fontSize: '.78rem', lineHeight: 1.45
           }}>
-            <div style={{ color: 'var(--text-soft)', marginBottom: '3px' }}>Pedido</div>
+            {/* Quién es esta persona antes que en qué anda el pedido: que ya
+                haya comprado cambia cómo se le habla, y es lo primero que un
+                asesor necesita saber al abrir el chat. */}
+            {selectedConversation.compras_previas > 0 && (
+              <div style={{
+                marginBottom: '9px', padding: '6px 8px', borderRadius: '6px',
+                background: 'rgba(5,150,105,.14)', color: '#065f46', fontWeight: 600
+              }}>
+                Cliente · {selectedConversation.compras_previas === 1
+                  ? 'ya compró una vez'
+                  : `ya compró ${selectedConversation.compras_previas} veces`}
+              </div>
+            )}
+
+            <div style={{ color: 'var(--text-soft)', marginBottom: '3px' }}>Pedido actual</div>
             <div style={{ fontWeight: 600 }}>
               {selectedConversation.order_status
                 ? ordersService.estado(selectedConversation.order_status).etiqueta
@@ -447,9 +467,21 @@ export function InboxPage() {
               </div>
             )}
 
+            {selectedConversation.order_id && selectedConversation.order_entregable === false && (
+              <div style={{
+                marginTop: '7px', padding: '6px 8px', borderRadius: '6px',
+                background: 'rgba(245,158,11,.14)', color: '#b45309'
+              }}>
+                Sin enlace de entrega. Si confirmás el pago, el material no se
+                manda solo.
+              </div>
+            )}
+
             {selectedConversation.order_id && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '9px' }}>
-                {['comprobante_recibido', 'interesado', 'pagado'].includes(selectedConversation.order_status) && (
+                {/* Los dos botones de siempre, que son el 95% de los casos y
+                    los únicos que mandan un mensaje al cliente. */}
+                {selectedConversation.order_status !== 'entregado' && (
                   <button
                     type="button"
                     disabled={cambiandoPedido}
@@ -462,7 +494,7 @@ export function InboxPage() {
                     {cambiandoPedido ? 'Enviando…' : 'Confirmar y entregar'}
                   </button>
                 )}
-                {selectedConversation.order_status === 'comprobante_recibido' && (
+                {selectedConversation.order_status !== 'rechazado' && (
                   <button
                     type="button"
                     disabled={cambiandoPedido}
@@ -475,6 +507,27 @@ export function InboxPage() {
                     No figura aún
                   </button>
                 )}
+
+                {/* El resto de los estados, para corregir a mano. Van en un
+                    desplegable y no como botones porque son casos raros, y
+                    porque nueve botones en una columna de 168px no se leen. */}
+                <select
+                  value=""
+                  disabled={cambiandoPedido}
+                  onChange={(e) => { if (e.target.value) cambiarEstadoPedido(e.target.value, { notify: false }); e.target.value = ''; }}
+                  style={{
+                    fontSize: '.74rem', padding: '5px 6px', borderRadius: '6px',
+                    border: '1px solid var(--border)', background: 'var(--bg-panel)',
+                    color: 'inherit', cursor: 'pointer', width: '100%'
+                  }}
+                >
+                  <option value="">Corregir estado…</option>
+                  {ORDEN_ESTADOS
+                    .filter(e => e !== selectedConversation.order_status)
+                    .map(e => (
+                      <option key={e} value={e}>{ESTADOS[e].etiqueta}</option>
+                    ))}
+                </select>
               </div>
             )}
 

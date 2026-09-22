@@ -38,6 +38,11 @@ export function ChatList({
       if (filtroVenta === 'pagaron' && c.order_status !== 'pagado' && c.order_status !== 'entregado') return false;
       if (filtroVenta === 'no_pagaron' && c.order_status !== 'interesado') return false;
 
+      // Recompra: ya compró antes y tiene un pedido nuevo todavía abierto.
+      if (filtroVenta === 'recompra' &&
+          !((c.compras_previas || 0) > 0 &&
+            ['interesado', 'comprobante_recibido'].includes(c.order_status))) return false;
+
       // Filtro de búsqueda
       if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -151,6 +156,15 @@ export function ChatList({
           >
             Sin pagar
           </button>
+          {/* El que ya compró y volvió: pedido nuevo sin cerrar, pero con
+              compras anteriores. Es la lista más rentable de todas, porque
+              a esta gente no hay que convencerla de que el material sirve. */}
+          <button
+            className={`filter-pill ${filtroVenta === 'recompra' ? 'active' : ''}`}
+            onClick={() => setFiltroVenta('recompra')}
+          >
+            Recompra
+          </button>
         </div>
       </div>
 
@@ -224,6 +238,23 @@ export function ChatList({
                     </span>
 
                     <div className="chat-badges-row">
+                      {/* Va antes que el estado del pedido: importa más saber
+                          que esta persona ya compró que en qué anda su pedido
+                          de hoy. */}
+                      {(chat.compras_previas || 0) > 0 && (
+                        <span
+                          title={chat.compras_previas === 1
+                            ? 'Ya compró una vez'
+                            : `Ya compró ${chat.compras_previas} veces`}
+                          style={{
+                            fontSize: '.68rem', fontWeight: 700, padding: '2px 6px',
+                            borderRadius: '999px', background: 'rgba(5,150,105,.16)',
+                            color: '#065f46', whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Cliente{chat.compras_previas > 1 ? ` ·${chat.compras_previas}` : ''}
+                        </span>
+                      )}
                       {chat.order_status && (
                         <OrderBadge status={chat.order_status} compacto />
                       )}

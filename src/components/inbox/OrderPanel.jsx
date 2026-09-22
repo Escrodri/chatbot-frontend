@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ordersService } from '../../services/orders.service';
+import { ordersService, ESTADOS } from '../../services/orders.service';
 import { productsService } from '../../services/products.service';
 import { OrderBadge } from './OrderBadge';
 
 /**
  * El pedido de esta conversación, al lado del chat.
  *
- * Reemplaza a tres botones del panel derecho que no hacían nada. La idea es
- * que el asesor confirme un pago sin salir del chat donde está viendo el
- * comprobante: tener que ir a otra pantalla para eso es justo el viaje que
- * antes obligaba a hacer la planilla.
+ * Permite al asesor ver el estado del pedido y cambiarlo a cualquiera de los
+ * 5 estados en cualquier momento, además de confirmar pagos y despachar enlaces
+ * directamente desde la conversación.
  */
 export function OrderPanel({ conversationId, contactName, onClose }) {
   const { token } = useAuth();
@@ -35,21 +34,59 @@ export function OrderPanel({ conversationId, contactName, onClose }) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const cambiar = async (pedido, estado) => {
-    if (estado === 'pagado') {
-      const ok = window.confirm(
-        `Vas a marcar como PAGADO el pedido de ${contactName || 'este contacto'}.\n\n` +
-        'Confirmá solo si ya viste la transferencia en el extracto del banco. ' +
-        'El comprobante que mandó el cliente no alcanza: una captura se edita o se reenvía.'
+  const confirmarPagoYEntregar = async (pedido) => {
+    if (!pedido.product_entregable) {
+      alert(
+        `El producto "${pedido.product_name || 'sin nombre'}" no tiene enlace de entrega cargado.\n\n` +
+        `Cárgalo primero en la sección de Productos antes de confirmar el pago y la entrega.`
       );
-      if (!ok) return;
+      return;
     }
+
+    const ok = window.confirm(
+      `Vas a confirmar el pago de ${contactName || 'este contacto'} por "${pedido.product_name || 'este producto'}".\n\n` +
+      'Se le enviará el enlace de descarga automáticamente por WhatsApp.\n\n' +
+      'Confirmá solo si ya viste la transferencia en el extracto del banco. El comprobante que mandó el cliente no alcanza: una captura se edita o se reenvía.'
+    );
+    if (!ok) return;
+
     setTrabajando(pedido.id);
     try {
-      await ordersService.cambiarEstado(token, pedido.id, estado);
+      await ordersService.cambiarEstado(token, pedido.id, 'pagado', { notify: true });
       await cargar();
     } catch (err) {
-      alert('No se pudo actualizar: ' + err.message);
+      alert('No se pudo confirmar: ' + err.message);
+    } finally {
+      setTrabajando(null);
+    }
+  };
+
+  const cambiarEstadoManual = async (pedido, nuevoEstado) => {
+    if (!nuevoEstado || nuevoEstado === pedido.status) return;
+
+    setTrabajando(pedido.id);
+    try {
+      await ordersService.cambiarEstado(token, pedido.id, nuevoEstado, { notify: false });
+      await cargar();
+    } catch (err) {
+      alert('No se pudo cambiar el estado: ' + err.message);
+    } finally {
+      setTrabajando(null);
+    }
+  };
+
+  const rechazarComprobante = async (pedido) => {
+    const ok = window.confirm(
+      `¿Rechazar comprobante de ${contactName || 'este contacto'} y avisarle por WhatsApp que no figura acreditado?`
+    );
+    if (!ok) return;
+
+    setTrabajando(pedido.id);
+    try {
+      await ordersService.cambiarEstado(token, pedido.id, 'rechazado', { notify: true });
+      await cargar();
+    } catch (err) {
+      alert('No se pudo rechazar: ' + err.message);
     } finally {
       setTrabajando(null);
     }
@@ -97,9 +134,31 @@ export function OrderPanel({ conversationId, contactName, onClose }) {
             border: '1px solid var(--border-gold, #eee)', borderRadius: '9px',
             padding: '13px', marginBottom: '12px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px' }}>
-              <OrderBadge status={p.status} />
-              <span style={{ fontSize: '.72rem', color: 'var(--text-soft)' }}>#{p.id}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '9px', gap: '8px' }}>
+              <select
+                value={p.status}
+                disabled={trabajando === p.id}
+                onChange={(e) => cambiarEstadoManual(p, e.target.value)}
+                title="Cambiar estado del pedido libremente"
+                style={{
+                  fontSize: '.78rem',
+                  fontWeight: 600,
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: `1px solid ${ESTADOS[p.status]?.color || '#ddd'}66`,
+                  background: ESTADOS[p.status]?.fondo || '#fff',
+                  color: ESTADOS[p.status]?.color || '#333',
+                  cursor: 'pointer',
+                  flex: 1
+                }}
+              >
+                <option value="comprobante_recibido">🟡 Verificar (comprobante)</option>
+                <option value="interesado">⚪ Interesado</option>
+                <option value="pagado">🟢 Pagado</option>
+                <option value="entregado">🟣 Entregado</option>
+                <option value="rechazado">🔴 Rechazado</option>
+              </select>
+              <span style={{ fontSize: '.72rem', color: 'var(--text-soft)', flexShrink: 0 }}>#{p.id}</span>
             </div>
 
             <div style={{ fontSize: '.88rem', fontWeight: 600, marginBottom: '3px' }}>
@@ -112,37 +171,70 @@ export function OrderPanel({ conversationId, contactName, onClose }) {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+              {p.status !== 'entregado' && (
+                <button
+                  type="button"
+                  disabled={trabajando === p.id}
+                  onClick={() => confirmarPagoYEntregar(p)}
+                  style={btn('#047857', 'rgba(16,185,129,.16)')}
+                >
+                  {trabajando === p.id ? 'Enviando…' : (p.status === 'pagado' ? 'Reintentar entrega' : 'Confirmar pago y entregar')}
+                </button>
+              )}
+
               {(p.status === 'comprobante_recibido' || p.status === 'interesado') && (
-                <button type="button" disabled={trabajando === p.id}
-                  onClick={() => cambiar(p, 'pagado')}
-                  style={btn('#047857', 'rgba(16,185,129,.16)')}>
-                  Confirmar pago
-                </button>
-              )}
-
-              {p.status === 'pagado' && (
-                <button type="button" disabled={trabajando === p.id}
-                  onClick={() => cambiar(p, 'entregado')}
-                  style={btn('#065f46', 'rgba(5,150,105,.14)')}>
-                  Marcar entregado
-                </button>
-              )}
-
-              {p.status === 'comprobante_recibido' && (
-                <button type="button" disabled={trabajando === p.id}
-                  onClick={() => cambiar(p, 'rechazado')}
-                  style={btn('#b91c1c', 'transparent')}>
+                <button
+                  type="button"
+                  disabled={trabajando === p.id}
+                  onClick={() => rechazarComprobante(p)}
+                  style={btn('#b91c1c', 'rgba(239,68,68,.12)')}
+                >
                   Rechazar comprobante
                 </button>
               )}
 
+              {p.status === 'rechazado' && (
+                <button
+                  type="button"
+                  disabled={trabajando === p.id}
+                  onClick={() => cambiarEstadoManual(p, 'comprobante_recibido')}
+                  style={btn('#b45309', 'rgba(245,158,11,.16)')}
+                >
+                  Volver a Verificar
+                </button>
+              )}
+
               {['pagado', 'entregado'].includes(p.status) && p.delivery_url && (
-                <a href={p.delivery_url} target="_blank" rel="noreferrer"
-                  style={{ ...btn('#1d4ed8', 'rgba(59,130,246,.12)'), textDecoration: 'none', textAlign: 'center', display: 'block' }}>
+                <a
+                  href={p.delivery_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ ...btn('#1d4ed8', 'rgba(59,130,246,.12)'), textDecoration: 'none', textAlign: 'center', display: 'block' }}
+                >
                   Ver enlace de entrega
                 </a>
               )}
+
+              {p.status === 'entregado' && p.product_entregable && (
+                <button
+                  type="button"
+                  disabled={trabajando === p.id}
+                  onClick={() => confirmarPagoYEntregar(p)}
+                  style={btn('#047857', 'rgba(16,185,129,.10)')}
+                >
+                  {trabajando === p.id ? 'Enviando…' : 'Reenviar enlace por WhatsApp'}
+                </button>
+              )}
             </div>
+
+            {p.product_id && !p.product_entregable && (
+              <p style={{
+                margin: '8px 0 0', fontSize: '.75rem', color: '#b45309',
+                background: 'rgba(245,158,11,.12)', padding: '6px 8px', borderRadius: '6px'
+              }}>
+                ⚠️ Este producto no tiene enlace de entrega cargado.
+              </p>
+            )}
 
             {p.status === 'comprobante_recibido' && (
               <p style={{ margin: '10px 0 0', fontSize: '.75rem', color: 'var(--text-soft)', lineHeight: 1.45 }}>

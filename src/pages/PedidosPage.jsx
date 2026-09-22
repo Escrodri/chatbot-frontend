@@ -95,34 +95,60 @@ export function PedidosPage() {
   const confirmarPago = async (pedido) => {
     const entregable = pedido.product_entregable;
 
-    const texto = entregable
-      ? `Vas a confirmar el pago de ${pedido.contact_name || pedido.contact_phone} por "${pedido.product_name}".\n\n` +
-        `Al confirmar se le manda el enlace de descarga automáticamente.\n\n` +
-        `Hacelo solo si ya viste la transferencia en el extracto del banco. El comprobante que mandó no alcanza: una captura se edita o se reenvía.`
-      : `Vas a confirmar el pago de ${pedido.contact_name || pedido.contact_phone}, pero el producto "${pedido.product_name || 'sin producto'}" no tiene enlace de entrega cargado.\n\n` +
-        `El pago se va a registrar, pero el material NO se le va a mandar: vas a tener que hacerlo a mano o cargar el enlace en Productos.`;
+    if (!entregable) {
+      alert(
+        `El producto "${pedido.product_name || 'sin nombre'}" no tiene enlace de entrega cargado.\n\n` +
+        `Cárgalo primero en la sección de Productos antes de confirmar el pago y la entrega.`
+      );
+      return;
+    }
+
+    const texto =
+      `Vas a confirmar el pago de ${pedido.contact_name || pedido.contact_phone} por "${pedido.product_name}".\n\n` +
+      `Al confirmar se le enviará el enlace de descarga automáticamente por WhatsApp.\n\n` +
+      `Hacelo solo si ya viste la transferencia en el extracto del banco. El comprobante que mandó no alcanza: una captura se edita o se reenvía.`;
 
     if (!window.confirm(texto)) return;
 
     setTrabajando(pedido.id);
     try {
-      const res = await ordersService.cambiarEstado(token, pedido.id, 'pagado');
+      const res = await ordersService.cambiarEstado(token, pedido.id, 'pagado', { notify: true });
       setAvisos(prev => ({ ...prev, [pedido.id]: res.entrega || null }));
       await cargar();
     } catch (err) {
+      alert('No se pudo confirmar: ' + err.message);
       setAvisos(prev => ({ ...prev, [pedido.id]: { enviado: false, motivo: 'error', detalle: err.message } }));
     } finally {
       setTrabajando(null);
     }
   };
 
-  const cambiar = async (pedido, nuevoEstado) => {
+  const rechazarConAviso = async (pedido) => {
+    const quien = pedido.contact_name || pedido.contact_phone || 'este cliente';
+    if (!window.confirm(`¿Rechazar comprobante y avisarle a ${quien} por WhatsApp que la transferencia no figura aún?`)) return;
+
     setTrabajando(pedido.id);
     try {
-      await ordersService.cambiarEstado(token, pedido.id, nuevoEstado);
+      const res = await ordersService.cambiarEstado(token, pedido.id, 'rechazado', { notify: true });
+      setAvisos(prev => ({ ...prev, [pedido.id]: res.entrega || null }));
       await cargar();
     } catch (err) {
-      alert('No se pudo actualizar: ' + err.message);
+      alert('No se pudo rechazar: ' + err.message);
+    } finally {
+      setTrabajando(null);
+    }
+  };
+
+  const cambiarEstadoManual = async (pedido, nuevoEstado) => {
+    if (!nuevoEstado || nuevoEstado === pedido.status) return;
+
+    setTrabajando(pedido.id);
+    try {
+      const res = await ordersService.cambiarEstado(token, pedido.id, nuevoEstado, { notify: false });
+      setAvisos(prev => ({ ...prev, [pedido.id]: res.entrega || null }));
+      await cargar();
+    } catch (err) {
+      alert('No se pudo cambiar el estado: ' + err.message);
     } finally {
       setTrabajando(null);
     }
@@ -135,24 +161,9 @@ export function PedidosPage() {
       ' ' + d.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const textoAviso = (aviso) => {
-    if (!aviso) return null;
-    if (aviso.enviado) return { ok: true, texto: 'Enlace enviado al cliente. El pedido quedó entregado.' };
-
-    const motivos = {
-      sin_enlace: 'El pago quedó registrado, pero el producto no tiene enlace de entrega. Cargalo en Productos y mandáselo a mano.',
-      sin_token: 'El pago quedó registrado, pero el canal no tiene token de Meta, así que el enlace no salió.',
-      sin_canal: 'El pago quedó registrado, pero el canal de este chat ya no existe.',
-      meta_rechazo: 'El pago quedó registrado, pero Meta rechazó el envío. Podés reintentarlo desde el chat.',
-      sin_conversacion: 'El pago quedó registrado, pero no se encontró la conversación.'
-    };
-
-    return {
-      ok: false,
-      texto: (motivos[aviso.motivo] || 'El pago quedó registrado, pero el enlace no salió.') +
-        (aviso.detalle ? ` (${aviso.detalle})` : '')
-    };
-  };
+  // El texto vive en orders.service para que este tablero y el panel del chat
+  // digan exactamente lo mismo ante el mismo resultado.
+  const textoAviso = (aviso) => (aviso === undefined ? null : ordersService.describirEntrega(aviso));
 
   const btn = (fondo, borde, color) => ({
     fontSize: '.78rem',
@@ -307,39 +318,79 @@ export function PedidosPage() {
                           </div>
                         </div>
 
-                        <OrderBadge status={p.status} />
+                        {/* Selector de estado interactivo: permite cambiar libremente a cualquiera de los 5 estados */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <select
+                            value={p.status}
+                            disabled={trabajando === p.id}
+                            onChange={(e) => cambiarEstadoManual(p, e.target.value)}
+                            title="Cambiar estado del pedido libremente"
+                            style={{
+                              fontSize: '.82rem',
+                              fontWeight: 600,
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              border: `1px solid ${ESTADOS[p.status]?.color || '#ddd'}66`,
+                              background: ESTADOS[p.status]?.fondo || '#fff',
+                              color: ESTADOS[p.status]?.color || '#333',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="comprobante_recibido">🟡 Verificar (comprobante)</option>
+                            <option value="interesado">⚪ Interesado</option>
+                            <option value="pagado">🟢 Pagado</option>
+                            <option value="entregado">🟣 Entregado</option>
+                            <option value="rechazado">🔴 Rechazado</option>
+                          </select>
+                        </div>
 
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {(p.status === 'comprobante_recibido' || p.status === 'interesado' || p.status === 'rechazado') && (
+                        {/* Botones de acción contextuales */}
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {p.status !== 'entregado' && (
                             <button
                               type="button"
                               disabled={trabajando === p.id}
                               onClick={() => confirmarPago(p)}
                               style={btn('rgba(16,185,129,.16)', '#04785733', '#047857')}
+                              title="Verificar banco y enviar enlace de descarga por WhatsApp"
                             >
-                              {trabajando === p.id ? 'Enviando…' : 'Confirmar pago y entregar'}
+                              {trabajando === p.id ? 'Enviando…' : (p.status === 'pagado' ? 'Reintentar entrega' : 'Confirmar pago y entregar')}
                             </button>
                           )}
 
-                          {p.status === 'pagado' && (
+                          {p.status === 'entregado' && p.product_entregable && (
                             <button
                               type="button"
                               disabled={trabajando === p.id}
                               onClick={() => confirmarPago(p)}
-                              style={btn('rgba(16,185,129,.16)', '#04785733', '#047857')}
+                              style={btn('rgba(16,185,129,.12)', '#04785733', '#047857')}
+                              title="Reenviar el enlace de descarga por WhatsApp"
                             >
-                              {trabajando === p.id ? 'Enviando…' : 'Reintentar entrega'}
+                              {trabajando === p.id ? 'Enviando…' : 'Reenviar enlace'}
                             </button>
                           )}
 
-                          {p.status === 'comprobante_recibido' && (
+                          {(p.status === 'comprobante_recibido' || p.status === 'interesado') && (
                             <button
                               type="button"
                               disabled={trabajando === p.id}
-                              onClick={() => cambiar(p, 'rechazado')}
+                              onClick={() => rechazarConAviso(p)}
                               style={btn('rgba(239,68,68,.12)', '#b91c1c33', '#b91c1c')}
+                              title="Avisar que no figura acreditado y pedir la captura de nuevo"
                             >
                               Rechazar
+                            </button>
+                          )}
+
+                          {p.status === 'rechazado' && (
+                            <button
+                              type="button"
+                              disabled={trabajando === p.id}
+                              onClick={() => cambiarEstadoManual(p, 'comprobante_recibido')}
+                              style={btn('rgba(245,158,11,.18)', '#b4530933', '#b45309')}
+                              title="El cliente envió la captura de nuevo, volver a poner en Verificar"
+                            >
+                              Volver a Verificar
                             </button>
                           )}
                         </div>
