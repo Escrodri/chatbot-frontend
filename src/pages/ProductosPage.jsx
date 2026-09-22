@@ -5,7 +5,7 @@ import { productsService } from '../services/products.service';
 const VACIO = {
   slug: '', name: '', description: '', price: '', currency: 'PYG',
   delivery_url: '', delivery_note: '', cover_url: '', is_active: true, sort_order: 0,
-  precio_recuperacion: '', preview_urls: ''
+  precio_recuperacion: '', preview_urls: '', resumen: ''
 };
 
 /**
@@ -30,6 +30,16 @@ export function ProductosPage() {
   const [guardando, setGuardando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const archivoRef = useRef(null);
+
+  // Las páginas de muestra suben por la misma tubería que la portada, pero con
+  // su propio estado: si compartieran el de arriba, elegir una muestra dejaría
+  // el botón de la portada diciendo "Subiendo…" sin razón.
+  const [subiendoMuestra, setSubiendoMuestra] = useState(false);
+  const muestrasRef = useRef(null);
+
+  // La lista vive como texto de varias líneas porque así la guarda el backend.
+  // Acá se parte solo para pintar las miniaturas.
+  const muestras = String(form.preview_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -68,6 +78,7 @@ export function ProductosPage() {
       delivery_url: p.delivery_url || '',
       delivery_note: p.delivery_note || '',
       cover_url: p.cover_url || '',
+      resumen: p.resumen || '',
       precio_recuperacion: p.precio_recuperacion ?? '',
       preview_urls: Array.isArray(p.preview_urls) ? p.preview_urls.join('\n') : (p.preview_urls || ''),
       is_active: p.is_active !== false,
@@ -103,6 +114,45 @@ export function ProductosPage() {
       setSubiendo(false);
       if (archivoRef.current) archivoRef.current.value = '';
     }
+  };
+
+  /**
+   * Sube una página de muestra y la agrega a la lista.
+   *
+   * Pedirle a alguien que consiga una URL pública para cada imagen era pedirle
+   * que hiciera a mano el trabajo que el sistema ya sabe hacer: la portada se
+   * sube eligiendo un archivo desde hace rato, y no había ninguna razón para
+   * que estas fueran distintas.
+   */
+  const elegirMuestra = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen supera los 5 MB. Usá una más liviana.');
+      return;
+    }
+
+    if (muestras.length >= 3) {
+      setError('Con tres muestras alcanza. El que ya vio todo el material no tiene nada que comprar.');
+      return;
+    }
+
+    setSubiendoMuestra(true);
+    setError(null);
+    try {
+      const { url } = await productsService.subirImagen(token, file);
+      campo('preview_urls', [...muestras, url].join('\n'));
+    } catch (err) {
+      setError('No se pudo subir la imagen: ' + err.message);
+    } finally {
+      setSubiendoMuestra(false);
+      if (muestrasRef.current) muestrasRef.current.value = '';
+    }
+  };
+
+  const quitarMuestra = (url) => {
+    campo('preview_urls', muestras.filter(u => u !== url).join('\n'));
   };
 
   const guardar = async (e) => {
@@ -343,7 +393,29 @@ export function ProductosPage() {
               <textarea id="p-desc" rows={2} style={{ ...input, resize: 'vertical' }} value={form.description}
                 onChange={(e) => campo('description', e.target.value)}
                 placeholder="10 relatos para leer en voz alta, en PDF." />
-              <small style={ayuda}>Una línea. Sale abajo del nombre en el mensaje de WhatsApp.</small>
+              <small style={ayuda}>La descripción completa. No es la que sale por WhatsApp.</small>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={label} htmlFor="p-resumen">
+                Resumen para WhatsApp
+                <span style={{
+                  marginLeft: '8px', fontWeight: 400,
+                  color: (form.resumen || '').length > 220 ? '#b45309' : 'var(--text-soft)'
+                }}>
+                  {(form.resumen || '').length}/220
+                </span>
+              </label>
+              <textarea id="p-resumen" rows={4} style={{ ...input, resize: 'vertical' }}
+                value={form.resumen}
+                onChange={(e) => campo('resumen', e.target.value)}
+                placeholder={'✅ 10 historias bíblicas\n✅ +50 páginas para colorear\n✅ Listo para imprimir'} />
+              <small style={ayuda}>
+                Es lo único que se lee en el celular antes de los botones. Pasando los 220
+                caracteres WhatsApp lo corta con un "Leer más" y el cliente no llega a ver
+                ni el precio ni los botones — que es justo lo que tiene que ver. Tres o cuatro
+                líneas de beneficio, no la ficha técnica.
+              </small>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: '12px', marginBottom: '14px' }}>
@@ -424,14 +496,40 @@ export function ProductosPage() {
             </div>
 
             <div style={{ marginBottom: '14px' }}>
-              <label style={label} htmlFor="p-previews">Páginas de muestra</label>
-              <textarea id="p-previews" rows={3} style={{ ...input, resize: 'vertical', fontSize: '.82rem' }}
-                value={form.preview_urls}
-                onChange={(e) => campo('preview_urls', e.target.value)}
-                placeholder={'https://.../pagina-1.jpg\nhttps://.../pagina-2.jpg'} />
+              <label style={label}>Páginas de muestra</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: '8px' }}>
+                {muestras.map((url) => (
+                  <div key={url} style={{ position: 'relative' }}>
+                    <img src={url} alt="Muestra"
+                      style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-gold, #ddd)' }} />
+                    <button type="button" onClick={() => quitarMuestra(url)} title="Quitar"
+                      style={{
+                        position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px',
+                        borderRadius: '50%', border: '1px solid var(--border-gold, #ddd)', background: '#fff',
+                        color: '#b91c1c', cursor: 'pointer', lineHeight: 1, fontSize: '.8rem', padding: 0
+                      }}>×</button>
+                  </div>
+                ))}
+
+                {muestras.length < 3 && (
+                  <button type="button" disabled={subiendoMuestra}
+                    onClick={() => muestrasRef.current?.click()}
+                    style={{
+                      width: '64px', height: '64px', borderRadius: '8px', cursor: 'pointer',
+                      border: '1px dashed var(--border-gold, #ccc)', background: 'transparent',
+                      color: 'var(--text-soft, #888)', fontSize: '.7rem', lineHeight: 1.2
+                    }}>
+                    {subiendoMuestra ? '…' : '+ Agregar'}
+                  </button>
+                )}
+              </div>
+
+              <input ref={muestrasRef} type="file" accept="image/jpeg,image/png,image/webp"
+                style={{ display: 'none' }} onChange={elegirMuestra} />
+
               <small style={ayuda}>
-                Una URL por línea. Son las que manda el bot cuando tocan "VER PÁGINAS".
-                Poné dos o tres, no más: quien ya vio todo el material no tiene nada que comprar.
+                Son las que manda el bot cuando tocan "VER PÁGINAS". Dos o tres alcanzan:
+                quien ya vio todo el material no tiene nada que comprar.
               </small>
             </div>
 
