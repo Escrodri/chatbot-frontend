@@ -682,7 +682,7 @@ export function SettingsPage() {
             setScanError('Meta autorizó pero no devolvió ni código ni token.');
           }
         }, {
-          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,instagram_basic,instagram_manage_messages,business_management',
+          scope: 'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,instagram_basic,instagram_manage_messages,business_management',
           return_scopes: true
         });
       } catch (err) {
@@ -2209,8 +2209,20 @@ export function SettingsPage() {
 
               {/* Error si ocurre */}
               {scanError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '8px', padding: '10px 14px', color: 'var(--danger)', fontWeight: 500, fontSize: '0.82rem' }}>
-                  <IconoAlerta size={14} /> {scanError}
+                <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '8px', padding: '12px 14px', color: 'var(--danger)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                    <IconoAlerta size={15} /> <span>{scanError}</span>
+                  </div>
+                  {(scanError.includes('#100') || scanError.includes('pages_read_engagement')) && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, borderTop: '1px solid rgba(239, 68, 68, 0.25)', paddingTop: '8px' }}>
+                      💡 <strong>Pasos para solucionar este error en Meta:</strong>
+                      <ol style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                        <li>En el <strong>Graph API Explorer</strong> de Meta Developers, añade los permisos: <code>pages_show_list</code>, <code>pages_messaging</code> y <code>pages_read_engagement</code>.</li>
+                        <li>Si tu App de Meta está en modo <strong>Desarrollo (Development)</strong>, asegúrate de que tu cuenta de Facebook tenga el rol de <strong>Administrador o Evaluador (Tester)</strong> dentro de <em>Roles de la App</em> en Meta Developers.</li>
+                        <li>Verifica que seas Administrador con control total de la Fan Page de Facebook en cuestión.</li>
+                      </ol>
+                    </div>
+                  )}
                 </div>
               )}
 
