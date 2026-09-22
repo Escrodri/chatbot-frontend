@@ -31,7 +31,13 @@ export function ChatList({
     return conversations.filter(c => {
       // Filtro de plataforma
       if (selectedPlatform && selectedPlatform !== 'all') {
-        if (c.platform !== selectedPlatform) return false;
+        const isSelectedFb = selectedPlatform === 'facebook' || selectedPlatform === 'messenger';
+        const isConvFb = c.platform === 'facebook' || c.platform === 'messenger';
+        if (isSelectedFb) {
+          if (!isConvFb) return false;
+        } else if (c.platform !== selectedPlatform) {
+          return false;
+        }
       }
       // Filtro por estado de venta
       if (filtroVenta === 'verificar' && c.order_status !== 'comprobante_recibido') return false;
