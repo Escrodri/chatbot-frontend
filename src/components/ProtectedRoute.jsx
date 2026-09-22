@@ -18,7 +18,7 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location, sessionExpired: true }} replace />;
   }
 
   // El Superadmin es exclusivo de la gestión de Equipos y Empresas; no opera chats de canales

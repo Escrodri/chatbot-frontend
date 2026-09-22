@@ -3,6 +3,16 @@ import { apiUrl } from '../lib/api';
 
 const AuthContext = createContext(null);
 
+const STORAGE_KEYS = ['ldt_user', 'ldt_token', 'tarot_user', 'tarot_token'];
+
+function clearAllStorageKeys() {
+  STORAGE_KEYS.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+  });
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -15,7 +25,13 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('ldt_token') || localStorage.getItem('tarot_token'));
   const [loading, setLoading] = useState(true);
 
-  // Helper de peticiones autenticadas hacia el proxy local de Vite (/api)
+  const clearLocalSession = () => {
+    setUser(null);
+    setToken(null);
+    clearAllStorageKeys();
+  };
+
+  // Helper de peticiones autenticadas hacia la API
   const apiFetch = async (url, options = {}) => {
     const currentToken = localStorage.getItem('ldt_token') || localStorage.getItem('tarot_token');
     const headers = {
@@ -24,11 +40,19 @@ export function AuthProvider({ children }) {
       ...(options.headers || {})
     };
 
-    return fetch(apiUrl(url), {
+    const res = await fetch(apiUrl(url), {
       ...options,
       headers,
       credentials: 'include'
     });
+
+    // Si el backend rechaza la petición con 401 (Sesión inválida o expirada) y no estamos en login,
+    // limpiamos de raíz la sesión local para evitar estados zombie donde parece abierta pero no funciona.
+    if (res.status === 401 && !url.includes('/api/auth/login')) {
+      clearLocalSession();
+    }
+
+    return res;
   };
 
   // Verificar la sesión con el backend al iniciar
@@ -38,14 +62,13 @@ export function AuthProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
-        localStorage.setItem('ldt_user', JSON.stringify(data.user));
+        try {
+          localStorage.setItem('ldt_user', JSON.stringify(data.user));
+          localStorage.setItem('tarot_user', JSON.stringify(data.user));
+        } catch {}
       } else {
-        // Sesión inválida o expirada
-        setUser(null);
-        localStorage.removeItem('ldt_user');
-        localStorage.removeItem('ldt_token');
-        localStorage.removeItem('tarot_user');
-        localStorage.removeItem('tarot_token');
+        // Sesión inválida o expirada en el servidor
+        clearLocalSession();
       }
     } catch (err) {
       console.warn('Servidor no disponible al verificar sesión:', err);
@@ -74,9 +97,15 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     if (data.token) {
       setToken(data.token);
-      localStorage.setItem('tarot_token', data.token);
+      try {
+        localStorage.setItem('ldt_token', data.token);
+        localStorage.setItem('tarot_token', data.token);
+      } catch {}
     }
-    localStorage.setItem('tarot_user', JSON.stringify(data.user));
+    try {
+      localStorage.setItem('ldt_user', JSON.stringify(data.user));
+      localStorage.setItem('tarot_user', JSON.stringify(data.user));
+    } catch {}
     return data.user;
   };
 
@@ -86,14 +115,11 @@ export function AuthProvider({ children }) {
     } catch (e) {
       console.warn('Error en logout del servidor:', e);
     }
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('tarot_user');
-    localStorage.removeItem('tarot_token');
+    clearLocalSession();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, apiFetch, checkAuth }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, apiFetch, checkAuth, clearLocalSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 export function SettingsPage() {
-  const { apiFetch } = useAuth();
+  const { apiFetch, logout } = useAuth();
 
   // Pestaña activa
   const [activeTab, setActiveTab] = useState('channels');
@@ -2221,6 +2221,19 @@ export function SettingsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
                     <IconoAlerta size={15} /> <span>{scanError}</span>
                   </div>
+                  {scanError.toLowerCase().includes('sesión') && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, borderTop: '1px solid rgba(239, 68, 68, 0.25)', paddingTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <span>Tu sesión de usuario en la plataforma ha caducado. Vuelve a iniciar sesión para continuar.</span>
+                      <button
+                        type="button"
+                        className="btn-card-action"
+                        onClick={logout}
+                        style={{ color: 'var(--danger)', borderColor: 'var(--danger)', whiteSpace: 'nowrap' }}
+                      >
+                        Cerrar sesión e ingresar de nuevo
+                      </button>
+                    </div>
+                  )}
                   {(scanError.includes('#100') || scanError.includes('pages_read_engagement')) && (
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, borderTop: '1px solid rgba(239, 68, 68, 0.25)', paddingTop: '8px' }}>
                       💡 <strong>Pasos para solucionar este error en Meta:</strong>

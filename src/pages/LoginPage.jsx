@@ -1,24 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BrandMark } from '../components/BrandMark';
 import { apiUrl } from '../lib/api';
 
 export function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState(() => {
+    if (location.state?.sessionExpired) {
+      return { type: 'warn', text: 'Tu sesión ha expirado o se cerró. Ingresa nuevamente con tus credenciales.' };
+    }
+    return null;
+  });
   const [serverHealth, setServerHealth] = useState('checking');
 
-  // Si ya está autenticado, redirigir automáticamente según su rol
+  // Solo redirigir si la verificación de sesión en el backend finalizó (authLoading === false) y el usuario es válido
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       if (user.role === 'superadmin') {
         navigate('/teams', { replace: true });
       } else if (user.role === 'admin') {
@@ -27,7 +33,7 @@ export function LoginPage() {
         navigate('/inbox', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     // Comprobar el estado real del backend.
