@@ -319,7 +319,11 @@ export function SettingsPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        addToast(`Conexión validada: ${data.message || 'el canal está activo'}`, 'success');
+        if (data.warning) {
+          addToast(data.warning, 'warn');
+        } else {
+          addToast(`Conexión validada: ${data.message || 'el canal está activo'}`, 'success');
+        }
         loadChannels();
       } else {
         addToast(`No se pudo validar: ${data.error || 'el token no es válido'}`, 'error');
