@@ -5,6 +5,7 @@ import { ordersService, ESTADOS, ORDEN_ESTADOS, ETAPAS } from '../services/order
 import { productsService } from '../services/products.service';
 import { analyticsService } from '../services/analytics.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
+import { RevisionAutomatica } from '../components/pedidos/RevisionAutomatica';
 
 /**
  * Tablero de Pedidos: quién pagó y quién no.
@@ -381,6 +382,11 @@ export function PedidosPage() {
           </section>
         )}
 
+        {/* Va antes de los filtros, y no escondido en Configuración, porque la
+            pregunta "¿quién está revisando los comprobantes ahora?" se hace
+            mirando esta misma pantalla. */}
+        <RevisionAutomatica />
+
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
@@ -397,7 +403,7 @@ export function PedidosPage() {
           <button
             type="button"
             onClick={() => setFiltro('auto')}
-            title="Pedidos que el sistema cobró y entregó de madrugada, sin revisión humana"
+            title="Pedidos que el sistema cobró y entregó solo, sin revisión humana"
             style={{
               padding: '8px 14px', borderRadius: '999px', cursor: 'pointer',
               fontSize: '.82rem', fontWeight: 600,
@@ -406,7 +412,7 @@ export function PedidosPage() {
               color: '#b45309'
             }}
           >
-            🌙 Aprobados de madrugada{autoAprobados > 0 ? ` (${autoAprobados})` : ''}
+            🌙 Aprobados solos{autoAprobados > 0 ? ` (${autoAprobados})` : ''}
           </button>
           <input
             type="text"
@@ -537,6 +543,31 @@ export function PedidosPage() {
                           </div>
                         )}
 
+                        {/* Cuántas veces se le insistió y con qué precio.
+                            Importa al confirmar: si el sistema le ofreció el
+                            precio de recuperación, la transferencia va a venir
+                            por ese monto y no por el de lista, y sin este
+                            cartel parece un pago incompleto. */}
+                        {Number(p.recuperacion_nivel) > 0 && (
+                          <div style={{
+                            fontSize: '.74rem', padding: '6px 9px', borderRadius: '7px',
+                            background: 'rgba(99,102,241,.12)', color: '#4338ca',
+                            border: '1px solid #4338ca26', lineHeight: 1.4
+                          }}>
+                            🔁 <strong>
+                              {Number(p.recuperacion_nivel) === 1
+                                ? 'Se le mandó 1 recordatorio'
+                                : `Se le mandaron ${p.recuperacion_nivel} seguimientos`}
+                            </strong>
+                            {Number(p.recuperacion_nivel) >= 2 && ', con el precio de recuperación'}.
+                            {p.recuperacion_at && (
+                              <> Último: {new Date(p.recuperacion_at).toLocaleString('es-PY', {
+                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                              })}.</>
+                            )}
+                          </div>
+                        )}
+
                         {/* Botones de acción contextuales */}
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                           {p.status !== 'entregado' && (
@@ -618,15 +649,16 @@ export function PedidosPage() {
         </div>
 
         <p style={{ marginTop: '16px', fontSize: '.82rem', color: 'var(--text-soft)', lineHeight: 1.55 }}>
-          El bot marca un pedido como <strong>Verificar</strong> cuando llega un comprobante, y en
-          horario de atención ahí se queda: confirmarlo lo hace una persona después de ver la
-          transferencia en el banco.
+          El bot marca un pedido como <strong>Verificar</strong> cuando llega un comprobante, y
+          mientras haya alguien atendiendo ahí se queda: confirmarlo lo hace una persona después
+          de ver la transferencia en el banco.
           <br />
-          Entre las 21:00 y las 08:00 es distinto. A esa hora no hay nadie, y hacer esperar ocho
-          horas a alguien que ya pagó cuesta más que el riesgo de un comprobante falso en un
-          material digital. Si el monto llega al precio, la cuenta es la nuestra y el número de
-          operación no se usó antes, el sistema cobra y entrega solo. Esos quedan marcados con
-          🌙 y conviene repasarlos a la mañana contra el extracto.
+          Cuando no hay nadie es distinto. De madrugada siempre, y de día cuando lo encendés
+          arriba porque vas a salir, el sistema cobra y entrega solo —pero únicamente si el monto
+          llega al precio, la cuenta es la nuestra y el número de operación no cobró otro pedido—.
+          Hacer esperar ocho horas a alguien que ya pagó cuesta más que el riesgo de un
+          comprobante falso en un material digital. Esos pedidos quedan marcados con 🌙 y conviene
+          repasarlos contra el extracto.
         </p>
       </main>
     </div>

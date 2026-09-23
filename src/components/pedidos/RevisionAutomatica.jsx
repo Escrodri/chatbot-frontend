@@ -1,0 +1,203 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { ordersService } from '../../services/orders.service';
+
+/**
+ * El interruptor de "salgo un rato, que apruebe solo".
+ *
+ * La aprobación automática de comprobantes nació atada al horario: de noche
+ * sí, de día no, porque de día hay alguien mirando. Es la regla correcta
+ * mientras esa persona esté. En cuanto sale a hacer un trámite, el comprobante
+ * de las once de la mañana queda esperando igual que el de las tres de la
+ * madrugada, pero sin la excusa de la hora: el cliente ve que es horario de
+ * atención, que nadie le contesta, y saca la única conclusión que le queda.
+ *
+ * Tres cosas de esta pantalla no son decorativas:
+ *
+ * Lo primero que se lee es si ahora mismo está aprobando sola o no, en una
+ * frase y no en un ícono. Un interruptor que solo muestra su posición obliga a
+ * hacer la cuenta mental "está en modo noche, son las tres de la tarde,
+ * entonces no"; y esa cuenta se hace mal justo el día que uno está apurado
+ * por salir.
+ *
+ * El vencimiento no es opcional por capricho. Un interruptor sin vencimiento
+ * se queda encendido: se activa un martes para salir dos horas y tres semanas
+ * después sigue aprobando sola a las cuatro de la tarde sin que nadie lo haya
+ * decidido. Por eso "siempre" se enciende siempre con un plazo, y cuando vence
+ * el sistema vuelve solo a lo de siempre.
+ *
+ * Y el cartel de los números de prueba está para que nadie encienda "siempre"
+ * creyendo que es la única forma de probar el circuito.
+ */
+export function RevisionAutomatica() {
+  const { token, user } = useAuth();
+  const [estado, setEstado] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState(null);
+  const [abierto, setAbierto] = useState(false);
+
+  const esAdmin = ['admin', 'superadmin'].includes(user?.role);
+
+  const cargar = useCallback(async () => {
+    try {
+      setEstado(await ordersService.revisionConfig(token));
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  }, [token]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  // Se revisa cada minuto para que el cartel no mienta: el modo puede vencer,
+  // y la franja nocturna puede empezar, sin que nadie recargue la página.
+  useEffect(() => {
+    const reloj = setInterval(cargar, 60 * 1000);
+    return () => clearInterval(reloj);
+  }, [cargar]);
+
+  const cambiar = async (modo, horas = null) => {
+    setGuardando(true);
+    setError(null);
+    try {
+      setEstado(await ordersService.cambiarRevisionConfig(token, { modo, horas }));
+      setAbierto(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  if (cargando || !estado) return null;
+
+  const activo = Boolean(estado.aprobando_ahora);
+  const modo = estado.modo_efectivo;
+
+  const color = activo ? '#047857' : 'var(--text-soft, #6b7280)';
+  const fondo = activo ? 'rgba(16,185,129,.12)' : 'rgba(107,114,128,.10)';
+
+  const franja = `${String(estado.franja_nocturna?.desde ?? 21).padStart(2, '0')}:00 ` +
+                 `a ${String(estado.franja_nocturna?.hasta ?? 8).padStart(2, '0')}:00`;
+
+  const frase = !estado.habilitada_en_servidor
+    ? 'Apagada en la configuración del servidor.'
+    : modo === 'apagado'
+      ? 'Apagada: todos los comprobantes los revisás vos.'
+      : modo === 'siempre'
+        ? 'Encendida a toda hora.'
+        : activo
+          ? `Encendida: es horario de madrugada (${franja}).`
+          : `Solo de madrugada (${franja}). Ahora los revisás vos.`;
+
+  const venceEn = estado.hasta && !estado.vencido
+    ? new Date(estado.hasta).toLocaleString('es-PY', {
+        hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'
+      })
+    : null;
+
+  const opcion = (texto, onClick, destacado = false) => (
+    <button
+      type="button"
+      disabled={guardando}
+      onClick={onClick}
+      style={{
+        textAlign: 'left', padding: '9px 12px', borderRadius: '8px', cursor: 'pointer',
+        fontSize: '.82rem', fontWeight: destacado ? 700 : 500,
+        border: `1px solid ${destacado ? '#04785744' : 'var(--border-gold, #e2e2e2)'}`,
+        background: destacado ? 'rgba(16,185,129,.10)' : 'transparent',
+        color: destacado ? '#047857' : 'inherit',
+        width: '100%', lineHeight: 1.35
+      }}
+    >
+      {texto}
+    </button>
+  );
+
+  return (
+    <section style={{
+      border: `1px solid ${activo ? '#04785733' : 'var(--border-gold, #e2e2e2)'}`,
+      background: fondo, borderRadius: '10px',
+      padding: '12px 14px', marginBottom: '16px'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <span style={{
+          width: '9px', height: '9px', borderRadius: '50%', flexShrink: 0,
+          background: activo ? '#10b981' : '#9ca3af'
+        }} />
+
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <div style={{ fontSize: '.86rem', fontWeight: 700, color }}>
+            Aprobación automática de comprobantes
+          </div>
+          <div style={{ fontSize: '.79rem', color: 'var(--text-soft)', lineHeight: 1.4 }}>
+            {frase}
+            {venceEn && <> Vuelve a lo de siempre a las <strong>{venceEn}</strong>.</>}
+            {/* Lo primero que uno quiere ver al volver de la calle: cuántas
+                entregó solo mientras no estabas, y si el tope del día está por
+                frenar las que vengan. */}
+            {Number(estado.entregadas_hoy) > 0 && (
+              <> Hoy entregó <strong>{estado.entregadas_hoy}</strong>
+                {Number(estado.max_por_dia) > 0 && ` de ${estado.max_por_dia}`} sin revisión.</>
+            )}
+            {Number(estado.max_por_dia) > 0 &&
+              Number(estado.entregadas_hoy) >= Number(estado.max_por_dia) && (
+              <> <span style={{ color: '#b45309', fontWeight: 600 }}>
+                Llegó al tope del día: el resto lo revisás vos hasta mañana.
+              </span></>
+            )}
+          </div>
+        </div>
+
+        {esAdmin && (
+          <button
+            type="button"
+            onClick={() => setAbierto(a => !a)}
+            className="btn-card-action"
+            style={{ flexShrink: 0 }}
+          >
+            {abierto ? 'Cerrar' : 'Cambiar'}
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <p style={{ margin: '9px 0 0', fontSize: '.78rem', color: '#b91c1c' }}>{error}</p>
+      )}
+
+      {abierto && esAdmin && (
+        <div style={{ marginTop: '12px', display: 'grid', gap: '7px' }}>
+          {opcion(
+            <>Salgo un rato — <strong>que apruebe sola 2 horas</strong></>,
+            () => cambiar('siempre', 2),
+            modo !== 'siempre'
+          )}
+          {opcion(<>Salgo por más tiempo — que apruebe sola <strong>6 horas</strong></>, () => cambiar('siempre', 6))}
+          {opcion(<>Todo el día — que apruebe sola <strong>12 horas</strong></>, () => cambiar('siempre', 12))}
+          {opcion(<>Volver a lo de siempre — <strong>solo de madrugada</strong> ({franja})</>, () => cambiar('noche'))}
+          {opcion(<>Apagarla del todo — <strong>reviso yo todos</strong>, incluso de madrugada</>, () => cambiar('apagado'))}
+
+          <p style={{
+            margin: '4px 0 0', fontSize: '.74rem', color: 'var(--text-soft)', lineHeight: 1.45
+          }}>
+            Aunque esté encendida, sigue entregando sola únicamente cuando no queda
+            ninguna duda: el monto tiene que llegar al precio, la cuenta de destino
+            tiene que ser la tuya y el número de operación no puede haber cobrado
+            otro pedido. Cualquier cosa rara cae igual en tu revisión.
+          </p>
+          <p style={{
+            margin: 0, fontSize: '.74rem', color: 'var(--text-soft)', lineHeight: 1.45
+          }}>
+            Para probar no hace falta encender nada: los comprobantes que llegan
+            desde los números de prueba se aprueban solos a cualquier hora.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default RevisionAutomatica;

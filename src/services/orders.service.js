@@ -87,6 +87,40 @@ export const ordersService = {
     return parse(res);
   },
 
+  /**
+   * Cómo está configurada la aprobación automática de comprobantes.
+   *
+   * Tres modos: de noche nomás, siempre, o apagada. El segundo existe para el
+   * día que hay que salir: sin esto, el comprobante de las once de la mañana
+   * espera igual que el de las tres de la madrugada, pero sin la excusa de la
+   * hora, y el cliente saca la única conclusión que le queda disponible.
+   */
+  async revisionConfig(token) {
+    const res = await fetch(apiUrl('/api/orders/revision-config'), {
+      headers: authHeaders(token),
+      credentials: 'include'
+    });
+    return parse(res);
+  },
+
+  /**
+   * Cambia el modo.
+   *
+   * `horas` le pone vencimiento, que es como lo piensa quien está por salir:
+   * "dos horas y que vuelva solo a lo de siempre". Sin vencimiento el
+   * interruptor se queda encendido, y tres semanas después sigue aprobando
+   * sola a las cuatro de la tarde sin que nadie lo haya decidido.
+   */
+  async cambiarRevisionConfig(token, { modo, horas = null, nota = null }) {
+    const res = await fetch(apiUrl('/api/orders/revision-config'), {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      credentials: 'include',
+      body: JSON.stringify({ modo, horas, nota })
+    });
+    return parse(res);
+  },
+
   async porConversacion(token, conversationId) {
     const res = await fetch(apiUrl(`/api/orders/conversation/${conversationId}`), {
       headers: authHeaders(token),

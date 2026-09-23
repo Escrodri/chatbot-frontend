@@ -34,6 +34,12 @@ function mediaSrc(msg, token) {
   return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
+/** La hora de un mensaje, o cadena vacía si no la trae. */
+function timeStrDe(msg) {
+  if (!msg?.timestamp) return '';
+  return new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 const PLATFORM_LABELS = {
   whatsapp: 'WhatsApp',
   instagram: 'Instagram',
@@ -54,7 +60,6 @@ export function ChatArea({
   loadingMessages = false,
   onSendMessage,
   onToggleBot,
-  togglingBot = false,
   sending,
   sendBanner = null,
   onDismissBanner = () => {},
@@ -636,12 +641,10 @@ export function ChatArea({
           <button
             type="button"
             className={`btn-handover ${isBotActive ? 'bot-active' : 'human-active'}`}
-            disabled={togglingBot}
             onClick={() => onToggleBot(conversation.id, isBotActive ? 'handed_over' : 'active')}
             title="Alternar entre respuesta automática del bot y atención humana"
-            style={togglingBot ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
           >
-            <span>{togglingBot ? 'Cambiando...' : (isBotActive ? 'Bot activo' : 'Control humano')}</span>
+            <span>{isBotActive ? 'Bot activo' : 'Control humano'}</span>
           </button>
 
           {/* Marcar la conversación como venta e informarla a Meta */}
@@ -750,6 +753,32 @@ export function ChatArea({
             const isBot = msg.sender_type === 'bot';
 
             const isFailed = msg.status === 'failed';
+
+            // Nota interna: no salió a Meta, el cliente nunca la vio.
+            //
+            // Se guardan como mensajes salientes del bot porque van en la misma
+            // tabla, y sin un caso propio acá caían en el renderizado normal,
+            // que no dibuja nada para este tipo: quedaba una burbuja vacía del
+            // bot justo después del handover. Desde la bandeja se leía como que
+            // el bot le había mandado un mensaje en blanco al cliente, que es
+            // exactamente lo que uno no quiere creer de su propio sistema.
+            if (msg.content_type === 'system') {
+              return (
+                <div key={msg.id} className="msg-system-note" style={{
+                  alignSelf: 'center', maxWidth: '82%', margin: '6px auto',
+                  padding: '7px 12px', borderRadius: '8px',
+                  background: 'rgba(107,114,128,.10)',
+                  border: '1px dashed rgba(107,114,128,.35)',
+                  color: 'var(--text-soft, #6b7280)',
+                  fontSize: '.78rem', lineHeight: 1.45, textAlign: 'center'
+                }}>
+                  {msg.text || 'Nota del sistema'}
+                  <div style={{ fontSize: '.68rem', opacity: .8, marginTop: '2px' }}>
+                    Nota interna · esto no se le envió al cliente{timeStrDe(msg) ? ` · ${timeStrDe(msg)}` : ''}
+                  </div>
+                </div>
+              );
+            }
 
             let bubbleClass = 'inbound';
             if (!isInbound) {

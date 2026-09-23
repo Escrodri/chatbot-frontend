@@ -244,6 +244,24 @@ export function ChatList({
                     </span>
 
                     <div className="chat-badges-row">
+                      {/* Primero de todo: esta persona se enojó o nos trató de
+                          estafadores. El bot le contestó igual —callarse es lo
+                          que convierte un enojo en una reseña—, pero es el chat
+                          que hay que mirar antes que ningún otro, y el único
+                          que la recuperación de abandonos no va a tocar. */}
+                      {chat.molesto_at && (
+                        <span
+                          title="Se enojó o nos acusó. El bot le contestó, pero no le va a insistir más."
+                          style={{
+                            fontSize: '.68rem', fontWeight: 700, padding: '2px 6px',
+                            borderRadius: '999px', background: 'rgba(239,68,68,.16)',
+                            color: '#b91c1c', whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Molesto
+                        </span>
+                      )}
+
                       {/* Va antes que el estado del pedido: importa más saber
                           que esta persona ya compró que en qué anda su pedido
                           de hoy. */}
