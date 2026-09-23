@@ -121,6 +121,22 @@ export const ordersService = {
     return parse(res);
   },
 
+  /**
+   * Guarda la cuenta que recibe las transferencias.
+   *
+   * Vive en el servidor y no en el guion a propósito: es el dato contra el que
+   * se contrasta cada comprobante antes de entregar sin que nadie mire.
+   */
+  async guardarDatosPago(token, datos) {
+    const res = await fetch(apiUrl('/api/orders/datos-pago'), {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      credentials: 'include',
+      body: JSON.stringify(datos)
+    });
+    return parse(res);
+  },
+
   async porConversacion(token, conversationId) {
     const res = await fetch(apiUrl(`/api/orders/conversation/${conversationId}`), {
       headers: authHeaders(token),
