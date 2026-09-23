@@ -72,7 +72,57 @@ export function RevisionAutomatica() {
     }
   };
 
-  if (cargando || !estado) return null;
+  // Este panel NUNCA desaparece.
+  //
+  // Antes hacía `if (cargando || !estado) return null`, y eso lo volvía
+  // invisible en el único momento en que hacía falta que se viera: cuando el
+  // backend todavía no tiene esta función y la consulta devuelve 404. La
+  // pantalla quedaba exactamente igual que antes de existir el panel, sin un
+  // solo cartel, y desde afuera se lee como "no lo hicieron".
+  //
+  // Un control que decide si se entrega material sin que nadie mire tiene que
+  // decir siempre en qué estado está, incluso —sobre todo— cuando no lo puede
+  // averiguar.
+  if (cargando && !estado) {
+    return (
+      <section style={{
+        border: '1px solid var(--border-gold, #e2e2e2)', borderRadius: '10px',
+        padding: '12px 14px', marginBottom: '16px',
+        fontSize: '.82rem', color: 'var(--text-soft)'
+      }}>
+        Aprobación automática de comprobantes — leyendo el estado…
+      </section>
+    );
+  }
+
+  if (!estado) {
+    const es404 = /404|not found|no encontr/i.test(error || '');
+    return (
+      <section style={{
+        border: '1px solid #b4530944', background: 'rgba(245,158,11,.10)',
+        borderRadius: '10px', padding: '12px 14px', marginBottom: '16px'
+      }}>
+        <div style={{ fontSize: '.86rem', fontWeight: 700, color: '#b45309' }}>
+          Aprobación automática de comprobantes
+        </div>
+        <div style={{ fontSize: '.79rem', color: 'var(--text-soft)', lineHeight: 1.45, marginTop: '3px' }}>
+          {es404
+            ? 'El servidor todavía no tiene esta función. Falta desplegar el backend: ' +
+              'mientras tanto, todos los comprobantes los revisás vos.'
+            : `No se pudo leer el estado: ${error || 'el servidor no contestó'}. ` +
+              'Mientras tanto, todos los comprobantes los revisás vos.'}
+        </div>
+        <button
+          type="button"
+          onClick={() => { setCargando(true); cargar(); }}
+          className="btn-card-action"
+          style={{ marginTop: '9px' }}
+        >
+          Reintentar
+        </button>
+      </section>
+    );
+  }
 
   const activo = Boolean(estado.aprobando_ahora);
   const modo = estado.modo_efectivo;
@@ -152,17 +202,28 @@ export function RevisionAutomatica() {
           </div>
         </div>
 
-        {esAdmin && (
-          <button
-            type="button"
-            onClick={() => setAbierto(a => !a)}
-            className="btn-card-action"
-            style={{ flexShrink: 0 }}
-          >
-            {abierto ? 'Cerrar' : 'Cambiar'}
-          </button>
-        )}
+        {/* El botón se muestra siempre. Esconderlo por rol dejaba la pantalla
+            idéntica a como era antes de que este panel existiera, y no había
+            forma de distinguir "no tenés permiso" de "no se instaló". Quien no
+            es administrador lo ve deshabilitado y con el motivo escrito; el
+            permiso de verdad lo sigue aplicando el servidor. */}
+        <button
+          type="button"
+          onClick={() => esAdmin && setAbierto(a => !a)}
+          disabled={!esAdmin}
+          title={esAdmin ? 'Cambiar el modo' : 'Solo un administrador puede cambiar esto'}
+          className="btn-card-action"
+          style={{ flexShrink: 0, opacity: esAdmin ? 1 : 0.55, cursor: esAdmin ? 'pointer' : 'not-allowed' }}
+        >
+          {abierto ? 'Cerrar' : 'Cambiar'}
+        </button>
       </div>
+
+      {!esAdmin && (
+        <p style={{ margin: '8px 0 0', fontSize: '.75rem', color: 'var(--text-soft)' }}>
+          Solo un administrador puede cambiar esto.
+        </p>
+      )}
 
       {error && (
         <p style={{ margin: '9px 0 0', fontSize: '.78rem', color: '#b91c1c' }}>{error}</p>
