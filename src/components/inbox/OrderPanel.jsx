@@ -64,6 +64,30 @@ export function OrderPanel({ conversationId, contactName, onClose }) {
   const cambiarEstadoManual = async (pedido, nuevoEstado) => {
     if (!nuevoEstado || nuevoEstado === pedido.status) return;
 
+    // Este desplegable cambiaba el estado con un solo clic y sin preguntar.
+    // Marcar "Entregado" por error daba la venta por cerrada, no le mandaba
+    // nada al cliente, y sacaba el pedido de la lista de pendientes: nadie se
+    // enteraba hasta que el cliente reclamara.
+    //
+    // Y "Pagado" desde acá tampoco entrega, que es justo lo que uno espera que
+    // haga. Por eso cada texto dice qué NO pasa.
+    const textos = {
+      entregado: `Vas a marcar el pedido de ${contactName || 'este contacto'} como ENTREGADO.\n\n` +
+        'Esto NO le manda el material: solo deja registrado que ya lo recibió. ' +
+        'Si todavía no se lo mandaste, cerrá esto y usá "Confirmar pago y entregar".',
+      pagado: 'Vas a marcar el pedido como PAGADO, sin entregar.\n\n' +
+        'No le llega ningún mensaje ni el enlace de descarga. Para cobrar Y entregar, ' +
+        'usá el botón de confirmar.',
+      rechazado: 'Vas a marcar el pedido como RECHAZADO.\n\n' +
+        'Esto no le avisa nada al cliente: es solo el registro.'
+    };
+
+    const ok = window.confirm(
+      textos[nuevoEstado] ||
+      `Vas a cambiar el estado del pedido a "${nuevoEstado}".\n\nEsto no le manda ningún mensaje al cliente.`
+    );
+    if (!ok) return;
+
     setTrabajando(pedido.id);
     try {
       await ordersService.cambiarEstado(token, pedido.id, nuevoEstado, { notify: false });

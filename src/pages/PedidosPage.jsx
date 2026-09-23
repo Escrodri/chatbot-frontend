@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ordersService, ESTADOS, ORDEN_ESTADOS } from '../services/orders.service';
+import { ordersService, ESTADOS, ORDEN_ESTADOS, ETAPAS } from '../services/orders.service';
 import { productsService } from '../services/products.service';
 import { analyticsService } from '../services/analytics.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
@@ -30,6 +30,7 @@ export function PedidosPage() {
   const [error, setError] = useState(null);
   const [trabajando, setTrabajando] = useState(null);
   const [ventasHoy, setVentasHoy] = useState(null);
+  const [embudo, setEmbudo] = useState(null);
 
   // Resultado de la última entrega, por pedido. Confirmar un pago dispara el
   // envío del enlace, y hay que decir si salió o no: antes esto era mudo.
@@ -39,14 +40,22 @@ export function PedidosPage() {
     setCargando(true);
     setError(null);
     try {
-      const [lista, sum, dashboard] = await Promise.all([
-        ordersService.list(token, { status: filtro === 'todos' ? null : filtro }),
+      // 'auto' no es un estado del pedido sino una marca, así que se pide todo
+      // y se filtra acá. Son pocos por noche: no justifica un endpoint propio.
+      const statusPedido = (filtro === 'todos' || filtro === 'auto') ? null : filtro;
+
+      const [lista, sum, dashboard, emb] = await Promise.all([
+        ordersService.list(token, { status: statusPedido }),
         ordersService.resumen(token),
-        analyticsService.getDashboard(token, { periodo: 'hoy' }).catch(() => null)
+        analyticsService.getDashboard(token, { periodo: 'hoy' }).catch(() => null),
+        // Si el embudo falla, el tablero tiene que seguir funcionando: es
+        // información para decidir, no para trabajar.
+        ordersService.embudo(token, 30).catch(() => null)
       ]);
       setPedidos(Array.isArray(lista) ? lista : []);
       setResumen(Array.isArray(sum) ? sum : []);
       if (dashboard?.hoy) setVentasHoy(dashboard.hoy);
+      setEmbudo(emb);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -69,7 +78,11 @@ export function PedidosPage() {
   const clientes = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
 
-    const filtrados = !q ? pedidos : pedidos.filter(p =>
+    const porMarca = filtro === 'auto'
+      ? pedidos.filter(p => p.auto_aprobado)
+      : pedidos;
+
+    const filtrados = !q ? porMarca : porMarca.filter(p =>
       (p.contact_name || '').toLowerCase().includes(q) ||
       (p.contact_phone || '').toLowerCase().includes(q) ||
       (p.product_name || '').toLowerCase().includes(q)
@@ -94,7 +107,15 @@ export function PedidosPage() {
     });
 
     return Array.from(mapa.values());
-  }, [pedidos, busqueda]);
+  }, [pedidos, busqueda, filtro]);
+
+  // Cuántos cobró el sistema solo mientras no había nadie. Se cuenta sobre lo
+  // que está cargado, así que solo es exacto mirando "Ver todos" o el propio
+  // filtro; alcanza para que el número llame la atención cuando hay algo.
+  const autoAprobados = useMemo(
+    () => pedidos.filter(p => p.auto_aprobado).length,
+    [pedidos]
+  );
 
   const confirmarPago = async (pedido) => {
     const entregable = pedido.product_entregable;
@@ -265,6 +286,101 @@ export function PedidosPage() {
           })}
         </div>
 
+        {/* El recorrido completo, de los últimos 30 días.
+            Los cinco estados de arriba dicen qué hay para hacer hoy. Esto dice
+            otra cosa: en qué escalón se cae la gente. Son preguntas distintas y
+            la segunda es la que decide dónde tocar el guion y qué anuncio
+            conviene. */}
+        {embudo?.general && Object.values(embudo.general).some(n => n > 0) && (
+          <section style={{
+            marginBottom: '22px', padding: '16px 18px', borderRadius: '10px',
+            border: '1px solid var(--border-gold, #e2e2e2)', background: 'var(--bg-card, #fff)'
+          }}>
+            <div style={{
+              fontSize: '.74rem', fontWeight: 700, letterSpacing: '.04em',
+              color: 'var(--text-soft)', marginBottom: '12px'
+            }}>
+              EL RECORRIDO — ÚLTIMOS 30 DÍAS
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+              {ETAPAS.map(({ clave, etiqueta }) => {
+                const cantidad = embudo.general[clave] || 0;
+                const base = embudo.general.entro || 0;
+                const pct = base > 0 ? Math.round((cantidad / base) * 100) : 0;
+                const esVenta = clave === 'pago' || clave === 'recibio_material';
+
+                return (
+                  <div key={clave} style={{
+                    flex: '1 1 110px', minWidth: '104px', padding: '9px 10px', borderRadius: '8px',
+                    background: esVenta ? 'rgba(16,185,129,.10)' : 'var(--bg-soft, #f7f7f7)',
+                    border: `1px solid ${esVenta ? '#04785733' : 'var(--border-gold, #e8e8e8)'}`
+                  }}>
+                    <div style={{
+                      fontSize: '1.15rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                      color: esVenta ? '#047857' : 'inherit', lineHeight: 1.1
+                    }}>
+                      {cantidad}
+                    </div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--text-soft)', lineHeight: 1.3, marginTop: '2px' }}>
+                      {etiqueta}
+                    </div>
+                    {base > 0 && (
+                      <div style={{ fontSize: '.68rem', color: 'var(--text-soft)', marginTop: '3px', opacity: .8 }}>
+                        {pct}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Por anuncio. Es lo único que separa "este anuncio trae gente"
+                de "este anuncio trae gente que paga", y sin eso el costo por
+                venta real no se puede calcular. */}
+            {embudo.anuncios && Object.keys(embudo.anuncios).length > 0 && (
+              <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed var(--border-gold, #e2e2e2)' }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--text-soft)', marginBottom: '8px' }}>
+                  Por anuncio
+                </div>
+                <div style={{ display: 'grid', gap: '4px' }}>
+                  {Object.entries(embudo.anuncios)
+                    .sort((a, b) => (b[1].entro || 0) - (a[1].entro || 0))
+                    .slice(0, 6)
+                    .map(([anuncio, datos]) => {
+                      const entraron = datos.entro || 0;
+                      const compraron = datos.pago || 0;
+                      const tasa = entraron > 0 ? Math.round((compraron / entraron) * 100) : 0;
+                      return (
+                        <div key={anuncio} style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          fontSize: '.78rem', padding: '5px 0'
+                        }}>
+                          <span style={{
+                            flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            fontFamily: anuncio === 'sin_anuncio' ? 'inherit' : 'ui-monospace, monospace'
+                          }}>
+                            {anuncio === 'sin_anuncio' ? 'Sin anuncio (escribieron directo)' : anuncio}
+                          </span>
+                          <span style={{ color: 'var(--text-soft)', fontVariantNumeric: 'tabular-nums' }}>
+                            {entraron} → {compraron}
+                          </span>
+                          <span style={{
+                            fontWeight: 700, minWidth: '42px', textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                            color: tasa > 0 ? '#047857' : 'var(--text-soft)'
+                          }}>
+                            {tasa}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
@@ -272,6 +388,25 @@ export function PedidosPage() {
             onClick={() => setFiltro('todos')}
           >
             Ver todos
+          </button>
+
+          {/* Los que el sistema cobró y entregó de madrugada, sin que nadie
+              mirara el banco. Tienen que ser fáciles de encontrar a la mañana:
+              es la única revisión que queda entre un comprobante falso y el
+              material regalado. */}
+          <button
+            type="button"
+            onClick={() => setFiltro('auto')}
+            title="Pedidos que el sistema cobró y entregó de madrugada, sin revisión humana"
+            style={{
+              padding: '8px 14px', borderRadius: '999px', cursor: 'pointer',
+              fontSize: '.82rem', fontWeight: 600,
+              border: `1px solid ${filtro === 'auto' ? '#b45309' : '#b4530944'}`,
+              background: filtro === 'auto' ? 'rgba(245,158,11,.18)' : 'transparent',
+              color: '#b45309'
+            }}
+          >
+            🌙 Aprobados de madrugada{autoAprobados > 0 ? ` (${autoAprobados})` : ''}
           </button>
           <input
             type="text"
@@ -383,6 +518,25 @@ export function PedidosPage() {
                           </select>
                         </div>
 
+                        {/* Aviso de que a este pedido no lo miró nadie. Va
+                            pegado al estado y no escondido en un detalle,
+                            porque es lo único que separa un comprobante falso
+                            aprobado a las 3 de la mañana de una pérdida que
+                            nadie va a notar nunca. */}
+                        {p.auto_aprobado && (
+                          <div style={{
+                            fontSize: '.74rem', padding: '6px 9px', borderRadius: '7px',
+                            background: 'rgba(245,158,11,.14)', color: '#b45309',
+                            border: '1px solid #b4530933', lineHeight: 1.4
+                          }}>
+                            🌙 <strong>Lo aprobó el sistema</strong>, sin revisión humana.
+                            {p.receipt_operacion && (
+                              <> Operación <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{p.receipt_operacion}</strong>.</>
+                            )}
+                            {' '}Contrastalo contra el extracto del banco.
+                          </div>
+                        )}
+
                         {/* Botones de acción contextuales */}
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                           {p.status !== 'entregado' && (
@@ -463,10 +617,16 @@ export function PedidosPage() {
           ))}
         </div>
 
-        <p style={{ marginTop: '16px', fontSize: '.82rem', color: 'var(--text-soft)' }}>
-          El bot puede marcar un pedido como <strong>Verificar</strong> cuando llega un comprobante,
-          pero no puede confirmarlo como pagado: eso lo hace una persona después de ver la
-          transferencia en el banco. El backend rechaza esa transición si viene del bot.
+        <p style={{ marginTop: '16px', fontSize: '.82rem', color: 'var(--text-soft)', lineHeight: 1.55 }}>
+          El bot marca un pedido como <strong>Verificar</strong> cuando llega un comprobante, y en
+          horario de atención ahí se queda: confirmarlo lo hace una persona después de ver la
+          transferencia en el banco.
+          <br />
+          Entre las 21:00 y las 08:00 es distinto. A esa hora no hay nadie, y hacer esperar ocho
+          horas a alguien que ya pagó cuesta más que el riesgo de un comprobante falso en un
+          material digital. Si el monto llega al precio, la cuenta es la nuestra y el número de
+          operación no se usó antes, el sistema cobra y entrega solo. Esos quedan marcados con
+          🌙 y conviene repasarlos a la mañana contra el extracto.
         </p>
       </main>
     </div>

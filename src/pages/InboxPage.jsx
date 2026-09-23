@@ -49,6 +49,15 @@ export function InboxPage() {
   // Reinicio de un chat de prueba, para volver a correr el flujo desde cero.
   const [reiniciando, setReiniciando] = useState(false);
 
+  // Si la bandeja no puede cargar, hay que decirlo.
+  //
+  // Antes el error se tragaba: `if (res.ok)` sin else, y el catch iba a la
+  // consola. Con la sesión vencida o el servidor caído, la pantalla mostraba
+  // exactamente lo mismo que cuando no hay conversaciones — "No hay
+  // conversaciones" —, así que uno se quedaba mirando una bandeja vacía
+  // creyendo que nadie escribió, mientras los clientes esperaban.
+  const [errorCarga, setErrorCarga] = useState(null);
+
   // Indexar conversaciones para búsqueda avanzada de mensajes
   useEffect(() => {
     if (conversations.length > 0) {
@@ -78,9 +87,18 @@ export function InboxPage() {
       if (res.ok) {
         const data = await res.json();
         setConversations(data);
+        setErrorCarga(null);
+        return;
       }
+
+      setErrorCarga(
+        res.status === 401 || res.status === 403
+          ? 'Tu sesión venció. Volvé a entrar para seguir viendo los chats.'
+          : `No se pudo cargar la bandeja (error ${res.status}). Los mensajes que lleguen mientras tanto no se pierden.`
+      );
     } catch (err) {
       console.error('Error al cargar conversaciones:', err);
+      setErrorCarga('No se pudo contactar al servidor. Revisá tu conexión — esta lista puede estar desactualizada.');
     }
   }, [apiFetch]);
 
@@ -437,6 +455,35 @@ export function InboxPage() {
         apiFetch={apiFetch}
         onCerrar={() => setAutomationEstado(prev => (prev ? { ...prev, hayProblema: false } : prev))}
       />
+
+      {/* La bandeja no pudo cargar. Va arriba de todo y ocupando el ancho
+          completo porque el error importante acá no es el error: es que sin
+          este aviso, una bandeja rota se ve igual que una bandeja tranquila. */}
+      {errorCarga && (
+        <div style={{
+          gridColumn: '1 / -1',
+          padding: '10px 16px',
+          background: 'rgba(239,68,68,.12)',
+          color: '#b91c1c',
+          borderBottom: '1px solid #b91c1c33',
+          fontSize: '.84rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{ flex: 1 }}>{errorCarga}</span>
+          <button
+            type="button"
+            onClick={loadConversations}
+            style={{
+              border: '1px solid #b91c1c55', background: 'transparent', color: '#b91c1c',
+              borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 600
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {/* Columna Izquierda: Lista de Chats */}
       <ChatList

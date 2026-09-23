@@ -19,6 +19,24 @@ export const ESTADOS = {
 
 export const ORDEN_ESTADOS = ['comprobante_recibido', 'interesado', 'pagado', 'entregado', 'rechazado'];
 
+/**
+ * Las ocho etapas del recorrido de compra, en orden, con su nombre corto.
+ *
+ * El estado del pedido dice qué hacer con él ahora; la etapa dice hasta dónde
+ * llegó esa persona, y nunca retrocede. Es la diferencia entre "este pedido
+ * está pendiente" y "este anuncio trae gente que paga".
+ */
+export const ETAPAS = [
+  { clave: 'entro', etiqueta: 'Escribió' },
+  { clave: 'vio_producto', etiqueta: 'Vio el producto' },
+  { clave: 'vio_muestras', etiqueta: 'Pidió muestras' },
+  { clave: 'pidio_comprar', etiqueta: 'Quiso comprar' },
+  { clave: 'recibio_datos', etiqueta: 'Recibió la cuenta' },
+  { clave: 'mando_comprobante', etiqueta: 'Mandó comprobante' },
+  { clave: 'pago', etiqueta: 'Pagó' },
+  { clave: 'recibio_material', etiqueta: 'Recibió el material' }
+];
+
 function authHeaders(token) {
   const h = { 'Content-Type': 'application/json' };
   if (token) h.Authorization = `Bearer ${token}`;
@@ -47,6 +65,22 @@ export const ordersService = {
 
   async resumen(token) {
     const res = await fetch(apiUrl('/api/orders/summary'), {
+      headers: authHeaders(token),
+      credentials: 'include'
+    });
+    return parse(res);
+  },
+
+  /**
+   * El embudo: cuánta gente llegó a cada paso, en total y abierto por anuncio.
+   *
+   * Es lo único que contesta cuál anuncio trae gente que compra en vez de
+   * gente que escribe. Dos anuncios que abren la misma cantidad de
+   * conversaciones se ven idénticos hasta que mirás esto, y uno puede estar
+   * vendiendo el triple que el otro.
+   */
+  async embudo(token, dias = 30) {
+    const res = await fetch(apiUrl(`/api/orders/embudo?dias=${dias}`), {
       headers: authHeaders(token),
       credentials: 'include'
     });
