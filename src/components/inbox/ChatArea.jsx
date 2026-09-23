@@ -54,6 +54,7 @@ export function ChatArea({
   loadingMessages = false,
   onSendMessage,
   onToggleBot,
+  togglingBot = false,
   sending,
   sendBanner = null,
   onDismissBanner = () => {},
@@ -635,10 +636,12 @@ export function ChatArea({
           <button
             type="button"
             className={`btn-handover ${isBotActive ? 'bot-active' : 'human-active'}`}
+            disabled={togglingBot}
             onClick={() => onToggleBot(conversation.id, isBotActive ? 'handed_over' : 'active')}
             title="Alternar entre respuesta automática del bot y atención humana"
+            style={togglingBot ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
           >
-            <span>{isBotActive ? 'Bot activo' : 'Control humano'}</span>
+            <span>{togglingBot ? 'Cambiando...' : (isBotActive ? 'Bot activo' : 'Control humano')}</span>
           </button>
 
           {/* Marcar la conversación como venta e informarla a Meta */}

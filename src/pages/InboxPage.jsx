@@ -49,6 +49,9 @@ export function InboxPage() {
   // Reinicio de un chat de prueba, para volver a correr el flujo desde cero.
   const [reiniciando, setReiniciando] = useState(false);
 
+  // Estado de alternancia del bot (Handover switch)
+  const [togglingBot, setTogglingBot] = useState(false);
+
   // Si la bandeja no puede cargar, hay que decirlo.
   //
   // Antes el error se tragaba: `if (res.ok)` sin else, y el catch iba a la
@@ -331,11 +334,15 @@ export function InboxPage() {
 
   // Alternar estado del bot (Handover switch)
   const handleToggleBot = async (convId, newStatus) => {
+    if (togglingBot) return;
+    setTogglingBot(true);
+    setSendBanner(null);
     try {
       const res = await apiFetch(`/api/conversations/${convId}/bot-toggle`, {
         method: 'POST',
         body: JSON.stringify({ botStatus: newStatus })
       });
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
         setConversations(prev => prev.map(c => {
@@ -344,9 +351,14 @@ export function InboxPage() {
           }
           return c;
         }));
+      } else {
+        setSendBanner(data.error || 'No se pudo cambiar el estado del bot.');
       }
     } catch (err) {
       console.error('Error al cambiar estado del bot:', err);
+      setSendBanner('No se pudo contactar al servidor para cambiar el estado del bot.');
+    } finally {
+      setTogglingBot(false);
     }
   };
 
@@ -505,6 +517,7 @@ export function InboxPage() {
           loadingMessages={loadingMessages}
           onSendMessage={handleSendMessage}
           onToggleBot={handleToggleBot}
+          togglingBot={togglingBot}
           sending={sending}
           sendBanner={sendBanner}
           onDismissBanner={() => setSendBanner(null)}
