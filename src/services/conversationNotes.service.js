@@ -126,6 +126,73 @@ class ConversationNotesService {
   }
 
   /**
+   * Predefined tag suggestions
+   */
+  getPredefinedTags() {
+    return [
+      { id: 'seguimiento', name: 'Seguimiento', color: '#3b82f6' },
+      { id: 'urgente', name: 'Urgente', color: '#ef4444' },
+      { id: 'vip', name: 'VIP', color: '#8b5cf6' },
+      { id: 'reclamo', name: 'Reclamo', color: '#f59e0b' }
+    ];
+  }
+
+  /**
+   * Get conversation data bundle
+   */
+  getConversationData(conversationId) {
+    const note = this.getNote(conversationId);
+    return {
+      noteText: note?.notes || '',
+      tags: note?.tags || [],
+      customName: note?.customName || null
+    };
+  }
+
+  /**
+   * Get tags for a specific conversation
+   */
+  getTags(conversationId) {
+    const note = this.getNote(conversationId);
+    return note?.tags || [];
+  }
+
+  /**
+   * Check if a conversation has a specific tag
+   */
+  hasTag(conversationId, tag) {
+    const note = this.getNote(conversationId);
+    return Boolean(note?.tags?.includes(tag));
+  }
+
+  /**
+   * Get display name (custom override or fallback)
+   */
+  getDisplayName(conversationId, defaultName = '') {
+    const note = this.getNote(conversationId);
+    return note?.customName || defaultName || '';
+  }
+
+  /**
+   * Update or set note text for a conversation
+   */
+  updateNoteText(conversationId, noteText) {
+    const note = this.getOrCreateNote(conversationId, '');
+    note.notes = noteText;
+    note.updatedAt = new Date().toISOString();
+    this._persistNotes();
+    return note;
+  }
+
+  /**
+   * Get note text for a conversation
+   */
+  getNoteText(conversationId) {
+    const note = this.getNote(conversationId);
+    return note?.notes || '';
+  }
+
+  /**
    * Persist notes to localStorage
    */
   _persistNotes() {

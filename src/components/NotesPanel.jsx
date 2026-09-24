@@ -27,7 +27,9 @@ export function NotesPanel({ conversation, onClose = null }) {
   const [isRenamingContact, setIsRenamingContact] = useState(false);
 
   const conversationId = conversation?.id;
-  const availableTags = conversationNotesService.getPredefinedTags();
+  const availableTags = typeof conversationNotesService?.getPredefinedTags === 'function'
+    ? conversationNotesService.getPredefinedTags()
+    : [];
 
   // Load notes on conversation change
   useEffect(() => {
