@@ -6,6 +6,7 @@ import { productsService } from '../services/products.service';
 import { analyticsService } from '../services/analytics.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
 import { RevisionAutomatica } from '../components/pedidos/RevisionAutomatica';
+import { Campanas } from '../components/pedidos/Campanas';
 
 /**
  * Tablero de Pedidos: quién pagó y quién no.
@@ -386,6 +387,11 @@ export function PedidosPage() {
             pregunta "¿quién está revisando los comprobantes ahora?" se hace
             mirando esta misma pantalla. */}
         <RevisionAutomatica />
+
+        {/* Al lado de la revisión a propósito: el precio que decide si un
+            comprobante es pago completo se ve en la misma pantalla donde se
+            revisan los comprobantes. */}
+        <Campanas />
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
