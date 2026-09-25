@@ -7,6 +7,7 @@ import { analyticsService } from '../services/analytics.service';
 import { OrderBadge } from '../components/inbox/OrderBadge';
 import { RevisionAutomatica } from '../components/pedidos/RevisionAutomatica';
 import { Campanas } from '../components/pedidos/Campanas';
+import { Anuncios } from '../components/pedidos/Anuncios';
 
 /**
  * Tablero de Pedidos: quién pagó y quién no.
@@ -337,51 +338,12 @@ export function PedidosPage() {
               })}
             </div>
 
-            {/* Por anuncio. Es lo único que separa "este anuncio trae gente"
-                de "este anuncio trae gente que paga", y sin eso el costo por
-                venta real no se puede calcular. */}
-            {embudo.anuncios && Object.keys(embudo.anuncios).length > 0 && (
-              <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed var(--border-gold, #e2e2e2)' }}>
-                <div style={{ fontSize: '.72rem', color: 'var(--text-soft)', marginBottom: '8px' }}>
-                  Por anuncio
-                </div>
-                <div style={{ display: 'grid', gap: '4px' }}>
-                  {Object.entries(embudo.anuncios)
-                    .sort((a, b) => (b[1].entro || 0) - (a[1].entro || 0))
-                    .slice(0, 6)
-                    .map(([anuncio, datos]) => {
-                      const entraron = datos.entro || 0;
-                      const compraron = datos.pago || 0;
-                      const tasa = entraron > 0 ? Math.round((compraron / entraron) * 100) : 0;
-                      return (
-                        <div key={anuncio} style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          fontSize: '.78rem', padding: '5px 0'
-                        }}>
-                          <span style={{
-                            flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            fontFamily: anuncio === 'sin_anuncio' ? 'inherit' : 'ui-monospace, monospace'
-                          }}>
-                            {anuncio === 'sin_anuncio' ? 'Sin anuncio (escribieron directo)' : anuncio}
-                          </span>
-                          <span style={{ color: 'var(--text-soft)', fontVariantNumeric: 'tabular-nums' }}>
-                            {entraron} → {compraron}
-                          </span>
-                          <span style={{
-                            fontWeight: 700, minWidth: '42px', textAlign: 'right',
-                            fontVariantNumeric: 'tabular-nums',
-                            color: tasa > 0 ? '#047857' : 'var(--text-soft)'
-                          }}>
-                            {tasa}%
-                          </span>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
           </section>
         )}
+
+        {/* De qué anuncio viene cada persona y cuántos pagaron. Es lo que
+            decide qué anuncio seguir pagando. */}
+        <Anuncios />
 
         {/* Va antes de los filtros, y no escondido en Configuración, porque la
             pregunta "¿quién está revisando los comprobantes ahora?" se hace

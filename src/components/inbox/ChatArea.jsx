@@ -627,6 +627,19 @@ export function ChatArea({
                 ? ` · ${conversation.contact_phone || conversation.channel_identifier}`
                 : ''}
             </span>
+            {/* De qué anuncio vino esta persona. */}
+            {conversation.source_ad_id && (
+              <div
+                title={`ID del anuncio: ${conversation.source_ad_id}`}
+                style={{
+                  fontSize: '12px', color: '#4338ca', fontWeight: 600, marginTop: '2px',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                }}
+              >
+                Vino del anuncio {conversation.anuncio_nombre || conversation.anuncio_titulo || `…${String(conversation.source_ad_id).slice(-4)}`}
+                {conversation.anuncio_conjunto ? ` · ${conversation.anuncio_conjunto}` : ''}
+              </div>
+            )}
           </div>
         </div>
 

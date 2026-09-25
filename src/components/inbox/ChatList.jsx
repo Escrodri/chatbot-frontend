@@ -279,6 +279,26 @@ export function ChatList({
                           Cliente{chat.compras_previas > 1 ? ` ·${chat.compras_previas}` : ''}
                         </span>
                       )}
+                      {/* De qué anuncio vino. Con el nombre que tiene en el
+                          Administrador de anuncios, o el título que vio la
+                          persona si todavía no se lo cargó. */}
+                      {chat.source_ad_id && (
+                        <span
+                          title={[
+                            `Vino del anuncio ${chat.anuncio_nombre || chat.anuncio_titulo || ''}`.trim(),
+                            chat.anuncio_conjunto ? `Conjunto: ${chat.anuncio_conjunto}` : null,
+                            `ID ${chat.source_ad_id}`
+                          ].filter(Boolean).join('\n')}
+                          style={{
+                            fontSize: '.68rem', fontWeight: 700, padding: '2px 6px',
+                            borderRadius: '999px', background: 'rgba(79,70,229,.14)',
+                            color: '#4338ca', whiteSpace: 'nowrap', maxWidth: '110px',
+                            overflow: 'hidden', textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {chat.anuncio_nombre || chat.anuncio_titulo || `Anuncio …${String(chat.source_ad_id).slice(-4)}`}
+                        </span>
+                      )}
                       {chat.order_status && (
                         <OrderBadge status={chat.order_status} compacto />
                       )}
