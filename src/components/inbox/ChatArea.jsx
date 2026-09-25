@@ -399,16 +399,13 @@ export function ChatArea({
     setShowScrollBottomBtn(false);
   };
 
-  // Mantener el scroll anclado abajo cuando imágenes/multimedia terminan de renderizar
+  // Mantener el scroll sin saltos abruptos cuando imágenes/multimedia terminan de renderizar
   const handleMediaLoad = () => {
-    if (isNearBottomRef.current && chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
+    // No forzar salto al fondo al cargar imágenes para no cortar la vista del mensaje inicial
   };
 
-  // Posicionamiento de scroll:
-  // useLayoutEffect se ejecuta de forma síncrona ANTES de que el navegador dibuje en pantalla.
-  // Así el chat aparece directamente abajo sin ningún parpadeo ni animación de bajada.
+  // Posicionamiento de scroll al abrir el chat:
+  // Se muestra la conversación desde el inicio para que no corte imágenes ni mensajes del cliente.
   useLayoutEffect(() => {
     if (!conversation) return;
 
@@ -416,21 +413,14 @@ export function ChatArea({
     if (!initialScrollDoneRef.current) {
       if (messages.length > 0) {
         if (chatContainerRef.current) {
-          // Posicionamiento instantáneo al fondo sin animación
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          // Mostrar desde el inicio para que la imagen o texto enviado por el cliente no quede cortado
+          chatContainerRef.current.scrollTop = 0;
         }
         initialScrollDoneRef.current = true;
         prevMessagesCountRef.current = messages.length;
         prevLastMsgIdRef.current = messages[messages.length - 1]?.id || null;
-        isNearBottomRef.current = true;
-        setShowScrollBottomBtn(false);
-
-        // Doble fijación en el siguiente ciclo por si el DOM calculó fuentes/estilos
-        requestAnimationFrame(() => {
-          if (chatContainerRef.current && isNearBottomRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-          }
-        });
+        isNearBottomRef.current = false;
+        setShowScrollBottomBtn(messages.length > 3);
       }
       return;
     }
@@ -656,7 +646,7 @@ export function ChatArea({
               >
                 <span className="chat-ad-badge-item">
                   <span style={{ fontSize: '12px' }}>📢</span>
-                  <span>
+                  <span className="chat-ad-badge-text">
                     <span className="chat-ad-label">Anuncio:</span>{' '}
                     <b>{conversation.anuncio_nombre || conversation.anuncio_titulo || `…${String(conversation.source_ad_id || '').slice(-4)}`}</b>
                   </span>
@@ -664,7 +654,7 @@ export function ChatArea({
                 <span className="chat-ad-badge-sep">|</span>
                 <span className="chat-ad-badge-item">
                   <span style={{ fontSize: '12px' }}>📁</span>
-                  <span>
+                  <span className="chat-ad-badge-text">
                     <span className="chat-ad-label">Conjunto:</span>{' '}
                     <b>{conversation.anuncio_conjunto || (conversation.source_adset_id ? `…${String(conversation.source_adset_id).slice(-4)}` : 'Sin conjunto')}</b>
                   </span>
@@ -700,7 +690,7 @@ export function ChatArea({
               title="Registrar una venta hecha en esta conversación"
             >
               <IconoVenta size={15} />
-              <span>Marcar venta</span>
+              <span className="btn-sale-text">Marcar venta</span>
             </button>
           )}
         </div>
