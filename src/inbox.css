@@ -8,6 +8,8 @@
   min-height: 0;
   height: calc(100vh - var(--topbar-h));
   height: calc(100dvh - var(--topbar-h));
+  max-height: calc(100vh - var(--topbar-h));
+  max-height: calc(100dvh - var(--topbar-h));
   overflow: hidden;
   background-color: var(--bg-app);
 }
@@ -304,6 +306,10 @@
   flex-direction: column;
   position: relative;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   background-color: var(--bg-chat);
 }
 
@@ -428,6 +434,7 @@
 ============================================================================= */
 .chat-messages-thread {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scroll-behavior: auto !important;
   padding: 20px 6% 24px;
@@ -1687,12 +1694,17 @@
 .inbox-toolbar {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
   padding: 14px 8px;
   background: var(--bg-panel);
   border-left: 1px solid var(--border);
   flex-shrink: 0;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   z-index: 10;
 }
 

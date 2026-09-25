@@ -9,6 +9,14 @@
   background: var(--bg-app);
 }
 
+.admin-layout:has(.inbox-layout) {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 /* =============================================================================
    BARRA SUPERIOR
    Claro: barra verde WhatsApp.  Oscuro: barra gris azulada #202c33.

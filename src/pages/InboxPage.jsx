@@ -240,9 +240,10 @@ export function InboxPage() {
 
   const selectedConversation = conversations.find(c => c.id === selectedId) || null;
 
-  // Sincronizar clase global en body para ocultar la barra superior en móvil con chat abierto
+  // Sincronizar clase global en body para ocultar la barra superior SOLO en móvil con chat abierto
   useEffect(() => {
-    if (selectedConversation) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    if (selectedConversation && isMobile) {
       document.body.classList.add('chat-open');
     } else {
       document.body.classList.remove('chat-open');
@@ -251,6 +252,13 @@ export function InboxPage() {
       document.body.classList.remove('chat-open');
     };
   }, [selectedConversation]);
+
+  // Asegurar que en escritorio la ventana siempre permanezca fija arriba sin scroll de página
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+  }, [selectedId]);
 
   // Reintentar un mensaje que Meta rechazó.
   // Se le pide al backend que vuelva a despachar el mensaje guardado, con su
