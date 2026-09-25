@@ -627,17 +627,38 @@ export function ChatArea({
                 ? ` · ${conversation.contact_phone || conversation.channel_identifier}`
                 : ''}
             </span>
-            {/* De qué anuncio vino esta persona. */}
-            {conversation.source_ad_id && (
+            {/* De qué anuncio y conjunto de anuncios vino esta persona. */}
+            {(conversation.source_ad_id || conversation.anuncio_nombre || conversation.anuncio_conjunto) && (
               <div
-                title={`ID del anuncio: ${conversation.source_ad_id}`}
+                title={[
+                  conversation.source_ad_id ? `ID de anuncio: ${conversation.source_ad_id}` : null,
+                  (conversation.anuncio_adset_id || conversation.source_adset_id)
+                    ? `ID de conjunto: ${conversation.anuncio_adset_id || conversation.source_adset_id}`
+                    : null,
+                  conversation.anuncio_campana ? `Campaña: ${conversation.anuncio_campana}` : null
+                ].filter(Boolean).join('\n')}
                 style={{
-                  fontSize: '12px', color: '#4338ca', fontWeight: 600, marginTop: '2px',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                  fontSize: '11.5px', color: '#3730a3', fontWeight: 600, marginTop: '3px',
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
+                  background: 'rgba(79, 70, 229, 0.08)', padding: '2px 8px', borderRadius: '6px',
+                  border: '1px solid rgba(79, 70, 229, 0.18)'
                 }}
               >
-                Vino del anuncio {conversation.anuncio_nombre || conversation.anuncio_titulo || `…${String(conversation.source_ad_id).slice(-4)}`}
-                {conversation.anuncio_conjunto ? ` · ${conversation.anuncio_conjunto}` : ''}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '12px' }}>📢</span>
+                  <span>
+                    <span style={{ color: '#4b5563', fontWeight: 500 }}>Anuncio:</span>{' '}
+                    <b>{conversation.anuncio_nombre || conversation.anuncio_titulo || `…${String(conversation.source_ad_id || '').slice(-4)}`}</b>
+                  </span>
+                </span>
+                <span style={{ color: '#c7d2fe' }}>|</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '12px' }}>📁</span>
+                  <span>
+                    <span style={{ color: '#4b5563', fontWeight: 500 }}>Conjunto:</span>{' '}
+                    <b>{conversation.anuncio_conjunto || (conversation.source_adset_id ? `…${String(conversation.source_adset_id).slice(-4)}` : 'Sin conjunto')}</b>
+                  </span>
+                </span>
               </div>
             )}
           </div>

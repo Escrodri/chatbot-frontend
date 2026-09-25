@@ -145,7 +145,9 @@ export function Anuncios() {
 
   const total = datos?.total;
   const anuncios = datos?.anuncios || [];
+  const conjuntos = datos?.conjuntos || [];
   const meta = datos?.meta || null;
+  const [vista, setVista] = useState('anuncios'); // 'anuncios' | 'conjuntos'
   // Con Meta conectado el gasto llega solo, por anuncio. Si no, se escribe a mano.
   const conGasto = Boolean(meta?.con_gasto);
   const gastoNum = conGasto ? (total?.gasto || 0) : leerGs(gasto);
@@ -159,7 +161,7 @@ export function Anuncios() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
         <div>
           <div style={{ fontSize: '.74rem', fontWeight: 700, letterSpacing: '.04em', color: 'var(--text-soft)' }}>
-            ANUNCIOS — QUIÉN ESCRIBE Y QUIÉN COMPRA
+            ANUNCIOS Y CONJUNTOS — QUIÉN ESCRIBE Y QUIÉN COMPRA
           </div>
           <div style={{ fontSize: '.74rem', color: 'var(--text-soft)', marginTop: '3px' }}>
             Personas que escribieron por primera vez en el período, y hasta dónde llegaron. Días en hora de Paraguay, igual que Meta.
@@ -249,18 +251,42 @@ export function Anuncios() {
         </>
       )}
 
+      {/* Selector de vista: Por Anuncio vs Por Conjunto de Anuncios */}
+      {anuncios.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-gold, #eee)', paddingBottom: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setVista('anuncios')}
+            className={`filter-pill ${vista === 'anuncios' ? 'active' : ''}`}
+            style={{ padding: '5px 12px', fontSize: '.78rem', fontWeight: 600 }}
+          >
+            📢 Por Anuncio ({anuncios.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista('conjuntos')}
+            className={`filter-pill ${vista === 'conjuntos' ? 'active' : ''}`}
+            style={{ padding: '5px 12px', fontSize: '.78rem', fontWeight: 600 }}
+          >
+            📁 Por Conjunto de Anuncios ({conjuntos.length})
+          </button>
+        </div>
+      )}
+
       {anuncios.length === 0 && datos && (
         <div style={{ fontSize: '.84rem', color: 'var(--text-soft)', padding: '6px 0' }}>
           Nadie escribió todavía en este período.
         </div>
       )}
 
-      {anuncios.length > 0 && (
+      {/* VISTA 1: TABLA POR ANUNCIO */}
+      {anuncios.length > 0 && vista === 'anuncios' && (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem', minWidth: conGasto ? '860px' : '620px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem', minWidth: conGasto ? '940px' : '700px' }}>
             <thead>
               <tr style={{ color: 'var(--text-soft)', fontSize: '.7rem', textAlign: 'left' }}>
                 <th style={{ padding: '6px 6px 6px 0', fontWeight: 600 }}>Anuncio</th>
+                <th style={{ padding: '6px 6px', fontWeight: 600 }}>Conjunto de Anuncios</th>
                 <th style={{ ...num, fontWeight: 600 }}>Escribieron</th>
                 <th style={{ ...num, fontWeight: 600 }}>Pidieron datos</th>
                 <th style={{ ...num, fontWeight: 600 }}>Comprobante</th>
@@ -278,7 +304,7 @@ export function Anuncios() {
                 const enEdicion = editando?.ad_id === a.ad_id && a.ad_id;
                 return (
                   <tr key={clave} style={{ borderTop: '1px solid var(--border-gold, #eee)' }}>
-                    <td style={{ padding: '7px 6px 7px 0', maxWidth: '300px' }}>
+                    <td style={{ padding: '7px 6px 7px 0', maxWidth: '260px' }}>
                       {!a.ad_id ? (
                         <span style={{ color: 'var(--text-soft)' }}>Sin anuncio (escribieron directo)</span>
                       ) : enEdicion ? (
@@ -286,17 +312,17 @@ export function Anuncios() {
                           <input
                             id={`anuncio-nombre-${a.ad_id}`}
                             autoFocus
-                            placeholder="Nombre (ej: CREATIVO A — CONTROL)"
+                            placeholder="Nombre del anuncio"
                             value={editando.nombre}
                             onChange={e => setEditando({ ...editando, nombre: e.target.value })}
-                            style={{ ...estiloCampo, width: '190px' }}
+                            style={{ ...estiloCampo, width: '170px' }}
                           />
                           <input
                             id={`anuncio-conjunto-${a.ad_id}`}
                             placeholder="Conjunto (ej: CJ001)"
                             value={editando.conjunto}
                             onChange={e => setEditando({ ...editando, conjunto: e.target.value })}
-                            style={{ ...estiloCampo, width: '110px' }}
+                            style={{ ...estiloCampo, width: '120px' }}
                           />
                           <button type="submit" className="btn-primary" disabled={trabajando} style={{ padding: '5px 10px', fontSize: '.76rem' }}>Guardar</button>
                           <button type="button" onClick={() => setEditando(null)} style={{ padding: '5px 8px', fontSize: '.76rem', background: 'none', border: 'none', color: 'var(--text-soft)', cursor: 'pointer' }}>Cancelar</button>
@@ -305,23 +331,31 @@ export function Anuncios() {
                         <div>
                           <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {a.nombre || a.titulo || 'Anuncio sin nombre'}
-                            {a.conjunto && <span style={{ fontWeight: 400, color: 'var(--text-soft)' }}> · {a.conjunto}</span>}
                           </div>
                           <div style={{ fontSize: '.68rem', color: 'var(--text-soft)', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <span style={{ fontFamily: 'ui-monospace, monospace' }}>{a.ad_id}</span>
-                            {/* Con Meta conectado el nombre viene de allá y se
-                                actualiza cada hora: cambiarlo acá no duraría. */}
                             {esAdmin && !meta?.conectado && (
                               <button
                                 type="button"
                                 onClick={() => setEditando({ ad_id: a.ad_id, nombre: a.nombre || '', conjunto: a.conjunto || '' })}
                                 style={{ background: 'none', border: 'none', padding: 0, color: '#4338ca', cursor: 'pointer', fontSize: '.68rem', fontWeight: 600 }}
                               >
-                                {a.nombre ? 'Cambiar nombre' : 'Ponerle nombre'}
+                                {a.nombre ? 'Editar' : 'Poner nombre'}
                               </button>
                             )}
                           </div>
                         </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '7px 6px', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {a.conjunto ? (
+                        <span style={{ fontWeight: 600, color: '#3730a3' }}>
+                          📁 {a.conjunto}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-soft)', fontStyle: 'italic', fontSize: '.75rem' }}>
+                          {a.adset_id ? `ID …${String(a.adset_id).slice(-4)}` : '—'}
+                        </span>
                       )}
                     </td>
                     <td style={num}>{a.conversaciones}</td>
@@ -337,6 +371,67 @@ export function Anuncios() {
                     {conGasto && (() => {
                       if (!a.ad_id) return <td style={num}>—</td>;
                       const r = (a.cobrado || 0) - (a.gasto || 0);
+                      return (
+                        <td style={{ ...num, fontWeight: 700, color: r > 0 ? '#047857' : r < 0 ? '#b91c1c' : 'var(--text-soft)' }}>
+                          {r === 0 ? '—' : `${r > 0 ? '+' : '−'}${gs(Math.abs(r))}`}
+                        </td>
+                      );
+                    })()}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* VISTA 2: TABLA POR CONJUNTO DE ANUNCIOS */}
+      {conjuntos.length > 0 && vista === 'conjuntos' && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem', minWidth: conGasto ? '900px' : '660px' }}>
+            <thead>
+              <tr style={{ color: 'var(--text-soft)', fontSize: '.7rem', textAlign: 'left' }}>
+                <th style={{ padding: '6px 6px 6px 0', fontWeight: 600 }}>Conjunto de Anuncios</th>
+                <th style={{ ...num, fontWeight: 600 }}>Anuncios</th>
+                <th style={{ ...num, fontWeight: 600 }}>Escribieron</th>
+                <th style={{ ...num, fontWeight: 600 }}>Pidieron datos</th>
+                <th style={{ ...num, fontWeight: 600 }}>Comprobante</th>
+                <th style={{ ...num, fontWeight: 600 }}>Compraron</th>
+                <th style={{ ...num, fontWeight: 600 }}>Conversión</th>
+                <th style={{ ...num, fontWeight: 600 }}>Cobrado</th>
+                {conGasto && <th style={{ ...num, fontWeight: 600 }}>Gastado</th>}
+                {conGasto && <th style={{ ...num, fontWeight: 600 }}>Costo por venta</th>}
+                {conGasto && <th style={{ ...num, fontWeight: 600 }}>Resultado</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {conjuntos.map(cj => {
+                return (
+                  <tr key={cj.conjunto} style={{ borderTop: '1px solid var(--border-gold, #eee)' }}>
+                    <td style={{ padding: '7px 6px 7px 0', maxWidth: '300px' }}>
+                      <div style={{ fontWeight: 700, color: '#3730a3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        📁 {cj.conjunto}
+                        {cj.campana && <span style={{ fontWeight: 400, color: 'var(--text-soft)' }}> · {cj.campana}</span>}
+                      </div>
+                      {cj.adset_id && (
+                        <div style={{ fontSize: '.68rem', color: 'var(--text-soft)', fontFamily: 'ui-monospace, monospace' }}>
+                          ID {cj.adset_id}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ ...num, fontWeight: 600 }}>{cj.anuncios}</td>
+                    <td style={num}>{cj.conversaciones}</td>
+                    <td style={num}>{cj.recibieron_datos}</td>
+                    <td style={num}>{cj.mandaron_comprobante}</td>
+                    <td style={{ ...num, fontWeight: 700, color: cj.compraron ? '#047857' : 'var(--text-soft)' }}>{cj.compraron}</td>
+                    <td style={{ ...num, fontWeight: 700, color: cj.compraron ? '#047857' : 'var(--text-soft)' }}>{pct(cj.compraron, cj.conversaciones)}</td>
+                    <td style={num}>{cj.cobrado ? gs(cj.cobrado) : '—'}</td>
+                    {conGasto && <td style={num}>{gs(cj.gasto || 0)}</td>}
+                    {conGasto && (
+                      <td style={num}>{cj.compraron && cj.gasto ? gs(cj.gasto / cj.compraron) : '—'}</td>
+                    )}
+                    {conGasto && (() => {
+                      const r = (cj.cobrado || 0) - (cj.gasto || 0);
                       return (
                         <td style={{ ...num, fontWeight: 700, color: r > 0 ? '#047857' : r < 0 ? '#b91c1c' : 'var(--text-soft)' }}>
                           {r === 0 ? '—' : `${r > 0 ? '+' : '−'}${gs(Math.abs(r))}`}
