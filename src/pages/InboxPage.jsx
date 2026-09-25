@@ -148,7 +148,41 @@ export function InboxPage() {
     setMessages([]);
     setLoadingMessages(true);
     setSelectedId(id);
+
+    // En pantallas móviles, guardar en historial para que el botón volver de Android o gestos no salgan de la app
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      window.history.pushState({ chatOpen: true, conversationId: id }, '');
+    }
   }, [selectedId]);
+
+  // Manejo de volver atrás en mobile (tanto con botón en cabecera como con botón físico/gesto del celular)
+  const handleBackToList = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.state?.chatOpen) {
+      window.history.back();
+    } else {
+      setSelectedId(null);
+      setSendBanner(null);
+      setAvisoPedido(null);
+      setMessages([]);
+    }
+    if (searchParams.get('conversation')) {
+      searchParams.delete('conversation');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Escuchar cuando el usuario presiona "Atrás" en el navegador o teléfono móvil
+  useEffect(() => {
+    const handlePopState = () => {
+      setSelectedId(null);
+      setSendBanner(null);
+      setAvisoPedido(null);
+      setMessages([]);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Polling suave para sincronización en tiempo real
   useEffect(() => {
@@ -205,6 +239,18 @@ export function InboxPage() {
   }, [selectedId, loadMessages]);
 
   const selectedConversation = conversations.find(c => c.id === selectedId) || null;
+
+  // Sincronizar clase global en body para ocultar la barra superior en móvil con chat abierto
+  useEffect(() => {
+    if (selectedConversation) {
+      document.body.classList.add('chat-open');
+    } else {
+      document.body.classList.remove('chat-open');
+    }
+    return () => {
+      document.body.classList.remove('chat-open');
+    };
+  }, [selectedConversation]);
 
   // Reintentar un mensaje que Meta rechazó.
   // Se le pide al backend que vuelva a despachar el mensaje guardado, con su
@@ -460,7 +506,7 @@ export function InboxPage() {
   }, []);
 
   return (
-    <div className="inbox-layout">
+    <div className={`inbox-layout ${selectedConversation ? 'has-active-chat' : 'no-active-chat'}`}>
       {/* Aviso de que las respuestas automáticas no están saliendo */}
       <AutomationAlert
         estado={automationEstado}
@@ -524,6 +570,7 @@ export function InboxPage() {
           onRetryMessage={handleRetryMessage}
           onRegisterSale={handleRegisterSale}
           onMessageUpdate={handleMessageUpdate}
+          onBack={handleBackToList}
         />
       ) : (
         <EmptyState />
@@ -716,7 +763,7 @@ export function InboxPage() {
         <SearchResults
           results={searchResults}
           onSelectResult={(conversationId) => {
-            setSelectedId(conversationId);
+            handleSelectChat(conversationId);
             setShowSearchResults(false);
           }}
           onClose={() => setShowSearchResults(false)}

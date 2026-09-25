@@ -4,7 +4,10 @@
 
 .inbox-layout {
   display: flex;
+  flex: 1;
+  min-height: 0;
   height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
   overflow: hidden;
   background-color: var(--bg-app);
 }
@@ -1028,7 +1031,80 @@
 }
 
 /* =============================================================================
-   RESPONSIVE
+   BOTÓN VOLVER EN CABECERA DEL CHAT (Estilo WhatsApp)
+============================================================================= */
+.btn-chat-back {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  padding: 0;
+  margin-left: -4px;
+  margin-right: 2px;
+  flex-shrink: 0;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.btn-chat-back:hover,
+.btn-chat-back:active {
+  background: var(--bg-hover);
+}
+
+/* Badge de anuncio y conjunto en cabecera */
+.chat-ad-header-badge {
+  font-size: 11.5px;
+  color: #3730a3;
+  font-weight: 600;
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(79, 70, 229, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(79, 70, 229, 0.18);
+  max-width: 100%;
+}
+
+.chat-ad-badge-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-ad-label {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.chat-ad-badge-sep {
+  color: #c7d2fe;
+}
+
+[data-theme='dark'] .chat-ad-header-badge {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+}
+
+[data-theme='dark'] .chat-ad-label {
+  color: #9ca3af;
+}
+
+[data-theme='dark'] .chat-ad-badge-sep {
+  color: #4338ca;
+}
+
+/* =============================================================================
+   RESPONSIVE — ESTILO WHATSAPP (Móviles y Tablets)
 ============================================================================= */
 @media (max-width: 900px) {
   .inbox-sidebar { width: 40%; min-width: 260px; }
@@ -1037,16 +1113,215 @@
   .window-indicator { display: none; }
 }
 
-@media (max-width: 640px) {
-  .inbox-layout { flex-direction: column; }
-  .inbox-sidebar {
-    width: 100%;
-    max-width: none;
-    height: 42%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+@media (max-width: 768px) {
+  /* En móvil cuando hay un chat abierto:
+     Ocultar la barra superior general de la app para que el chat ocupe
+     el 100% de la pantalla exactamente como WhatsApp móvil. */
+  body.chat-open .admin-navbar,
+  .admin-layout:has(.inbox-layout.has-active-chat) .admin-navbar {
+    display: none !important;
   }
-  .inbox-chat-area { height: 58%; }
+
+  .inbox-layout {
+    flex-direction: row;
+    position: relative;
+    width: 100%;
+    height: calc(100vh - var(--topbar-h));
+    height: calc(100dvh - var(--topbar-h));
+  }
+
+  body.chat-open .inbox-layout,
+  .inbox-layout.has-active-chat {
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     1. MODO BANDEJA / LISTA (Sin conversación abierta en móvil)
+     Se muestra SOLO la lista de chats a pantalla completa.
+     El chat y el estado vacío ("Bandeja Unificada") quedan completamente ocultos.
+  -------------------------------------------------------------------------- */
+  .inbox-layout.no-active-chat .inbox-sidebar {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    height: 100% !important;
+    flex: 1 1 100% !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .inbox-layout.no-active-chat .inbox-chat-area,
+  .inbox-layout.no-active-chat .inbox-empty-state,
+  .inbox-layout.no-active-chat .inbox-toolbar {
+    display: none !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     2. MODO CHAT ACTIVO (Conversación seleccionada en móvil)
+     La lista se oculta y el chat toma el 100% de la pantalla con botón volver.
+  -------------------------------------------------------------------------- */
+  .inbox-layout.has-active-chat .inbox-sidebar {
+    display: none !important;
+  }
+
+  .inbox-layout.has-active-chat .inbox-empty-state {
+    display: none !important;
+  }
+
+  .inbox-layout.has-active-chat .inbox-toolbar {
+    display: none !important;
+  }
+
+  .inbox-layout.has-active-chat .inbox-chat-area {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    height: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Mostrar botón atrás estilo WhatsApp en la cabecera del chat */
+  .btn-chat-back {
+    display: inline-flex !important;
+  }
+
+  /* Cabecera optimizada para pantallas móviles */
+  .chat-header {
+    padding: 8px 10px;
+    gap: 8px;
+    min-height: 54px;
+  }
+
+  .chat-header-user {
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .chat-header-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    font-size: 15px;
+  }
+
+  .chat-header-title {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .chat-header-title h4 {
+    font-size: 14.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 0 1px;
+  }
+
+  .chat-header-title span {
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .chat-ad-header-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .chat-header-actions {
+    gap: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-handover {
+    padding: 5px 9px;
+    font-size: 11.5px;
+    border-radius: 14px;
+    white-space: nowrap;
+  }
+
+  .btn-sale {
+    padding: 5px 9px;
+    font-size: 11.5px;
+    border-radius: 14px;
+    white-space: nowrap;
+  }
+
+  /* Hilo de mensajes en pantalla móvil */
+  .chat-messages-thread {
+    padding: 12px 10px 16px;
+  }
+
+  .msg-bubble-wrapper {
+    max-width: 90%;
+  }
+
+  /* Barra de escritura en pantalla móvil */
+  .chat-composer {
+    padding: 8px 10px;
+  }
+
+  .composer-form {
+    gap: 6px;
+  }
+
+  .composer-input {
+    padding: 9px 12px;
+    font-size: 14px;
+    min-height: 40px;
+    line-height: 1.4;
+  }
+
+  .btn-send-message,
+  .btn-mic {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .chat-header {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .chat-header-avatar {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    font-size: 14px;
+  }
+
+  .btn-chat-back {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    margin-left: -6px;
+  }
+
+  .btn-handover {
+    padding: 4px 7px;
+    font-size: 10.5px;
+  }
+
+  .btn-sale {
+    padding: 4px 7px;
+    font-size: 10.5px;
+  }
 }
 
 /* =============================================================================

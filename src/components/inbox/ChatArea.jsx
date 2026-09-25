@@ -65,7 +65,8 @@ export function ChatArea({
   onDismissBanner = () => {},
   onRetryMessage = null,
   onRegisterSale = null,
-  onMessageUpdate = null
+  onMessageUpdate = null,
+  onBack = null
 }) {
   const { token, apiFetch } = useAuth();
   const [inputText, setInputText] = useState('');
@@ -606,6 +607,20 @@ export function ChatArea({
       {/* Cabecera del chat */}
       <header className="chat-header">
         <div className="chat-header-user">
+          {onBack && (
+            <button
+              type="button"
+              className="btn-chat-back"
+              onClick={onBack}
+              title="Volver a los chats"
+              aria-label="Volver a las conversaciones"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+          )}
           <div className="chat-header-avatar">
             {conversation.contact_avatar ? (
               <img
@@ -630,6 +645,7 @@ export function ChatArea({
             {/* De qué anuncio y conjunto de anuncios vino esta persona. */}
             {(conversation.source_ad_id || conversation.anuncio_nombre || conversation.anuncio_conjunto) && (
               <div
+                className="chat-ad-header-badge"
                 title={[
                   conversation.source_ad_id ? `ID de anuncio: ${conversation.source_ad_id}` : null,
                   (conversation.anuncio_adset_id || conversation.source_adset_id)
@@ -637,25 +653,19 @@ export function ChatArea({
                     : null,
                   conversation.anuncio_campana ? `Campaña: ${conversation.anuncio_campana}` : null
                 ].filter(Boolean).join('\n')}
-                style={{
-                  fontSize: '11.5px', color: '#3730a3', fontWeight: 600, marginTop: '3px',
-                  display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
-                  background: 'rgba(79, 70, 229, 0.08)', padding: '2px 8px', borderRadius: '6px',
-                  border: '1px solid rgba(79, 70, 229, 0.18)'
-                }}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span className="chat-ad-badge-item">
                   <span style={{ fontSize: '12px' }}>📢</span>
                   <span>
-                    <span style={{ color: '#4b5563', fontWeight: 500 }}>Anuncio:</span>{' '}
+                    <span className="chat-ad-label">Anuncio:</span>{' '}
                     <b>{conversation.anuncio_nombre || conversation.anuncio_titulo || `…${String(conversation.source_ad_id || '').slice(-4)}`}</b>
                   </span>
                 </span>
-                <span style={{ color: '#c7d2fe' }}>|</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span className="chat-ad-badge-sep">|</span>
+                <span className="chat-ad-badge-item">
                   <span style={{ fontSize: '12px' }}>📁</span>
                   <span>
-                    <span style={{ color: '#4b5563', fontWeight: 500 }}>Conjunto:</span>{' '}
+                    <span className="chat-ad-label">Conjunto:</span>{' '}
                     <b>{conversation.anuncio_conjunto || (conversation.source_adset_id ? `…${String(conversation.source_adset_id).slice(-4)}` : 'Sin conjunto')}</b>
                   </span>
                 </span>
