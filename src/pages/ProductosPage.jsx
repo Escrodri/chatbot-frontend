@@ -398,23 +398,23 @@ export function ProductosPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={label} htmlFor="p-resumen">
-                Resumen para WhatsApp
+                Resumen / Presentación para WhatsApp
                 <span style={{
                   marginLeft: '8px', fontWeight: 400,
-                  color: (form.resumen || '').length > 220 ? '#b45309' : 'var(--text-soft)'
+                  color: (form.resumen || '').length > 1024 ? '#dc2626' : (form.resumen || '').length > 800 ? '#b45309' : 'var(--text-soft)'
                 }}>
-                  {(form.resumen || '').length}/220
+                  {(form.resumen || '').length}/1024
                 </span>
               </label>
-              <textarea id="p-resumen" rows={4} style={{ ...input, resize: 'vertical' }}
+              <textarea id="p-resumen" rows={6} style={{ ...input, resize: 'vertical' }}
                 value={form.resumen}
                 onChange={(e) => campo('resumen', e.target.value)}
-                placeholder={'✅ 10 historias bíblicas\n✅ +50 páginas para colorear\n✅ Listo para imprimir'} />
+                placeholder={'¡Buen día, [Nombre]! Qué alegría saludarte 🤍✨...\n\n📦 Mirá todo lo que incluye el material:\n1️⃣ 10 Grandes Historias Bíblicas completas\n2️⃣ 50 Láminas para Colorear\n...\n🔥 Precio promocional: Gs. 19.000\n\n¿Cómo te gustaría continuar? Elegí una opción 👇'} />
               <small style={ayuda}>
-                Es lo único que se lee en el celular antes de los botones. Pasando los 220
-                caracteres WhatsApp lo corta con un "Leer más" y el cliente no llega a ver
-                ni el precio ni los botones — que es justo lo que tiene que ver. Tres o cuatro
-                líneas de beneficio, no la ficha técnica.
+                Mensaje de presentación del producto en WhatsApp. Si el mensaje incluye botones interactivos
+                de WhatsApp Cloud API, el límite técnico de Meta es de 1024 caracteres. Si no incluye botones,
+                un mensaje de texto admite hasta 4096 caracteres. Podés incluir el desglose con emojis,
+                precio y opciones.
               </small>
             </div>
 

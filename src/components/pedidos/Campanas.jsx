@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { campanasService } from '../../services/campanas.service';
 import { productsService } from '../../services/products.service';
+import { MensajesRemarketing } from './MensajesRemarketing';
 
 /**
  * Campañas de precio: remarketing y promos con fecha.
@@ -291,6 +292,8 @@ export function Campanas() {
           })}
         </div>
       )}
+
+      <MensajesRemarketing />
     </section>
   );
 }
