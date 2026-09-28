@@ -2,11 +2,89 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { productsService } from '../services/products.service';
 
+// Límites de WhatsApp: si un mensaje se pasa, Meta lo rechaza entero.
+const LIMITE_CON_BOTONES = 1024;
+const LIMITE_TEXTO = 4096;
+const LIMITE_BOTON = 20;
+const MAX_PARTES = 3;
+
+const MENSAJES_VACIOS = {
+  presentacion: [''],
+  boton_comprar: 'Lo quiero',
+  boton_muestras: 'Ver muestras',
+  muestras_intro: '',
+  muestras_cierre: '',
+  entrega: ''
+};
+
+const VARIABLES = [
+  { clave: 'saludo', ayuda: 'Buen día, Buenas tardes o Buenas noches según la hora' },
+  { clave: 'nombre', ayuda: 'Nombre de pila del cliente (si no lo tenemos, queda vacío)' },
+  { clave: 'producto', ayuda: 'Nombre del producto' },
+  { clave: 'precio_texto', ayuda: 'Precio de esa persona. Si tiene un descuento real agrega "(en vez de …)"' },
+  { clave: 'precio', ayuda: 'Precio de esa persona' },
+  { clave: 'precio_lista', ayuda: 'Precio normal' },
+  { clave: 'links', ayuda: 'Link de entrega (solo en el mensaje de entrega)' }
+];
+
 const VACIO = {
   slug: '', name: '', description: '', price: '', currency: 'PYG',
   delivery_url: '', delivery_note: '', cover_url: '', is_active: true, sort_order: 0,
-  precio_recuperacion: '', preview_urls: '', resumen: ''
+  precio_recuperacion: '', preview_urls: '', resumen: '',
+  mensajes: MENSAJES_VACIOS
 };
+
+/** Lo que llega del backend, listo para el formulario (siempre al menos un mensaje). */
+function mensajesParaEditar(m) {
+  const e = m && typeof m === 'object' ? m : {};
+  const presentacion = Array.isArray(e.presentacion) && e.presentacion.length
+    ? e.presentacion.slice(0, MAX_PARTES)
+    : [''];
+  return {
+    presentacion,
+    boton_comprar: e.boton_comprar || MENSAJES_VACIOS.boton_comprar,
+    boton_muestras: e.boton_muestras || MENSAJES_VACIOS.boton_muestras,
+    muestras_intro: e.muestras_intro || '',
+    muestras_cierre: e.muestras_cierre || '',
+    entrega: e.entrega || ''
+  };
+}
+
+/** Los mismos chequeos que hace el backend, para avisar antes de guardar. */
+function erroresDeMensajes(m) {
+  const errores = [];
+  const partes = m.presentacion.map(t => t.trim()).filter(Boolean);
+  partes.forEach((t, i) => {
+    const conBotones = i === partes.length - 1;
+    const tope = conBotones ? LIMITE_CON_BOTONES : LIMITE_TEXTO;
+    if (t.length > tope) errores.push(`El mensaje ${i + 1} de la presentación pasa de ${tope} caracteres.`);
+  });
+  if (m.boton_comprar.trim().length > LIMITE_BOTON) errores.push(`El botón para comprar pasa de ${LIMITE_BOTON} caracteres.`);
+  if (m.boton_muestras.trim().length > LIMITE_BOTON) errores.push(`El botón para ver muestras pasa de ${LIMITE_BOTON} caracteres.`);
+  if (m.muestras_cierre.trim().length > LIMITE_CON_BOTONES) errores.push(`El texto después de las muestras pasa de ${LIMITE_CON_BOTONES} caracteres.`);
+  return errores;
+}
+
+/** Igual que el backend: rellena variables y saca la coma que queda sin nombre. */
+function renderizar(plantilla, vars) {
+  let salida = String(plantilla || '');
+  for (const { clave } of VARIABLES) {
+    salida = salida.replace(new RegExp(`\\{\\{\\s*${clave}\\s*\\}\\}`, 'gi'), vars[clave] ?? '');
+  }
+  return salida.replace(/,\s*([!?.])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+/** *negrita* de WhatsApp, para que la vista previa se parezca a lo que llega. */
+function conNegritas(texto) {
+  return String(texto).split(/(\*[^*\n]+\*)/g).map((trozo, i) =>
+    /^\*[^*\n]+\*$/.test(trozo) ? <strong key={i}>{trozo.slice(1, -1)}</strong> : trozo
+  );
+}
+
+function Contador({ largo, tope }) {
+  const color = largo > tope ? '#dc2626' : largo > tope * 0.85 ? '#b45309' : 'var(--text-soft)';
+  return <span style={{ marginLeft: '8px', fontWeight: 400, color, fontVariantNumeric: 'tabular-nums' }}>{largo}/{tope}</span>;
+}
 
 /**
  * Catálogo de productos digitales.
@@ -37,6 +115,9 @@ export function ProductosPage() {
   const [subiendoMuestra, setSubiendoMuestra] = useState(false);
   const muestrasRef = useRef(null);
 
+  // Dónde va la variable que se toca: el último cuadro de mensaje enfocado.
+  const [campoActivo, setCampoActivo] = useState('presentacion:0');
+
   // La lista vive como texto de varias líneas porque así la guarda el backend.
   // Acá se parte solo para pintar las miniaturas.
   const muestras = String(form.preview_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
@@ -59,10 +140,48 @@ export function ProductosPage() {
 
   const campo = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
+  const mensaje = (k, v) => setForm(prev => ({ ...prev, mensajes: { ...prev.mensajes, [k]: v } }));
+
+  const parte = (i, v) => setForm(prev => {
+    const presentacion = [...prev.mensajes.presentacion];
+    presentacion[i] = v;
+    return { ...prev, mensajes: { ...prev.mensajes, presentacion } };
+  });
+
+  const agregarParte = () => {
+    const cantidad = form.mensajes.presentacion.length;
+    if (cantidad >= MAX_PARTES) return;
+    setForm(prev => ({
+      ...prev,
+      mensajes: { ...prev.mensajes, presentacion: [...prev.mensajes.presentacion, ''] }
+    }));
+    setCampoActivo(`presentacion:${cantidad}`);
+  };
+
+  const quitarParte = (i) => {
+    setForm(prev => {
+      const presentacion = prev.mensajes.presentacion.filter((_, j) => j !== i);
+      return { ...prev, mensajes: { ...prev.mensajes, presentacion: presentacion.length ? presentacion : [''] } };
+    });
+    setCampoActivo('presentacion:0');
+  };
+
+  const insertarVariable = (clave) => {
+    const token = `{{${clave}}}`;
+    const unir = (actual) => (actual && !/\s$/.test(actual) ? `${actual} ${token}` : `${actual || ''}${token}`);
+    if (campoActivo.startsWith('presentacion:')) {
+      const i = Number(campoActivo.split(':')[1]) || 0;
+      parte(i, unir(form.mensajes.presentacion[i]));
+    } else {
+      mensaje(campoActivo, unir(form.mensajes[campoActivo]));
+    }
+  };
+
   const abrirNuevo = () => {
     setEditandoId(null);
     // La posición por defecto manda el producto al final de la lista.
     setForm({ ...VACIO, sort_order: productos.length });
+    setCampoActivo('presentacion:0');
     setError(null);
     setModalAbierto(true);
   };
@@ -82,8 +201,10 @@ export function ProductosPage() {
       precio_recuperacion: p.precio_recuperacion ?? '',
       preview_urls: Array.isArray(p.preview_urls) ? p.preview_urls.join('\n') : (p.preview_urls || ''),
       is_active: p.is_active !== false,
-      sort_order: p.sort_order || 0
+      sort_order: p.sort_order || 0,
+      mensajes: mensajesParaEditar(p.mensajes)
     });
+    setCampoActivo('presentacion:0');
     setError(null);
     setModalAbierto(true);
   };
@@ -160,13 +281,20 @@ export function ProductosPage() {
     if (!form.name.trim()) { setError('Poné un nombre.'); return; }
     if (!form.slug.trim()) { setError('Poné un identificador (slug).'); return; }
 
+    const errores = erroresDeMensajes(form.mensajes);
+    if (errores.length) { setError(errores.join(' ')); return; }
+
     setGuardando(true);
     setError(null);
     try {
       const cuerpo = {
         ...form,
         price: Number(form.price) || 0,
-        sort_order: Number(form.sort_order) || 0
+        sort_order: Number(form.sort_order) || 0,
+        mensajes: {
+          ...form.mensajes,
+          presentacion: form.mensajes.presentacion.map(t => t.trim()).filter(Boolean)
+        }
       };
       if (editandoId) await productsService.update(token, editandoId, cuerpo);
       else await productsService.create(token, cuerpo);
@@ -375,14 +503,14 @@ export function ProductosPage() {
               <label style={label} htmlFor="p-name">Nombre</label>
               <input id="p-name" style={input} value={form.name}
                 onChange={(e) => campo('name', e.target.value)}
-                placeholder="Historias de la Biblia — Tomo I" />
+                placeholder="Nombre del producto, como lo va a ver el cliente" />
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={label} htmlFor="p-slug">Identificador</label>
               <input id="p-slug" style={input} value={form.slug}
                 onChange={(e) => campo('slug', e.target.value)}
-                placeholder="historias-biblia-1" />
+                placeholder="nombre-corto-sin-espacios" />
               <small style={ayuda}>
                 Un nombre corto sin espacios, para uso interno. El cliente nunca lo ve.
               </small>
@@ -392,29 +520,23 @@ export function ProductosPage() {
               <label style={label} htmlFor="p-desc">Descripción</label>
               <textarea id="p-desc" rows={2} style={{ ...input, resize: 'vertical' }} value={form.description}
                 onChange={(e) => campo('description', e.target.value)}
-                placeholder="10 relatos para leer en voz alta, en PDF." />
-              <small style={ayuda}>La descripción completa. No es la que sale por WhatsApp.</small>
+                placeholder="Qué es, para quién es y qué trae." />
+              <small style={ayuda}>
+                La descripción completa. La usa la IA para contestar preguntas y aparece en la lista de precios.
+              </small>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={label} htmlFor="p-resumen">
-                Resumen / Presentación para WhatsApp
-                <span style={{
-                  marginLeft: '8px', fontWeight: 400,
-                  color: (form.resumen || '').length > 1024 ? '#dc2626' : (form.resumen || '').length > 800 ? '#b45309' : 'var(--text-soft)'
-                }}>
-                  {(form.resumen || '').length}/1024
-                </span>
+                Resumen corto
+                <Contador largo={(form.resumen || '').length} tope={LIMITE_CON_BOTONES} />
               </label>
-              <textarea id="p-resumen" rows={6} style={{ ...input, resize: 'vertical' }}
+              <textarea id="p-resumen" rows={3} style={{ ...input, resize: 'vertical' }}
                 value={form.resumen}
                 onChange={(e) => campo('resumen', e.target.value)}
-                placeholder={'¡Buen día, [Nombre]! Qué alegría saludarte 🤍✨...\n\n📦 Mirá todo lo que incluye el material:\n1️⃣ 10 Grandes Historias Bíblicas completas\n2️⃣ 50 Láminas para Colorear\n...\n🔥 Precio promocional: Gs. 19.000\n\n¿Cómo te gustaría continuar? Elegí una opción 👇'} />
+                placeholder="Dos o tres líneas con lo principal del producto." />
               <small style={ayuda}>
-                Mensaje de presentación del producto en WhatsApp. Si el mensaje incluye botones interactivos
-                de WhatsApp Cloud API, el límite técnico de Meta es de 1024 caracteres. Si no incluye botones,
-                un mensaje de texto admite hasta 4096 caracteres. Podés incluir el desglose con emojis,
-                precio y opciones.
+                Respaldo: el bot lo usa solo si todavía no cargaste los mensajes de presentación de más abajo.
               </small>
             </div>
 
@@ -532,6 +654,173 @@ export function ProductosPage() {
                 quien ya vio todo el material no tiene nada que comprar.
               </small>
             </div>
+
+            {/* Mensajes del bot */}
+            <section style={{ margin: '4px 0 18px', padding: '14px', border: '1px solid var(--border-gold, #e2e2e2)', borderRadius: '10px' }}>
+              <h4 style={{ margin: '0 0 4px', fontSize: '.98rem' }}>Mensajes del bot</h4>
+              <p style={{ ...ayuda, marginTop: 0, marginBottom: '10px' }}>
+                Lo que el bot le manda al cliente sobre este producto. No está en el código: lo que
+                guardes acá es lo que recibe el próximo cliente.
+              </p>
+
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                {VARIABLES.map(v => (
+                  <button key={v.clave} type="button" title={v.ayuda} onClick={() => insertarVariable(v.clave)}
+                    style={{ ...btnSecundario, padding: '3px 8px', fontSize: '.74rem', fontFamily: 'monospace' }}>
+                    {`{{${v.clave}}}`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Presentación */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ fontSize: '.84rem', fontWeight: 700, marginBottom: '6px' }}>Presentación</div>
+                <small style={{ ...ayuda, marginTop: 0, marginBottom: '8px' }}>
+                  Primero sale la portada (si cargaste una) y después estos mensajes, en orden y con unos
+                  segundos entre uno y otro. El último lleva los botones.
+                </small>
+                {form.mensajes.presentacion.map((t, i, lista) => {
+                  const ultimo = i === lista.length - 1;
+                  const tope = ultimo ? LIMITE_CON_BOTONES : LIMITE_TEXTO;
+                  return (
+                    <div key={i} style={{ marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label style={label} htmlFor={`p-msg-${i}`}>
+                          Mensaje {i + 1}{ultimo ? ' · sale con los botones' : ''}
+                          <Contador largo={t.length} tope={tope} />
+                        </label>
+                        {lista.length > 1 && (
+                          <button type="button" onClick={() => quitarParte(i)}
+                            style={{ ...btnSecundario, padding: '2px 8px', fontSize: '.72rem', color: '#b91c1c' }}>
+                            Quitar
+                          </button>
+                        )}
+                      </div>
+                      <textarea id={`p-msg-${i}`} rows={ultimo ? 4 : 5} style={{ ...input, resize: 'vertical' }}
+                        value={t}
+                        onFocus={() => setCampoActivo(`presentacion:${i}`)}
+                        onChange={(e) => parte(i, e.target.value)}
+                        placeholder={i === 0 ? '¡{{saludo}}, {{nombre}}! …' : (ultimo ? '💰 Precio: {{precio_texto}} …' : '')} />
+                    </div>
+                  );
+                })}
+                {form.mensajes.presentacion.length < MAX_PARTES && (
+                  <button type="button" style={{ ...btnSecundario, fontSize: '.78rem' }} onClick={agregarParte}>
+                    + Agregar mensaje
+                  </button>
+                )}
+              </div>
+
+              {/* Botones */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label style={label} htmlFor="p-btn-comprar">
+                    Botón para comprar
+                    <Contador largo={form.mensajes.boton_comprar.length} tope={LIMITE_BOTON} />
+                  </label>
+                  <input id="p-btn-comprar" style={input} value={form.mensajes.boton_comprar}
+                    onChange={(e) => mensaje('boton_comprar', e.target.value)} />
+                </div>
+                <div>
+                  <label style={label} htmlFor="p-btn-muestras">
+                    Botón para ver muestras
+                    <Contador largo={form.mensajes.boton_muestras.length} tope={LIMITE_BOTON} />
+                  </label>
+                  <input id="p-btn-muestras" style={input} value={form.mensajes.boton_muestras}
+                    onChange={(e) => mensaje('boton_muestras', e.target.value)} />
+                  <small style={ayuda}>Solo aparece si el producto tiene páginas de muestra.</small>
+                </div>
+              </div>
+
+              {/* Muestras */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={label} htmlFor="p-muestras-intro">Antes de las páginas de muestra (opcional)</label>
+                <textarea id="p-muestras-intro" rows={2} style={{ ...input, resize: 'vertical' }}
+                  value={form.mensajes.muestras_intro}
+                  onFocus={() => setCampoActivo('muestras_intro')}
+                  onChange={(e) => mensaje('muestras_intro', e.target.value)} />
+              </div>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={label} htmlFor="p-muestras-cierre">
+                  Después de las páginas de muestra · sale con el botón de comprar
+                  <Contador largo={form.mensajes.muestras_cierre.length} tope={LIMITE_CON_BOTONES} />
+                </label>
+                <textarea id="p-muestras-cierre" rows={3} style={{ ...input, resize: 'vertical' }}
+                  value={form.mensajes.muestras_cierre}
+                  onFocus={() => setCampoActivo('muestras_cierre')}
+                  onChange={(e) => mensaje('muestras_cierre', e.target.value)} />
+                <small style={ayuda}>Si lo dejás vacío sale el nombre del producto con el precio.</small>
+              </div>
+
+              {/* Entrega */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={label} htmlFor="p-entrega-msg">
+                  Mensaje de entrega
+                  <Contador largo={form.mensajes.entrega.length} tope={LIMITE_TEXTO} />
+                </label>
+                <textarea id="p-entrega-msg" rows={4} style={{ ...input, resize: 'vertical' }}
+                  value={form.mensajes.entrega}
+                  onFocus={() => setCampoActivo('entrega')}
+                  onChange={(e) => mensaje('entrega', e.target.value)}
+                  placeholder={'¡Listo, {{nombre}}! Acá tenés {{producto}}:\n{{links}}'} />
+                <small style={ayuda}>
+                  Sale cuando se confirma el pago. Usá {'{{links}}'} donde va el link; si no lo ponés, se agrega al final.
+                  Si lo dejás vacío sale un mensaje corto con el nombre del producto y el link.
+                </small>
+              </div>
+
+              {/* Vista previa */}
+              {(() => {
+                const precio = productsService.formatearPrecio(Number(form.price) || 0, form.currency);
+                const vars = {
+                  saludo: 'Buen día', nombre: 'María', producto: form.name || 'Tu producto',
+                  precio, precio_lista: precio, precio_texto: precio, links: form.delivery_url || ''
+                };
+                const partes = form.mensajes.presentacion.map(t => t.trim()).filter(Boolean);
+                const botones = [
+                  ...(muestras.length ? [form.mensajes.boton_muestras || MENSAJES_VACIOS.boton_muestras] : []),
+                  form.mensajes.boton_comprar || MENSAJES_VACIOS.boton_comprar
+                ];
+                const burbuja = {
+                  background: '#dcf8c6', color: '#111', borderRadius: '10px', padding: '9px 11px',
+                  fontSize: '.82rem', whiteSpace: 'pre-wrap', lineHeight: 1.45, maxWidth: '420px'
+                };
+                return (
+                  <div>
+                    <div style={{ fontSize: '.84rem', fontWeight: 700, marginBottom: '6px' }}>
+                      Vista previa de la presentación
+                      <span style={{ fontWeight: 400, color: 'var(--text-soft)', fontSize: '.74rem', marginLeft: '6px' }}>
+                        (con "María" y el precio de lista)
+                      </span>
+                    </div>
+                    {partes.length === 0 ? (
+                      <small style={ayuda}>Escribí al menos un mensaje de presentación para verlo acá.</small>
+                    ) : (
+                      <div style={{ display: 'grid', gap: '6px', background: 'var(--bg-soft, #efeae2)', padding: '10px', borderRadius: '10px' }}>
+                        {form.cover_url && (
+                          <img src={form.cover_url} alt="Portada"
+                            style={{ width: '140px', borderRadius: '8px', display: 'block' }} />
+                        )}
+                        {partes.map((t, i) => (
+                          <div key={i} style={burbuja}>
+                            {conNegritas(renderizar(t, vars))}
+                            {i === partes.length - 1 && (
+                              <div style={{ display: 'grid', gap: '4px', marginTop: '8px' }}>
+                                {botones.map((b, j) => (
+                                  <div key={j} style={{ textAlign: 'center', padding: '6px', borderTop: '1px solid rgba(0,0,0,.08)', color: '#027eb5', fontWeight: 600 }}>
+                                    {b}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </section>
 
             <div style={{ marginBottom: '16px' }}>
               <label style={label} htmlFor="p-orden">Posición en el catálogo</label>
