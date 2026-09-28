@@ -2,13 +2,77 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { recoveryMessagesService } from '../../services/recovery-messages.service';
 
+// Iguales a DEFAULT_MENSAJES_RECUPERACION del backend. Solo se ven un instante,
+// hasta que llega lo guardado.
 const DEFAULTS = {
-  nivel_1_decidido: '¡Hola, {{nombre}}! 🤍\nTe escribo por las dudas: ¿tuviste algún inconveniente con la transferencia o necesitás ayuda con algún dato bancario?\nAvisame y te ayudo con gusto así tus peques ya pueden tener sus historias listas para colorear hoy mismo 🙌🏻✨',
-  nivel_1_mirando: '¡Hola, {{nombre}}! 🤍\n¿Te quedó alguna duda con {{producto}}? Si querés te muestro unas páginas por dentro o me preguntás lo que necesites, con total confianza 🙌🏻',
-  nivel_2_decidido: '¡Hola, {{nombre}}! 🤍\nSi lo que te frenó fue el monto, te lo puedo dejar en {{precio}}. ¿Te paso los datos así lo cerramos hoy mismo? 🙌🏻',
-  nivel_2_mirando: '¡Hola, {{nombre}}! 🤍\nTe hago una propuesta especial: {{producto}} te lo puedo dejar hoy en {{precio}}. Si te interesa, decime y te paso los datos 🙌🏻',
-  nivel_3: '¡Hola, {{nombre}}! No quiero insistir de más, así que te dejo esto simple:\n\nSi todavía querés {{producto}}, te lo dejo en {{precio}} y te paso los datos ahora mismo.\n\nY si no era para vos, todo bien igual. Acá quedo si algún día lo necesitás 🤍'
+  nivel_1_decidido: '¡Hola, {{nombre}}! 🤍\nTe escribo por si se complicó algo con la transferencia. ¿Querés que te pase de nuevo los datos?\n\nApenas me mandes la captura del comprobante, te llega {{producto}} por este mismo chat 🙌🏻',
+  nivel_1_mirando: '¡Hola, {{nombre}}! 🤍\n¿Pudiste ver bien {{producto}}? Si te quedó alguna duda, preguntame lo que quieras.\n\nY si ya lo querés, decime y te paso los datos 🙌🏻',
+  nivel_2_decidido: '¡Hola, {{nombre}}! 🤍\nSi lo que te frenó fue el monto, te lo puedo dejar en {{precio}}. Ese precio te lo mantengo hasta el {{vence}}.\n\n¿Te paso los datos? 📲',
+  nivel_2_mirando: '¡Hola, {{nombre}}! 🤍\nTe quería hacer una propuesta: {{producto}} te lo dejo en {{precio}}, y ese precio te lo mantengo hasta el {{vence}}.\n\n¿Te interesa? Decime y te paso los datos 🙌🏻',
+  nivel_2_sin_descuento: '¡Hola, {{nombre}}! 🤍\n¿Seguís con ganas de {{producto}}? Si hay algo que te frena, contame y lo vemos.\n\nSi ya lo querés, decime y te paso los datos 🙌🏻',
+  nivel_3: '¡Hola, {{nombre}}! 🤍\nNo quiero insistir de más, así que te dejo esto simple: si todavía querés {{producto}}, te lo dejo en {{precio}} hasta el {{vence}} y te paso los datos ahora mismo.\n\nY si no era para vos, todo bien igual. Acá quedo si algún día lo necesitás.',
+  nivel_3_sin_descuento: '¡Hola, {{nombre}}! 🤍\nNo quiero insistir de más, así que te dejo esto simple: si todavía querés {{producto}} a {{precio}}, decime y te paso los datos ahora mismo.\n\nY si no era para vos, todo bien igual. Acá quedo si algún día lo necesitás.'
 };
+
+const VARIABLES = {
+  nombre: { etiqueta: 'Nombre', texto: '{{nombre}}' },
+  producto: { etiqueta: 'Producto', texto: '{{producto}}' },
+  precio: { etiqueta: 'Precio', texto: '{{precio}}' },
+  vence: { etiqueta: 'Vence', texto: '{{vence}}' }
+};
+
+// Un bloque por texto, en el orden en que salen.
+const CAMPOS = [
+  {
+    clave: 'nivel_1_decidido',
+    titulo: '⏰ Recordatorio 1 (a las 2 horas) — pidió los datos pero no pagó',
+    ayuda: 'Para quien tocó "Lo quiero" o pidió la cuenta y no mandó comprobante.',
+    variables: ['nombre', 'producto'],
+    filas: 3
+  },
+  {
+    clave: 'nivel_1_mirando',
+    titulo: '⏰ Recordatorio 1 (a las 2 horas) — solo miró',
+    ayuda: 'Para quien vio el producto y no pidió los datos.',
+    variables: ['nombre', 'producto'],
+    filas: 3
+  },
+  {
+    clave: 'nivel_2_decidido',
+    titulo: '🏷️ Seguimiento 2 (a las 8 horas) — con precio de recuperación, pidió los datos',
+    ayuda: 'Solo sale si el producto tiene precio de recuperación y es menor al que ya tiene esta persona. {{precio}} es ese precio rebajado y {{vence}} la fecha en que vence.',
+    variables: ['nombre', 'producto', 'precio', 'vence'],
+    filas: 3
+  },
+  {
+    clave: 'nivel_2_mirando',
+    titulo: '🏷️ Seguimiento 2 (a las 8 horas) — con precio de recuperación, solo miró',
+    ayuda: 'Igual que el anterior, para quien no había pedido los datos.',
+    variables: ['nombre', 'producto', 'precio', 'vence'],
+    filas: 3
+  },
+  {
+    clave: 'nivel_2_sin_descuento',
+    titulo: '💬 Seguimiento 2 (a las 8 horas) — sin descuento',
+    ayuda: 'Sale cuando no hay un precio más bajo para ofrecer. No digas "promo" ni "especial": el precio es el de siempre.',
+    variables: ['nombre', 'producto', 'precio'],
+    filas: 3
+  },
+  {
+    clave: 'nivel_3',
+    titulo: '🏁 Último mensaje (a las 20 horas) — con descuento',
+    ayuda: 'El último de la secuencia. Después de este, el sistema no vuelve a insistir.',
+    variables: ['nombre', 'producto', 'precio', 'vence'],
+    filas: 4
+  },
+  {
+    clave: 'nivel_3_sin_descuento',
+    titulo: '🏁 Último mensaje (a las 20 horas) — sin descuento',
+    ayuda: 'También para quien ya recibió el precio de recuperación en el mensaje anterior: {{precio}} es el que ya tiene.',
+    variables: ['nombre', 'producto', 'precio'],
+    filas: 4
+  }
+];
 
 const estiloTextarea = {
   width: '100%',
@@ -52,7 +116,7 @@ export function MensajesRemarketing() {
     try {
       const data = await recoveryMessagesService.obtener(token);
       if (data?.messages) {
-        setMensajes(data.messages);
+        setMensajes({ ...DEFAULTS, ...data.messages });
       }
     } catch (err) {
       console.warn('No se pudieron leer mensajes de remarketing:', err.message);
@@ -130,8 +194,9 @@ export function MensajesRemarketing() {
                 Mensajes de Recuperación y Remarketing Automático
               </h4>
               <p style={{ margin: 0, fontSize: '.75rem', color: 'var(--text-soft)' }}>
-                Se envían automáticamente según el tiempo desde la última interacción del cliente (2h, 8h y 20h).
-                Podés usar: <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{nombre}}'}</code>, <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{producto}}'}</code>, <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{precio}}'}</code>.
+                Se envían automáticamente según el tiempo desde el último mensaje del cliente (2 h, 8 h y 20 h).
+                Variables: <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{nombre}}'}</code>, <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{producto}}'}</code>, <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{precio}}'}</code> y <code style={{ color: 'var(--color-gold, #b45309)' }}>{'{{vence}}'}</code>.
+                Un PDF no se agota: nada de cupos, lugares apartados ni "solo por hoy". La oferta vence cuando dice {'{{vence}}'}.
               </p>
             </div>
             <button
@@ -166,92 +231,35 @@ export function MensajesRemarketing() {
           )}
 
           <form onSubmit={guardar} style={{ display: 'grid', gap: '14px' }}>
-            {/* Nivel 1 - Decidido (Mensaje 5) */}
-            <div style={{ padding: '10px', background: 'var(--bg-panel, rgba(0,0,0,0.02))', borderRadius: '7px', border: '1px solid var(--border-gold, #eee)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '.8rem', fontWeight: 700 }}>
-                  ⏰ Recordatorio 1 (a las 2 horas) — Si pidió datos pero no pagó (Mensaje 5)
-                </label>
-                <div>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_1_decidido', '{{nombre}}')}>+ Nombre</span>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_1_decidido', '{{producto}}')}>+ Producto</span>
+            {CAMPOS.map(campo => (
+              <div
+                key={campo.clave}
+                style={{ padding: '10px', background: 'var(--bg-panel, rgba(0,0,0,0.02))', borderRadius: '7px', border: '1px solid var(--border-gold, #eee)' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                  <label htmlFor={`remarketing-${campo.clave}`} style={{ fontSize: '.8rem', fontWeight: 700 }}>
+                    {campo.titulo}
+                  </label>
+                  <div>
+                    {campo.variables.map(v => (
+                      <span key={v} style={estiloPildora} onClick={() => insertarVariable(campo.clave, VARIABLES[v].texto)}>
+                        + {VARIABLES[v].etiqueta}
+                      </span>
+                    ))}
+                  </div>
                 </div>
+                <textarea
+                  id={`remarketing-${campo.clave}`}
+                  rows={campo.filas}
+                  style={estiloTextarea}
+                  value={mensajes[campo.clave] || ''}
+                  onChange={e => setMensajes(m => ({ ...m, [campo.clave]: e.target.value }))}
+                />
+                <small style={{ display: 'block', fontSize: '.71rem', color: 'var(--text-soft)', marginTop: '3px' }}>
+                  {campo.ayuda}
+                </small>
               </div>
-              <textarea
-                rows={3}
-                style={estiloTextarea}
-                value={mensajes.nivel_1_decidido || ''}
-                onChange={e => setMensajes(m => ({ ...m, nivel_1_decidido: e.target.value }))}
-                placeholder="¡Hola, [Nombre]! 🤍 Te escribo por las dudas..."
-              />
-              <small style={{ display: 'block', fontSize: '.71rem', color: 'var(--text-soft)', marginTop: '3px' }}>
-                Se envía a quien pidió la cuenta bancaria o tocó "Lo quiero ya" y pasaron 2 horas sin enviar comprobante.
-              </small>
-            </div>
-
-            {/* Nivel 1 - Mirando */}
-            <div style={{ padding: '10px', background: 'var(--bg-panel, rgba(0,0,0,0.02))', borderRadius: '7px', border: '1px solid var(--border-gold, #eee)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '.8rem', fontWeight: 700 }}>
-                  ⏰ Recordatorio 1 (a las 2 horas) — Si solo miró o no pidió datos
-                </label>
-                <div>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_1_mirando', '{{nombre}}')}>+ Nombre</span>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_1_mirando', '{{producto}}')}>+ Producto</span>
-                </div>
-              </div>
-              <textarea
-                rows={3}
-                style={estiloTextarea}
-                value={mensajes.nivel_1_mirando || ''}
-                onChange={e => setMensajes(m => ({ ...m, nivel_1_mirando: e.target.value }))}
-              />
-            </div>
-
-            {/* Nivel 2 - Decidido con Oferta */}
-            <div style={{ padding: '10px', background: 'var(--bg-panel, rgba(0,0,0,0.02))', borderRadius: '7px', border: '1px solid var(--border-gold, #eee)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '.8rem', fontWeight: 700 }}>
-                  🔥 Remarketing 2 (a las 8 horas) — Oferta / Descuento especial
-                </label>
-                <div>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_2_decidido', '{{nombre}}')}>+ Nombre</span>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_2_decidido', '{{precio}}')}>+ Precio</span>
-                </div>
-              </div>
-              <textarea
-                rows={3}
-                style={estiloTextarea}
-                value={mensajes.nivel_2_decidido || ''}
-                onChange={e => setMensajes(m => ({ ...m, nivel_2_decidido: e.target.value }))}
-              />
-              <small style={{ display: 'block', fontSize: '.71rem', color: 'var(--text-soft)', marginTop: '3px' }}>
-                Se envía con el precio de recuperación cargado en el producto o el precio vigente con descuento.
-              </small>
-            </div>
-
-            {/* Nivel 3 - Cierre */}
-            <div style={{ padding: '10px', background: 'var(--bg-panel, rgba(0,0,0,0.02))', borderRadius: '7px', border: '1px solid var(--border-gold, #eee)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '.8rem', fontWeight: 700 }}>
-                  🏁 Remarketing 3 (a las 20 horas) — Última llamada respetuosa
-                </label>
-                <div>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_3', '{{nombre}}')}>+ Nombre</span>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_3', '{{precio}}')}>+ Precio</span>
-                  <span style={estiloPildora} onClick={() => insertarVariable('nivel_3', '{{producto}}')}>+ Producto</span>
-                </div>
-              </div>
-              <textarea
-                rows={4}
-                style={estiloTextarea}
-                value={mensajes.nivel_3 || ''}
-                onChange={e => setMensajes(m => ({ ...m, nivel_3: e.target.value }))}
-              />
-              <small style={{ display: 'block', fontSize: '.71rem', color: 'var(--text-soft)', marginTop: '3px' }}>
-                El último mensaje de la secuencia. Después de este, el sistema no vuelve a insistir.
-              </small>
-            </div>
+            ))}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button
