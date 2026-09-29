@@ -8,6 +8,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { TeamsPage } from './pages/TeamsPage';
 import { InboxPage } from './pages/InboxPage';
 import { ProductosPage } from './pages/ProductosPage';
+import { ProductoEditorPage } from './pages/ProductoEditorPage';
 import { PedidosPage } from './pages/PedidosPage';
 import { MetricasPage } from './pages/MetricasPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -49,6 +50,23 @@ export function App() {
             element={
               <ProtectedRoute requireAdmin={true}>
                 <ProductosPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Pantalla de cada producto: nuevo (también ?desde=ID para duplicar) o existente */}
+          <Route
+            path="/productos/nuevo"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <ProductoEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/productos/:id"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <ProductoEditorPage />
               </ProtectedRoute>
             }
           />

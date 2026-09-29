@@ -29,6 +29,15 @@ export const productsService = {
     return parse(res);
   },
 
+  /** Un producto con todo lo que hace falta para editarlo (solo admin). */
+  async obtener(token, id) {
+    const res = await fetch(apiUrl(`/api/products/${id}`), {
+      headers: authHeaders(token),
+      credentials: 'include'
+    });
+    return parse(res);
+  },
+
   async create(token, producto) {
     const res = await fetch(apiUrl('/api/products'), {
       method: 'POST',

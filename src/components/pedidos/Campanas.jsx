@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { campanasService } from '../../services/campanas.service';
 import { productsService } from '../../services/products.service';
-import { MensajesRemarketing } from './MensajesRemarketing';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Campañas de precio: remarketing y promos con fecha.
@@ -62,6 +62,7 @@ const estiloEtiqueta = { display: 'block', fontSize: '.74rem', color: 'var(--tex
 
 export function Campanas() {
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const esAdmin = ['admin', 'superadmin'].includes(user?.role);
 
   const [campanas, setCampanas] = useState(null);
@@ -293,7 +294,13 @@ export function Campanas() {
         </div>
       )}
 
-      <MensajesRemarketing />
+      <p style={{ margin: '16px 0 0', fontSize: '.82rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
+        Los mensajes de seguimiento (remarketing) ahora son de cada producto: se editan en{' '}
+        <button type="button" onClick={() => navigate('/productos')}
+          style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--text-link)', textDecoration: 'underline', cursor: 'pointer' }}>
+          Productos
+        </button>{' '}→ el producto → Seguimiento.
+      </p>
     </section>
   );
 }

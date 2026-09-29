@@ -462,7 +462,14 @@ export function PedidosPage() {
                             {p.product_name || <span style={{ color: 'var(--text-soft)' }}>Producto sin definir</span>}
                           </div>
                           <div style={{ color: 'var(--text-soft)', fontSize: '.8rem', fontVariantNumeric: 'tabular-nums' }}>
-                            {p.amount ? productsService.formatearPrecio(p.amount, p.currency) : 'Sin monto'}
+                            {p.amount
+                              ? productsService.formatearPrecio(Number(p.amount) + (Number(p.extras_total) || 0), p.currency)
+                              : 'Sin monto'}
+                            {Number(p.extras_total) > 0 && (
+                              <span style={{ marginLeft: '6px', color: 'var(--info, #0284c7)' }}>
+                                · incluye {p.extras_nombres || 'extra'} (+{productsService.formatearPrecio(p.extras_total, p.currency)})
+                              </span>
+                            )}
                           </div>
                         </div>
 

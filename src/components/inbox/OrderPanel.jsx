@@ -189,8 +189,14 @@ export function OrderPanel({ conversationId, contactName, onClose }) {
               {p.product_name || 'Producto sin definir'}
             </div>
             {p.amount && (
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--wa-teal-dark, #047857)', marginBottom: '10px' }}>
-                {productsService.formatearPrecio(p.amount, p.currency)}
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--wa-teal-dark, #047857)', marginBottom: Number(p.extras_total) > 0 ? '2px' : '10px' }}>
+                {productsService.formatearPrecio(Number(p.amount) + (Number(p.extras_total) || 0), p.currency)}
+              </div>
+            )}
+            {/* El extra que sumó al comprar: se cobra y se entrega junto con el producto. */}
+            {Number(p.extras_total) > 0 && (
+              <div style={{ fontSize: '.78rem', color: 'var(--text-soft)', marginBottom: '10px', lineHeight: 1.4 }}>
+                Incluye {p.extras_nombres || 'un extra'} (+{productsService.formatearPrecio(p.extras_total, p.currency)})
               </div>
             )}
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from './Navbar';
+import { puedeSalir } from '../lib/cambiosSinGuardar';
 
 export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdmin = false }) {
   const { user, loading } = useAuth();
@@ -45,7 +46,7 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSuperAdm
     <div className="admin-layout">
       <Navbar
         currentRoute={currentRoute}
-        onNavigate={(route) => navigate(`/${route}`)}
+        onNavigate={(route) => { if (puedeSalir()) navigate(`/${route}`); }}
       />
       {children}
     </div>
