@@ -12,7 +12,8 @@ export const LIMITES = Object.freeze({
   boton: 20,
   partes: 3,
   links: 10,
-  muestras: 3
+  muestras: 3,
+  guia: 6000
 });
 
 /** Qué significa cada variable, en palabras de quien vende. */

@@ -5,7 +5,7 @@ import { productsService } from '../services/products.service';
 import { recoveryMessagesService } from '../services/recovery-messages.service';
 import { ordersService } from '../services/orders.service';
 import { VistaWhatsApp } from '../components/productos/VistaWhatsApp';
-import { CampoMensaje, CampoBoton } from '../components/productos/CampoMensaje';
+import { CampoMensaje, CampoBoton, Contador } from '../components/productos/CampoMensaje';
 import {
   LIMITES,
   CLAVES_SEGUIMIENTO,
@@ -108,6 +108,7 @@ function formularioNuevo(base) {
       muestras_cierre: '',
       pago: '',
       entrega: ENTREGA_POR_DEFECTO,
+      guia_ia: '',
       seguimiento: {
         activo: true,
         textos: Object.fromEntries(CLAVES_SEGUIMIENTO.map(k => [k, base?.messages?.[k] || '']))
@@ -150,6 +151,7 @@ function formularioDesde(p, base) {
       pago: m.pago || '',
       // Vacío, el bot manda un mensaje corto de respaldo: se muestra ese mismo, a la vista y editable.
       entrega: m.entrega || ENTREGA_POR_DEFECTO,
+      guia_ia: m.guia_ia || '',
       seguimiento: {
         activo: seg.activo !== false,
         // Lo que el producto no tiene propio arranca con los textos base, a la vista y editable.
@@ -219,6 +221,7 @@ function erroresDeLargo(f) {
   }
   if (f.mensajes.muestras_cierre.length > LIMITES.conBotones) e.push(`El texto después de las muestras pasa de ${LIMITES.conBotones} caracteres.`);
   if (f.bump.texto.length > LIMITES.conBotones) e.push(`El mensaje del extra pasa de ${LIMITES.conBotones} caracteres.`);
+  if ((f.mensajes.guia_ia || '').length > LIMITES.guia) e.push(`La guía para la IA pasa de ${LIMITES.guia} caracteres.`);
 
   const revisar = [
     ...f.mensajes.presentacion.map(t => [t, 'presentacion']),
@@ -621,6 +624,17 @@ export function ProductoEditorPage() {
                     onChange={(e) => campo('description', e.target.value)}
                     placeholder="Qué es, para quién es, qué trae, en qué formato llega." />
                   <p className="pe-ayuda">No se le manda al cliente tal cual: la usa la IA para contestar las preguntas que no están en los mensajes.</p>
+                </div>
+
+                <div className="pe-campo">
+                  <div className="pe-campo__cabeza">
+                    <label htmlFor="p-guia" className="pe-etiqueta">Guía de venta para la IA (opcional)</label>
+                    <span className="pe-campo__lado"><Contador largo={(form.mensajes.guia_ia || '').length} tope={LIMITES.guia} /></span>
+                  </div>
+                  <textarea id="p-guia" rows={8} className="pe-input pe-textarea" value={form.mensajes.guia_ia || ''}
+                    onChange={(e) => mensaje('guia_ia', e.target.value)}
+                    placeholder={'Ej.:\n¿Cuántos kilos bajo? → No prometer kilos. Contar qué cambia: comer ordenado, sin harinas y sin pasar hambre.\nNo tengo tiempo → Las cenas SOS salen en 10 minutos.\nEmbarazo, diabetes o medicación → Que lo consulte con su médico antes de empezar.'} />
+                  <p className="pe-ayuda">Cómo contestar las dudas que frenan la compra de este producto: precio, tiempo, si funciona, para quién no es, qué no prometer. No se le manda al cliente: la IA la lee antes de cada respuesta. Lo más útil entra en 2.000 a 3.500 caracteres.</p>
                 </div>
 
                 <div className="pe-campo">
