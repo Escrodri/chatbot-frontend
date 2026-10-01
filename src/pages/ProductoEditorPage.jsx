@@ -98,6 +98,9 @@ function formularioNuevo(base) {
     preview_urls: [],
     entregables: [{ etiqueta: '', url: '' }],
     mensajes: {
+      saludo_anuncio: '',
+      frases_anuncio: '',
+      nombre_corto: '',
       presentacion: [''],
       boton_comprar: BOTONES_POR_DEFECTO.comprar,
       boton_muestras: BOTONES_POR_DEFECTO.muestras,
@@ -136,6 +139,9 @@ function formularioDesde(p, base) {
     preview_urls: Array.isArray(p.preview_urls) ? p.preview_urls : [],
     entregables: links.length ? links.map(l => ({ etiqueta: l.etiqueta || '', url: l.url })) : [{ etiqueta: '', url: '' }],
     mensajes: {
+      saludo_anuncio: m.saludo_anuncio || '',
+      frases_anuncio: m.frases_anuncio || '',
+      nombre_corto: m.nombre_corto || '',
       presentacion: Array.isArray(m.presentacion) && m.presentacion.length ? m.presentacion.slice(0, LIMITES.partes) : [''],
       boton_comprar: m.boton_comprar || BOTONES_POR_DEFECTO.comprar,
       boton_muestras: m.boton_muestras || BOTONES_POR_DEFECTO.muestras,
@@ -617,6 +623,24 @@ export function ProductoEditorPage() {
                   <p className="pe-ayuda">No se le manda al cliente tal cual: la usa la IA para contestar las preguntas que no están en los mensajes.</p>
                 </div>
 
+                <div className="pe-campo">
+                  <label htmlFor="p-saludo-anuncio" className="pe-etiqueta">Mensaje de entrada del anuncio</label>
+                  <input id="p-saludo-anuncio" className="pe-input"
+                    value={form.mensajes.saludo_anuncio || ''}
+                    onChange={(e) => mensaje('saludo_anuncio', e.target.value)}
+                    placeholder="Ej: Hola 👋 Quiero el plan de 21 días" />
+                  <p className="pe-ayuda">El saludo o texto automático que envía el cliente al tocar tu anuncio en Meta. Si el mensaje coincide, el bot reconoce este producto al instante.</p>
+                </div>
+
+                <div className="pe-campo">
+                  <label htmlFor="p-frases-anuncio" className="pe-etiqueta">Palabras o frases clave del anuncio (opcional)</label>
+                  <input id="p-frases-anuncio" className="pe-input"
+                    value={form.mensajes.frases_anuncio || ''}
+                    onChange={(e) => mensaje('frases_anuncio', e.target.value)}
+                    placeholder="plan 21, 21 días, recetario" />
+                  <p className="pe-ayuda">Separadas por coma. Ayudan a identificar el producto aunque el cliente escriba con sus propias palabras.</p>
+                </div>
+
                 <label className="pe-check">
                   <input type="checkbox" checked={form.is_active} onChange={(e) => campo('is_active', e.target.checked)} />
                   <span><strong>Activo.</strong> Apagado, el bot no lo ofrece ni lo cobra.</span>
@@ -631,6 +655,14 @@ export function ProductoEditorPage() {
                       <input type="checkbox" checked={form.solo_extra} onChange={(e) => campo('solo_extra', e.target.checked)} />
                       <span><strong>Solo se vende como extra</strong> de otro producto. El bot no lo ofrece suelto ni lo muestra en la lista.</span>
                     </label>
+                    <div className="pe-campo">
+                      <label htmlFor="p-nombre-corto" className="pe-etiqueta">Nombre corto para botones</label>
+                      <input id="p-nombre-corto" className="pe-input"
+                        value={form.mensajes.nombre_corto || ''}
+                        onChange={(e) => mensaje('nombre_corto', e.target.value)}
+                        placeholder="Ej: Plan 21 Días (hasta 20 letras)" />
+                      <p className="pe-ayuda">Texto del botón cuando el bot le pregunta a quien viene sin anuncio cuál de los productos quiere.</p>
+                    </div>
                     <div className="pe-fila">
                       <div className="pe-campo">
                         <label htmlFor="p-slug" className="pe-etiqueta">Identificador interno</label>
