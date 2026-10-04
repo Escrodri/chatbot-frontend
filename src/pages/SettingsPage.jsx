@@ -336,6 +336,56 @@ export function SettingsPage() {
     }
   };
 
+  // Conectar el número a la API de Conversiones (compras a Meta)
+  const [conectandoId, setConectandoId] = useState(null);
+  const handleConectarConversiones = async (id) => {
+    setConectandoId(id);
+    try {
+      const res = await apiFetch(`/api/settings/channels/${id}/conversiones`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        addToast(data.message, 'success');
+        loadChannels();
+      } else {
+        addToast(data.error || 'Meta no dio el conjunto de datos.', 'error');
+      }
+    } catch (err) {
+      addToast('No se pudo conectar: ' + err.message, 'error');
+    } finally {
+      setConectandoId(null);
+    }
+  };
+
+  // Volver a registrar el número (por ejemplo, para que tome el nombre visible aprobado)
+  const [registroAbierto, setRegistroAbierto] = useState(null);
+  const [registroPin, setRegistroPin] = useState('');
+  const [registrando, setRegistrando] = useState(false);
+  const handleRegistrarNumero = async (id) => {
+    if (!/^\d{6}$/.test(registroPin)) {
+      addToast('El PIN son 6 números.', 'warn');
+      return;
+    }
+    setRegistrando(true);
+    try {
+      const res = await apiFetch(`/api/settings/channels/${id}/registrar`, {
+        method: 'POST',
+        body: JSON.stringify({ pin: registroPin })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        addToast(data.message, 'success');
+        setRegistroAbierto(null);
+        setRegistroPin('');
+      } else {
+        addToast(data.error || 'Meta no registró el número.', 'error');
+      }
+    } catch (err) {
+      addToast('No se pudo registrar: ' + err.message, 'error');
+    } finally {
+      setRegistrando(false);
+    }
+  };
+
   // Handler: Toggle Estado Canal
   const handleToggleChannelStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'paused' : 'active';
@@ -1093,7 +1143,52 @@ export function SettingsPage() {
                         <span style={{ color: ch.tiene_app_secret ? 'var(--ok)' : 'var(--warn)' }}>
                           {ch.tiene_app_secret ? '🔒 App Secret propio guardado' : '⚠️ Sin App Secret (usa global)'}
                         </span>
+                        {ch.platform === 'whatsapp' && (
+                          <span style={{ color: ch.dataset_id ? 'var(--ok)' : 'var(--warn)' }}>
+                            {ch.dataset_id ? `📈 Compras a Meta: conectado (${ch.dataset_id})` : '📈 Compras a Meta: sin conectar'}
+                          </span>
+                        )}
                       </div>
+                      {ch.platform === 'whatsapp' && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                          <button
+                            className="btn-card-action"
+                            onClick={() => handleConectarConversiones(ch.id)}
+                            disabled={conectandoId === ch.id}
+                            title="Pide a Meta el conjunto de datos de esta cuenta de WhatsApp y lo guarda. Desde ahí las compras se informan solas."
+                          >
+                            {conectandoId === ch.id ? 'Conectando…' : (ch.dataset_id ? 'Reconectar compras a Meta' : 'Conectar compras a Meta')}
+                          </button>
+                          <button
+                            className="btn-card-action"
+                            onClick={() => { setRegistroAbierto(registroAbierto === ch.id ? null : ch.id); setRegistroPin(''); }}
+                            title="Vuelve a registrar el número en la API de WhatsApp, por ejemplo para que tome un nombre visible recién aprobado"
+                          >
+                            Volver a registrar
+                          </button>
+                        </div>
+                      )}
+                      {registroAbierto === ch.id && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
+                          <label htmlFor={`pin-${ch.id}`} style={{ fontSize: '0.75rem', color: 'var(--text-soft)' }}>
+                            PIN de verificación en dos pasos
+                          </label>
+                          <input
+                            id={`pin-${ch.id}`}
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={6}
+                            value={registroPin}
+                            onChange={(e) => setRegistroPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            style={{ width: '90px' }}
+                            className="form-input"
+                          />
+                          <button className="btn-card-action" disabled={registrando} onClick={() => handleRegistrarNumero(ch.id)}>
+                            {registrando ? 'Registrando…' : 'Registrar'}
+                          </button>
+                        </div>
+                      )}
                       {ch.error_message && (
                         <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '6px' }}>
                           <IconoAlerta size={13} /> {ch.error_message}

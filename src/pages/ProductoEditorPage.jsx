@@ -60,7 +60,8 @@ const NIVELES = [
     nivel: 2,
     claves: [
       { clave: 'nivel_2_mirando', titulo: 'Con descuento · si solo miró', descuento: true },
-      { clave: 'nivel_2_decidido', titulo: 'Con descuento · si ya tocó comprar', descuento: true },
+      { clave: 'nivel_2_decidido', titulo: 'Con descuento · si ya tocó comprar (básico)', descuento: true },
+      { clave: 'nivel_2_extra', titulo: 'Con descuento · si había sumado el extra (Downsell)', descuento: true },
       { clave: 'nivel_2_sin_descuento', titulo: 'Sin descuento' }
     ]
   },
