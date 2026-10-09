@@ -14,6 +14,7 @@ import {
   ENTREGA_POR_DEFECTO,
   BOTONES_POR_DEFECTO,
   renderizar,
+  separarRedacciones,
   formatearPrecio,
   linksDe,
   linkValido,
@@ -261,6 +262,7 @@ export function ProductoEditorPage() {
   const [activo, setActivo] = useState('producto');
   const [nivel, setNivel] = useState(1);
   const [claveSeguimiento, setClaveSeguimiento] = useState('nivel_1_mirando');
+  const [varianteVista, setVarianteVista] = useState(0);
   const [pagoConExtra, setPagoConExtra] = useState(true);
   const [masOpciones, setMasOpciones] = useState(false);
   const portadaRef = useRef(null);
@@ -1017,31 +1019,73 @@ export function ProductoEditorPage() {
                         </p>
                       </div>
 
+                      <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'var(--bg-sunken, #f8fafc)', border: '1px solid var(--border)', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                        <strong style={{ color: 'var(--text-strong)' }}>🛡️ Prevención de spam y mensajes repetitivos:</strong>
+                        <div style={{ marginTop: '4px', color: 'var(--text-soft)' }}>
+                          Para no enviar siempre el mismo texto letra por letra, podés cargar diferentes redacciones separadas por una línea con <code>---</code>. El bot alternará entre ellas al azar sin repetir la misma consecutivamente. Si cargás una sola opción, el sistema sumará automáticamente las 3 variantes de respaldo del sistema.
+                        </div>
+                      </div>
+
                       <div className="pe-pestanas" role="tablist" aria-label="Mensaje">
                         {NIVELES.map((n, i) => (
                           <button key={n.nivel} type="button" role="tab" aria-selected={nivel === n.nivel}
                             className={nivel === n.nivel ? 'is-activo' : ''}
-                            onClick={() => { setNivel(n.nivel); setClaveSeguimiento(n.claves[0].clave); }}>
+                            onClick={() => { setNivel(n.nivel); setClaveSeguimiento(n.claves[0].clave); setVarianteVista(0); }}>
                             {n.nivel}.º · {horas(escalones[i] ?? MINUTOS_POR_DEFECTO[i])}
                           </button>
                         ))}
                       </div>
 
-                      {nivelActual.claves.map(c => (
-                        <div key={c.clave} className={c.descuento && !tieneDescuento ? 'pe-atenuado' : ''}>
-                          <CampoMensaje
-                            id={`p-seg-${c.clave}`}
-                            etiqueta={c.titulo}
-                            valor={m.seguimiento.textos[c.clave]}
-                            onChange={(v) => textoSeguimiento(c.clave, v)}
-                            onFocus={() => setClaveSeguimiento(c.clave)}
-                            tope={LIMITES.texto}
-                            paso="seguimiento"
-                            filas={4}
-                            ayuda={c.descuento && !tieneDescuento ? 'Sin precio de recuperación esta versión no se manda.' : null}
-                          />
-                        </div>
-                      ))}
+                      {nivelActual.claves.map(c => {
+                        const textoActual = m.seguimiento.textos[c.clave] || '';
+                        const opciones = separarRedacciones(textoActual);
+                        const cantOpciones = opciones.length;
+                        return (
+                          <div key={c.clave} className={c.descuento && !tieneDescuento ? 'pe-atenuado' : ''}>
+                            <CampoMensaje
+                              id={`p-seg-${c.clave}`}
+                              etiqueta={
+                                <span>
+                                  {c.titulo}
+                                  {cantOpciones > 1 ? (
+                                    <span className="pe-chip pe-chip--ok" style={{ marginLeft: '8px', fontSize: '0.70rem' }}>
+                                      {cantOpciones} opciones configuradas
+                                    </span>
+                                  ) : (
+                                    <span className="pe-chip pe-chip--info" style={{ marginLeft: '8px', fontSize: '0.70rem' }}>
+                                      1 opción (+3 variantes de respaldo)
+                                    </span>
+                                  )}
+                                </span>
+                              }
+                              valor={textoActual}
+                              onChange={(v) => textoSeguimiento(c.clave, v)}
+                              onFocus={() => { setClaveSeguimiento(c.clave); setVarianteVista(0); }}
+                              tope={LIMITES.texto}
+                              paso="seguimiento"
+                              filas={cantOpciones > 1 ? 6 : 4}
+                              accion={
+                                <button
+                                  type="button"
+                                  className="pe-link"
+                                  onClick={() => {
+                                    const baseTexto = textoActual.trim();
+                                    const nuevo = baseTexto ? `${baseTexto}\n\n---\n\n¡Hola, {{nombre}}! ` : '¡Hola, {{nombre}}! ';
+                                    textoSeguimiento(c.clave, nuevo);
+                                    setClaveSeguimiento(c.clave);
+                                  }}
+                                  title="Agrega otra opción separada con --- para que el bot alterne"
+                                >
+                                  + Agregar opción (---)
+                                </button>
+                              }
+                              ayuda={c.descuento && !tieneDescuento
+                                ? 'Sin precio de recuperación esta versión no se manda.'
+                                : 'Separá opciones con "---" en una línea sola para rotar mensajes y evitar spam.'}
+                            />
+                          </div>
+                        );
+                      })}
                       {base?.messages && (
                         <button type="button" className="pe-link"
                           onClick={() => {
@@ -1055,13 +1099,47 @@ export function ProductoEditorPage() {
                     </>
                   )}
                 </div>
-                <VistaWhatsApp
-                  titulo={`Mensaje ${nivel}.º · ${NIVELES.flatMap(n => n.claves).find(c => c.clave === claveVista)?.titulo || ''}`}
-                  burbujas={m.seguimiento.activo ? [
-                    { de: 'nota', texto: `${horas(escalones[nivel - 1] ?? MINUTOS_POR_DEFECTO[nivel - 1])} sin respuesta` },
-                    { texto: renderizar(m.seguimiento.textos[claveVista], varsSeguimiento) }
-                  ] : [{ de: 'nota', texto: 'Apagado: nadie recibe seguimiento por este producto.' }]}
-                />
+                <div>
+                  {(() => {
+                    const textoClave = m.seguimiento.textos[claveVista] || '';
+                    const opcionesClave = separarRedacciones(textoClave);
+                    const idx = varianteVista < opcionesClave.length ? varianteVista : 0;
+                    const textoParaBurbuja = opcionesClave.length > 0 ? opcionesClave[idx] : textoClave;
+
+                    return (
+                      <>
+                        {opcionesClave.length > 1 && (
+                          <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-soft)' }}>
+                              Ver en vista previa:
+                            </span>
+                            {opcionesClave.map((_, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                className={`pe-chip ${idx === i ? 'pe-chip--ok' : ''}`}
+                                style={{ cursor: 'pointer', border: 'none' }}
+                                onClick={() => setVarianteVista(i)}
+                              >
+                                Opción {i + 1}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <VistaWhatsApp
+                          titulo={`Mensaje ${nivel}.º · ${NIVELES.flatMap(n => n.claves).find(c => c.clave === claveVista)?.titulo || ''}`}
+                          burbujas={m.seguimiento.activo ? [
+                            {
+                              de: 'nota',
+                              texto: `${horas(escalones[nivel - 1] ?? MINUTOS_POR_DEFECTO[nivel - 1])} sin respuesta${opcionesClave.length > 1 ? ` · Opción ${idx + 1} de ${opcionesClave.length}` : ''}`
+                            },
+                            { texto: renderizar(textoParaBurbuja, varsSeguimiento) }
+                          ] : [{ de: 'nota', texto: 'Apagado: nadie recibe seguimiento por este producto.' }]}
+                        />
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             )}
           </section>

@@ -87,6 +87,18 @@ export const BOTONES_POR_DEFECTO = Object.freeze({
   extra_no: 'No, gracias'
 });
 
+/**
+ * Parte un texto en sus redacciones alternativas.
+ * Una línea que tenga solo tres o más guiones (---) separa una redacción de la
+ * siguiente para rotar opciones de remarketing y evitar mensajes repetitivos.
+ */
+export function separarRedacciones(texto) {
+  return String(texto || '')
+    .split(/\r?\n[ \t]*-{3,}[ \t]*\r?\n/)
+    .map(t => t.trim())
+    .filter(Boolean);
+}
+
 /** Las {{variables}} de un texto que ese paso no conoce. */
 export function variablesDesconocidas(plantilla, paso) {
   const permitidas = PERMITIDAS_POR_PASO[paso] || [];
