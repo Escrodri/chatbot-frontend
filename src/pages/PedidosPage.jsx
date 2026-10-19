@@ -8,6 +8,7 @@ import { OrderBadge } from '../components/inbox/OrderBadge';
 import { RevisionAutomatica } from '../components/pedidos/RevisionAutomatica';
 import { Campanas } from '../components/pedidos/Campanas';
 import { Anuncios } from '../components/pedidos/Anuncios';
+import { Visitas } from '../components/pedidos/Visitas';
 
 /**
  * Tablero de Pedidos: quién pagó y quién no.
@@ -344,6 +345,10 @@ export function PedidosPage() {
         {/* De qué anuncio viene cada persona y cuántos pagaron. Es lo que
             decide qué anuncio seguir pagando. */}
         <Anuncios />
+
+        {/* De dónde llega la gente a la web (Plan 21), antes de que escriban o
+            compren: si el anuncio manda sus datos y si Hotmart recibe el ID. */}
+        <Visitas />
 
         {/* Va antes de los filtros, y no escondido en Configuración, porque la
             pregunta "¿quién está revisando los comprobantes ahora?" se hace
