@@ -101,6 +101,40 @@ export function Visitas() {
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
+  const [modalLimpiar, setModalLimpiar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+
+  const eliminarEventoIndividual = async (id, ts, e) => {
+    e.stopPropagation();
+    if (!window.confirm('¿Descartar este registro de prueba?')) return;
+    setEliminando(true);
+    try {
+      await visitasService.eliminar(id, ts, token);
+      await cargar();
+    } catch (err) {
+      alert(err.message || 'Error al eliminar');
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  const ejecutarLimpieza = async (tipo) => {
+    const txt = tipo === 'sin_utm'
+      ? '¿Borrar todas las visitas de prueba que NO vinieron de anuncios?'
+      : '¿Seguro que deseas REINICIAR TODO el historial de visitas a cero para arrancar en limpio?';
+    if (!window.confirm(txt)) return;
+
+    setEliminando(true);
+    try {
+      await visitasService.limpiar(tipo, token);
+      setModalLimpiar(false);
+      await cargar();
+    } catch (err) {
+      alert(err.message || 'Error al limpiar visitas');
+    } finally {
+      setEliminando(false);
+    }
+  };
 
   const cargar = useCallback(async () => {
     if (!esAdmin) return;
@@ -334,6 +368,33 @@ export function Visitas() {
               <path d="M16 21h5v-5" />
             </svg>
             {cargando ? 'Sincronizando…' : 'Actualizar'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setModalLimpiar(true)}
+            disabled={eliminando || cargando}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '9px',
+              border: '1px solid #fecaca',
+              background: '#fef2f2',
+              color: '#b91c1c',
+              fontSize: '.78rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+            title="Borrar visitas de prueba para arrancar en limpio"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+            Limpiar Pruebas
           </button>
         </div>
       </div>
@@ -880,8 +941,41 @@ export function Visitas() {
                           </div>
                         </div>
 
-                        {/* HORA Y BOTÓN EXPANDIR */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* HORA, BOTÓN DESCARTAR Y BOTÓN EXPANDIR */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => eliminarEventoIndividual(ev.id, ev.ts, e)}
+                            disabled={eliminando}
+                            title="Descartar este evento de prueba"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-soft, #9ca3af)',
+                              cursor: 'pointer',
+                              padding: '5px',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#ef4444';
+                              e.currentTarget.style.background = '#fee2e2';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = 'var(--text-soft, #9ca3af)';
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </button>
+
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--text-strong, #111827)' }}>
                               {tiempoRelativo(ev.ts)}
@@ -1386,6 +1480,133 @@ export function Visitas() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL PARA LIMPIAR PRUEBAS ── */}
+      {modalLimpiar && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => !eliminando && setModalLimpiar(false)}
+        >
+          <div
+            style={{
+              background: 'var(--bg-panel, #ffffff)',
+              borderRadius: '16px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+              border: '1px solid var(--border, #e5e7eb)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-strong, #111827)' }}>
+                  Limpiar visitas de prueba
+                </h3>
+                <p style={{ margin: '3px 0 0', fontSize: '.76rem', color: 'var(--text-soft, #6b7280)' }}>
+                  Elige qué eventos deseas descartar para no alterar tus estadísticas reales.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '20px 0' }}>
+              <button
+                type="button"
+                onClick={() => ejecutarLimpieza('sin_utm')}
+                disabled={eliminando}
+                style={{
+                  textAlign: 'left',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border, #e5e7eb)',
+                  background: 'var(--bg-app, #f8fafc)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '.84rem', color: 'var(--text-strong, #111827)' }}>
+                  1. Borrar solo visitas directas (Sin UTM)
+                </div>
+                <div style={{ fontSize: '.74rem', color: 'var(--text-soft, #6b7280)', marginTop: '3px', lineHeight: 1.4 }}>
+                  Elimina únicamente las pruebas en las que entraste directo a la landing o sin parámetros de anuncio. Conserva las que tengan datos de Meta.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => ejecutarLimpieza('todas')}
+                disabled={eliminando}
+                style={{
+                  textAlign: 'left',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid #fecaca',
+                  background: '#fef2f2',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#b91c1c' }}>
+                  2. Reiniciar todo el historial a cero (Reset total)
+                </div>
+                <div style={{ fontSize: '.74rem', color: '#991b1b', marginTop: '3px', lineHeight: 1.4 }}>
+                  Vacía todos los registros acumulados hasta hoy para empezar desde cero con el tráfico de tus campañas activas.
+                </div>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setModalLimpiar(false)}
+                disabled={eliminando}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border, #d1d5db)',
+                  background: 'var(--bg-panel, #ffffff)',
+                  color: 'var(--text-strong, #374151)',
+                  fontSize: '.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
